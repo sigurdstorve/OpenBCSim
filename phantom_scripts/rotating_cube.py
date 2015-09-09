@@ -10,26 +10,7 @@ description = """\
     a rotating box.
 """
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('h5_file', help='Name of scatterer file')
-    parser.add_argument('--x_min', help='bbox [m]', type=float, default=-0.03)
-    parser.add_argument('--x_max', help='bbox [m]', type=float, default=0.03)
-    parser.add_argument('--y_min', help='bbox [m]', type=float, default=-0.03)
-    parser.add_argument('--y_max', help='bbox [m]', type=float, default=0.03)
-    parser.add_argument('--z_min', help='bbox [m]', type=float, default=-0.03)
-    parser.add_argument('--z_max', help='bbox [m]', type=float, default=0.03)
-    parser.add_argument('--z0', help='Z coordinate of box center', type=float, default=0.06)
-    parser.add_argument('--num_cs', help='Number of control points in spline approximation', type=int, default=20)
-    parser.add_argument('--spline_degree', help='Spline degree', type=int, default=3)
-    parser.add_argument('--t0', help='Start time', type=float, default=0.0)
-    parser.add_argument('--t1', help='End time', type=float, default=1.0)
-    parser.add_argument('--num_scatterers', help='Num scatterers', type=int, default=100000)
-    parser.add_argument('--x_angular_velocity', type=float, default=3.14)
-    parser.add_argument('--y_angular_velocity', type=float, default=1.0)
-    parser.add_argument('--z_angular_velocity', type=float, default=0.4)
-    args = parser.parse_args()
-    
+def create_phantom(args):
     xs = np.random.uniform(size=(args.num_scatterers,), low=args.x_min, high=args.x_max)
     ys = np.random.uniform(size=(args.num_scatterers,), low=args.y_min, high=args.y_max)
     zs = np.random.uniform(size=(args.num_scatterers,), low=args.z_min, high=args.z_max)
@@ -57,22 +38,32 @@ if __name__ == '__main__':
         temp[:, 2] += args.z0
         nodes[:, control_point_i, 0:3] = temp
         nodes[:, control_point_i, 3] = as_
-        
-    if False:
-        from mpl_toolkits.mplot3d import Axes3D
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        scatterer_i = 0
-        xs_vis = nodes[scatterer_i, :, 0]
-        ys_vis = nodes[scatterer_i, :, 1]
-        zs_vis = nodes[scatterer_i, :, 2]
-        ax.plot(xs_vis, ys_vis, zs_vis)
-        plt.show() 
-   
+           
     with h5py.File(args.h5_file, 'w') as f:
         f["spline_degree"] = args.spline_degree
         f["nodes"] = nodes
         f["knot_vector"] = knots
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('h5_file', help='Name of scatterer file')
+    parser.add_argument('--x_min', help='bbox [m]', type=float, default=-0.03)
+    parser.add_argument('--x_max', help='bbox [m]', type=float, default=0.03)
+    parser.add_argument('--y_min', help='bbox [m]', type=float, default=-0.03)
+    parser.add_argument('--y_max', help='bbox [m]', type=float, default=0.03)
+    parser.add_argument('--z_min', help='bbox [m]', type=float, default=-0.03)
+    parser.add_argument('--z_max', help='bbox [m]', type=float, default=0.03)
+    parser.add_argument('--z0', help='Z coordinate of box center', type=float, default=0.06)
+    parser.add_argument('--num_cs', help='Number of control points in spline approximation', type=int, default=20)
+    parser.add_argument('--spline_degree', help='Spline degree', type=int, default=3)
+    parser.add_argument('--t0', help='Start time', type=float, default=0.0)
+    parser.add_argument('--t1', help='End time', type=float, default=1.0)
+    parser.add_argument('--num_scatterers', help='Num scatterers', type=int, default=100000)
+    parser.add_argument('--x_angular_velocity', type=float, default=3.14)
+    parser.add_argument('--y_angular_velocity', type=float, default=1.0)
+    parser.add_argument('--z_angular_velocity', type=float, default=0.4)
+    args = parser.parse_args()
+    
+    create_phantom(args)
            
  

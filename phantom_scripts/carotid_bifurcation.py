@@ -56,6 +56,7 @@ class CarotidArteryBifurcartionPhantom:
         ys    = self.ys
         zs    = self.zs
         ampls = self.ampls
+        args  = self.args
         
         # Recompute all indices
         self._process()
@@ -191,28 +192,8 @@ class CarotidArteryBifurcartionPhantom:
         final_inds = np.logical_not(temp_inds)
 
         return final_inds
-        
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('h5_file', help="Name of fixed-scatterer hdf5 file")
-    parser.add_argument("--z0", help="Depth of center [m]", type=float, default=0.025)
-    parser.add_argument("--x_min", help="Bounding box for scatterers [m]", type=float, default=-0.08)
-    parser.add_argument("--x_max", help="Bounding box for scatterers [m]", type=float, default=0.08)
-    parser.add_argument("--y_min", help="Bounding box for scatterers [m]", type=float, default=-0.03)
-    parser.add_argument("--y_max", help="Bounding box for scatterers [m]", type=float, default=0.03)
-    parser.add_argument("--z_min", help="Bounding box for scatterers [m]", type=float, default=0.0)
-    parser.add_argument("--z_max", help="Bounding box for scatterers [m]", type=float, default=0.05)
-    parser.add_argument("--num_scatterers", help="Number of random scatterers in bounding box", type=int, default=5000000)
-    parser.add_argument("--small_r", help="Radius after bifurcation", type=float, default=5e-3)
-    parser.add_argument("--large_r", help="Radius before bifurcation", type=float, default=8.2e-3)
-    parser.add_argument("--common_x_max", type=float, default=13e-3)
-    parser.add_argument("--theta", help="Angle of bifurcating arteries [radians]", type=float, default=np.pi*10/180.0)
-    parser.add_argument("--visualize", help="Render the artery scatterers", action="store_true")
-    parser.add_argument("--lumen_ampl", help="Scaling factor for scatterers inside lumen", type=float, default=0.0)
-    parser.add_argument("--enable_plaque", action="store_true")
-    args = parser.parse_args()
-        
-    # Make a phantom
+
+def create_phantom(args):
     carotid_phantom = CarotidArteryBifurcartionPhantom(args)
 
     if args.enable_plaque:
@@ -252,3 +233,25 @@ if __name__ == '__main__':
     with h5py.File(args.h5_file, 'w') as f:
         f["data"] = scatterers
     print 'Wrote %d scatterers to %s' % (final_num_scatterers, args.h5_file)
+        
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('h5_file', help="Name of fixed-scatterer hdf5 file")
+    parser.add_argument("--z0", help="Depth of center [m]", type=float, default=0.025)
+    parser.add_argument("--x_min", help="Bounding box for scatterers [m]", type=float, default=-0.08)
+    parser.add_argument("--x_max", help="Bounding box for scatterers [m]", type=float, default=0.08)
+    parser.add_argument("--y_min", help="Bounding box for scatterers [m]", type=float, default=-0.03)
+    parser.add_argument("--y_max", help="Bounding box for scatterers [m]", type=float, default=0.03)
+    parser.add_argument("--z_min", help="Bounding box for scatterers [m]", type=float, default=0.0)
+    parser.add_argument("--z_max", help="Bounding box for scatterers [m]", type=float, default=0.05)
+    parser.add_argument("--num_scatterers", help="Number of random scatterers in bounding box", type=int, default=5000000)
+    parser.add_argument("--small_r", help="Radius after bifurcation", type=float, default=5e-3)
+    parser.add_argument("--large_r", help="Radius before bifurcation", type=float, default=8.2e-3)
+    parser.add_argument("--common_x_max", type=float, default=13e-3)
+    parser.add_argument("--theta", help="Angle of bifurcating arteries [radians]", type=float, default=np.pi*10/180.0)
+    parser.add_argument("--visualize", help="Render the artery scatterers", action="store_true")
+    parser.add_argument("--lumen_ampl", help="Scaling factor for scatterers inside lumen", type=float, default=0.0)
+    parser.add_argument("--enable_plaque", action="store_true")
+    args = parser.parse_args()
+    
+    create_phantom(args)
