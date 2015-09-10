@@ -1,6 +1,6 @@
 # OpenBCSim
-This project is a fast C++/CUDA open-source implementation of an ultrasound simulator based on the COLE algorithm as published by Gao et al. in ""A fast convolution-based methodology to simulate 
-2-Dd/3-D cardiac ultrasound images.", IEEE TUFFC 2009.
+This project is a fast C++/CUDA open-source implementation of an ultrasound simulator based on the COLE algorithm as published by Gao et al. in "A fast convolution-based methodology to simulate 
+2-D/3-D cardiac ultrasound images.", IEEE TUFFC 2009.
 
 The algorithm has been extended to optionally use B-splines for representing dynamic point scatterers. Features:
 - Python script for generating point-scatterer phantoms
