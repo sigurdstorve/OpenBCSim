@@ -1,0 +1,20 @@
+               The OpenBCSim Ultrasound Simulator Project
+              ============================================
+This project is a fast C++/CUDA open-source implementation of an ultrasound
+simulator based on the COLE algorithm as published by Gao et al. in [1].
+The algorithm has been extended to optionally use B-splines for representing
+dynamic point scatterers. Both CPU implementations and (experimental) GPU
+implementations are provided.
+
+This project is licensed under the BSD license found in LICENSE.txt
+
+[1] Gao, Hang, et al. "A fast convolution-based methodology to simulate 
+2-Dd/3-D cardiac ultrasound images." Ultrasonics, Ferroelectrics, and 
+Frequency Control, IEEE Transactions on 56.2 (2009): 404-409.
+
+-------------------------------------------------------------------------------
+This project contains files from the "numpy-boost" project, a wrapper to make
+Numpy arrays accessible in C++ as boost::multiarray objects, which is written
+by Michael Droettboom and can be obtained from
+    https://github.com/mdboom/numpy-boost
+
