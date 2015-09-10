@@ -27,7 +27,9 @@
 *.out
 *.app
 
-# Build folders
+# Specific folder
 build
 build32
 build64
+generated_phantoms
+
