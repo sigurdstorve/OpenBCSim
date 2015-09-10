@@ -1,5 +1,5 @@
-               The OpenBCSim Ultrasound Simulator Project
-              ============================================
+             The OpenBCSim Ultrasound Simulator Project
+            ============================================
 This project is a fast C++/CUDA open-source implementation of an ultrasound
 simulator based on the COLE algorithm as published by Gao et al. in [1].
 The algorithm has been extended to optionally use B-splines for representing
@@ -27,5 +27,5 @@ OpenGL is inspired by the "Hello GL2 Example", which can be obtained from
     
 This project contains a CMake script for locating the Qwt library. This script
 is written by Julien Schueller and the license can be found at the beginning
-of the file
-    src/cmake/FindQwt.cmake
+of the file src/cmake/FindQwt.cmake. The file can be obtained from
+    http://www.cmake.org/Wiki/CMakeUserFindQwt
