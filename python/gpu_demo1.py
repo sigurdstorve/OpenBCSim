@@ -79,6 +79,8 @@ print 'Time pr. frame: %f [ms]' % (1000.0*elapsed_time/args.num_frames)
 print 'Time pr. RF line: %f [ms]' % (1000.0*elapsed_time/(args.num_frames*args.num_lines))
     
 if args.save_pdf or args.visualize:
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     num_samples, num_lines = rf_lines.shape
     plt.figure()
