@@ -26,3 +26,8 @@
 *.exe
 *.out
 *.app
+
+# Build folders
+build
+build32
+build64
