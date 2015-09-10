@@ -1,7 +1,6 @@
 # DEMO 1
 # Linear scan with three scatterers.
 # Using a Gaussian analytic beam profile.
-# Written by Sigurd Storve (sigurd.storve@ntnu.no), october 2013
 import sys
 sys.path.append('.')
 from pyrfsim import RfSimulator
@@ -18,6 +17,7 @@ sim.set_use_all_available_cores()
 
 # Set general simulation parameters
 sim.set_parameters(1540)
+sim.set_output_type("rf")
 
 # Set scatterers
 num_scatterers = 16
@@ -25,22 +25,6 @@ scatterers_data = np.zeros((num_scatterers, 4), dtype='float32')
 scatterers_data[:,2] = np.linspace(0.01, 0.16, num_scatterers)
 scatterers_data[:,3] = np.ones((num_scatterers,))
 sim.set_fixed_scatterers(scatterers_data)
-
-# Define a scan sequence
-num_lines = 12
-origins = np.zeros((num_lines, 3), dtype='float32')
-origins[:,0] = np.linspace(-0.04, 0.04, num_lines)
-
-
-x_axis = np.array([1.0, 0.0, 0.0])
-y_axis = np.array([0.0, 1.0, 0.0])
-z_axis = np.array([0.0, 0.0, 1.0])
-num_lines = origins.shape[0]
-directions = np.array(np.tile(z_axis, (num_lines, 1)), dtype='float32')
-lengths = np.ones((num_lines,), dtype='float32')*0.20
-lateral_dirs = np.array(np.tile(x_axis, (num_lines, 1)), dtype='float32')
-timestamps = np.zeros((num_lines,), dtype='float32')
-sim.set_scan_sequence(origins, directions, lengths, lateral_dirs, timestamps)
 
 # Define excitation signal
 fs = 50e6
@@ -58,6 +42,23 @@ plt.xlabel('Time [s]')
 plt.ylabel('Exitation')
 plt.show()
 sim.set_excitation(samples, center_index, fs)
+
+# Define a scan sequence
+num_lines = 12
+origins = np.zeros((num_lines, 3), dtype='float32')
+origins[:,0] = np.linspace(-0.04, 0.04, num_lines)
+
+
+x_axis = np.array([1.0, 0.0, 0.0])
+y_axis = np.array([0.0, 1.0, 0.0])
+z_axis = np.array([0.0, 0.0, 1.0])
+num_lines = origins.shape[0]
+directions = np.array(np.tile(z_axis, (num_lines, 1)), dtype='float32')
+length = 0.20
+lateral_dirs = np.array(np.tile(x_axis, (num_lines, 1)), dtype='float32')
+timestamps = np.zeros((num_lines,), dtype='float32')
+sim.set_scan_sequence(origins, directions, length, lateral_dirs, timestamps)
+
 
 # Set the beam profile
 sigma_lateral = 1e-3
