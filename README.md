@@ -10,4 +10,4 @@ The algorithm has been extended to optionally use B-splines for representing dyn
 - Python interface using Boost.Python and numpy-boost
 - Qt5-based interactive GUI from-end
 
-This code is still experimental.
+This code is still experimental. More documentation, examples, and instructions on how to compile the code will be added soon.
