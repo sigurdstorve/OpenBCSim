@@ -25,7 +25,7 @@ sim = RfSimulator("gpu_fixed")
 
 
 
-sim.set_verbose(True)
+sim.set_verbose(False)
 
 # configure scatterers (in a 3D cube)
 x0 = -0.04; x1 = 0.04
@@ -83,13 +83,15 @@ if args.save_pdf or args.visualize:
     mpl.use('Agg')
     import matplotlib.pyplot as plt
     num_samples, num_lines = rf_lines.shape
-    plt.figure()
+    plt.figure(1)
     plt.plot(rf_lines[:, num_lines/2])
+    if args.save_pdf: plt.savefig("frame1-out.pdf")
+    plt.figure(2)
+    plt.imshow(rf_lines, aspect='auto')
+    if args.save_pdf: plt.savefig("frame2-out.pdf")
 if args.visualize:
     plt.show()
 if args.save_pdf:
-    img_file = "middle_rf.pdf"
-    plt.savefig(img_file)
-    print 'Image written to %s' % img_file
+    print 'Image written to disk.'
     
     
