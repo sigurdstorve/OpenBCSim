@@ -18,13 +18,14 @@ if __name__ == '__main__':
     parser.add_argument("--num_lines", type=int, default=192)
     parser.add_argument("--num_frames", help="Each frame is equal, but can be used to test performance", type=int, default=1)
     parser.add_argument("--visualize", help="Visualize the middle RF line", action="store_true")
+    parser.add_argument("--save_pdf", help="Save .pdf image", action="store_true")
     args = parser.parse_args()
 
 sim = RfSimulator("gpu_fixed")
 
 
 
-sim.set_verbose(False)
+sim.set_verbose(True)
 
 # configure scatterers (in a 3D cube)
 x0 = -0.04; x1 = 0.04
@@ -77,10 +78,16 @@ print 'Used %f seconds in total.' % elapsed_time
 print 'Time pr. frame: %f [ms]' % (1000.0*elapsed_time/args.num_frames)
 print 'Time pr. RF line: %f [ms]' % (1000.0*elapsed_time/(args.num_frames*args.num_lines))
     
-if args.visualize:
+if args.save_pdf or args.visualize:
     import matplotlib.pyplot as plt
     num_samples, num_lines = rf_lines.shape
     plt.figure()
     plt.plot(rf_lines[:, num_lines/2])
+if args.visualize:
     plt.show()
+if args.save_pdf:
+    img_file = "middle_rf.pdf"
+    plt.savefig(img_file)
+    print 'Image written to %s' % img_file
+    
     
