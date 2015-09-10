@@ -70,9 +70,9 @@ ExcitationSignalWidget::ExcitationSignalWidget(QWidget* parent)
     connect(m_center_freq_sb, SIGNAL(valueChanged(double)), this, SLOT(onSomethingChanged()));
 
     m_bandwidth_sb = new QDoubleSpinBox;
-    m_bandwidth_sb->setRange(0.01, 2.0);
-    m_bandwidth_sb->setSingleStep(0.01);
-    m_bandwidth_sb->setValue(0.4);
+    m_bandwidth_sb->setRange(0.1, 150.0);
+    m_bandwidth_sb->setSingleStep(1.0);
+    m_bandwidth_sb->setValue(10.0);
     m_bandwidth_sb->setSuffix("%");
     connect(m_bandwidth_sb, SIGNAL(valueChanged(double)), this, SLOT(onSomethingChanged()));
 
@@ -99,7 +99,7 @@ bcsim::ExcitationSignal ExcitationSignalWidget::construct(std::vector<float>& /*
     // read values from GUI controls
     new_excitation.sampling_frequency = static_cast<float>(m_sampling_freq_sb->value()*1e6);
     auto center_frequency             = static_cast<float>(m_center_freq_sb->value()*1e6);
-    auto fractional_bandwidth         = static_cast<float>(m_bandwidth_sb->value());
+    auto fractional_bandwidth         = static_cast<float>(m_bandwidth_sb->value()*0.01);
 
     //std::vector<float> times;
     bcsim::MakeGaussianExcitation(center_frequency,
