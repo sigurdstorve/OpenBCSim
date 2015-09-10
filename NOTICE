@@ -18,3 +18,9 @@ Numpy arrays accessible in C++ as boost::multiarray objects, which is written
 by Michael Droettboom and can be obtained from
     https://github.com/mdboom/numpy-boost
 
+
+This project contains a Qt5-based GUI where the GLScattererWidget widget which
+is responsible for rendering the visualized scatterers and scanlines using 
+OpenGL is inspired by the "Hello GL2 Example", which can be obtained from
+    http://doc.qt.io/qt-5/qtopengl-hellogl2-example.html
+    
