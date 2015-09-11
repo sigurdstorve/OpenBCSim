@@ -38,8 +38,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFormLayout>
 #include <QPushButton>
 #include <QVector>
+#ifdef BCSIM_ENABLE_QWT
 #include <qwt_plot.h>
 #include <qwt_plot_curve.h>
+#endif
 #include "GaussPulse.hpp"
 
 ExcitationSignalWidget::ExcitationSignalWidget(QWidget* parent)
@@ -48,13 +50,13 @@ ExcitationSignalWidget::ExcitationSignalWidget(QWidget* parent)
     auto main_layout = new QVBoxLayout;
     auto group_box   = new QGroupBox("Gaussian pulse excitiation");
     auto form_layout = new QFormLayout;
-
+#ifdef BCSIM_ENABLE_QWT
     m_plot_curve = new QwtPlotCurve("Excitation");
     m_plot = new QwtPlot;
     m_plot->setFixedSize(150, 150);
     m_plot_curve->attach(m_plot);
     form_layout->addRow(m_plot);
-
+#endif
     m_sampling_freq_sb = new QDoubleSpinBox;
     m_sampling_freq_sb->setRange(1, 1000);
     m_sampling_freq_sb->setSingleStep(10);
@@ -115,8 +117,8 @@ bcsim::ExcitationSignal ExcitationSignalWidget::construct(std::vector<float>& /*
 void ExcitationSignalWidget::onSomethingChanged() {
     std::vector<float> temp_times;
     auto new_excitation = construct(temp_times);
+#ifdef BCSIM_ENABLE_QWT
     auto num_samples = temp_times.size();
-    
     // convert to double for plotting
     std::vector<double> plot_times(num_samples);
     std::vector<double> plot_samples(num_samples);
@@ -130,6 +132,6 @@ void ExcitationSignalWidget::onSomethingChanged() {
     const auto max_value = *std::max_element(plot_times.begin(), plot_times.end());
     m_plot->setAxisScale(QwtPlot::xBottom, min_value, max_value);
     m_plot->replot();
-
+#endif
     emit valueChanged(new_excitation);
 }

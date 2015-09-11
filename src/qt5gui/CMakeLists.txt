@@ -1,6 +1,8 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
+option(BCSIM_ENABLE_QWT "Enable Qwt for plots" ON)
+
 # In order for this to work, Qt5 must be found below the
 # CMAKE_PREFIX_PATH, or the Qt5<Module>_DIR must be set
 # in CMake cache to the location of Qt5WidgetsConfig.cmake
@@ -9,9 +11,11 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt5Widgets)
 find_package(Qt5OpenGL)
 
-# Handle Qwt
-find_package(Qwt REQUIRED)
-include_directories(${QWT_INCLUDE_DIRS})
+if (BCSIM_ENABLE_QWT)
+    find_package(Qwt REQUIRED)
+    include_directories(${QWT_INCLUDE_DIRS})
+    add_definitions(-DBCSIM_ENABLE_QWT)
+endif()
 
 add_executable(BCSimGUI
                main.cpp
@@ -54,7 +58,9 @@ target_link_libraries(BCSimGUI
                       Qt5::Widgets
                       Qt5::OpenGL
                       LibBCSim
-                      ${QWT_LIBRARIES}
                       )
-
+if (BCSIM_ENABLE_QWT)
+    target_link_libraries(BCSimGUI ${QWT_LIBRARIES})
+endif()
+                      
 
