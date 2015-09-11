@@ -32,8 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <algorithm>
 #include <random> // for selecting scatterers
-#include <qwt_plot.h>
-#include <qwt_plot_curve.h>
 
 #include <QMenuBar>
 #include <QMenu>
@@ -154,20 +152,6 @@ MainWindow::MainWindow() {
     m_playback_timer = new QTimer;
     m_playback_millisec = 1;
     connect(m_playback_timer, SIGNAL(timeout()), this, SLOT(onTimer()));
-
-
-    // Dummy plot
-    /*
-    m_qwt_plot = new QwtPlot(QString("Middle RF signal"), window);
-    m_qwt_plot_curve = new QwtPlotCurve("RF signal curve");
-    m_qwt_plot_curve->setRenderHint(QwtPlotItem::RenderAntialiased);
-    m_qwt_plot_curve->attach(m_qwt_plot);
-    m_env_curve = new QwtPlotCurve("Env.");
-    m_env_curve->setRenderHint(QwtPlotItem::RenderAntialiased);
-    m_env_curve->attach(m_qwt_plot);
-    m_env_curve->setPen(QPen("blue"));
-    v_layout->addWidget(m_qwt_plot);
-    */
 
     int num_lines;
     auto geometry = m_scanseq_widget->get_geometry(num_lines);
@@ -612,12 +596,6 @@ void MainWindow::doSimulation() {
     
     img.setColorTable(GrayColortable());
     m_label->setPixmap(QPixmap::fromImage(img));
-
-    //m_qwt_plot_curve->setSamples(ts.data(), xs.dadta(), static_cast<int>(num_samples));
-    //m_qwt_plot->setAxisScale(QwtPlot::yLeft, y_min, y_max);
-    //m_env_curve->setSamples(ts.data(), std::vector<double>(envelope.begin(), envelope.end()).data(), static_cast<int>(num_samples));
-    //m_qwt_plot->replot();
-
 
     statusBar()->showMessage("Simulation time: " + QString::number(simulation_millisec) + " ms  Postprocessing: " + QString::number(postprocessing_millisec) + " ms.");
     

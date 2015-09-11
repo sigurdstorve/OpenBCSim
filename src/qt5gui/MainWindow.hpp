@@ -149,10 +149,6 @@ private:
     // The label that is used to show the B-mode image
     QLabel*                         m_label;
 
-    // Visualization of RF_line
-    //QwtPlot*                        m_qwt_plot;
-    //QwtPlotCurve*                   m_qwt_plot_curve;
-    //QwtPlotCurve*                   m_env_curve;
     QSettings*                      m_settings;
     GaussianBeamProfileWidget*      m_beamprofile_widget;
     ExcitationSignalWidget*         m_excitation_signal_widget;
