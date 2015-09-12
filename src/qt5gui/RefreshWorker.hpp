@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
+#include <stdexcept>
 #include <memory>
 #include <QObject>
 #include <QDebug>
@@ -88,9 +89,6 @@ public:
     QImage  image;
     float   updated_normalization_const;
 };
-
-Q_DECLARE_METATYPE(WorkTask::ptr);
-Q_DECLARE_METATYPE(WorkResult::ptr);
 
 class Worker : public QObject {
 Q_OBJECT
@@ -237,3 +235,7 @@ private:
 };
 
 }   // end namespace
+
+Q_DECLARE_METATYPE(refresh_worker::WorkTask::ptr);
+Q_DECLARE_METATYPE(refresh_worker::WorkResult::ptr);
+
