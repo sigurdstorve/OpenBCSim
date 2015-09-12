@@ -29,6 +29,7 @@
 
 # Other
 *.pyc
+*~
 
 # Specific folder
 build
