@@ -196,10 +196,6 @@ void MainWindow::createMenus() {
     connect(loadExcitationAct, SIGNAL(triggered()), this, SLOT(onLoadExcitation()));
     fileMenu->addAction(loadExcitationAct);
 
-    auto loadScansequenceAct = new QAction(tr("Load scan sequence definition"), this);
-    connect(loadScansequenceAct, SIGNAL(triggered()), this, SLOT(onLoadScansequence()));
-    fileMenu->addAction(loadScansequenceAct);
-
     auto gpu_algorithm_act = new QAction(tr("Create a GPU simulator"), this);
     connect(gpu_algorithm_act, SIGNAL(triggered()), this, SLOT(onCreateGpuSimulator()));
     fileMenu->addAction(gpu_algorithm_act);
@@ -294,16 +290,6 @@ void MainWindow::onLoadExcitation() {
         return;
     }
     setExcitation(h5_file);
-}
-
-void MainWindow::onLoadScansequence() {
-    auto h5_file = QFileDialog::getOpenFileName(this, tr("Load h5 scan sequence definition"), "", tr("h5 files (*.h5)"));
-    if (h5_file == "") {
-        qDebug() << "Invalid scan sequence file. Skipping";
-        return;
-    }
-    setScansequence(h5_file);
-    // TODO: Must mark the scanseq widget as "Custom" or something.
 }
 
 void MainWindow::onCreateGpuSimulator() {
@@ -426,17 +412,6 @@ void MainWindow::loadScatterers(const QString h5_file) {
     qDebug() << "Configured scatterers";
 
     updateOpenGlVisualization();
-}
-
-void MainWindow::setScansequence(const QString h5_file) {
-    throw std::runtime_error("this function should not be used");
-    try {
-        auto scan_seq = bcsim::ScanSequence::s_ptr(bcsim::loadScanSequenceFromHdf(h5_file.toUtf8().constData()));
-        m_sim->set_scan_sequence(scan_seq);
-        m_gl_vis_widget->setScanSequence(scan_seq);
-    } catch (const std::runtime_error& e) {
-        qDebug() << "Caught exception: " << e.what();
-    }
 }
 
 void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines) {

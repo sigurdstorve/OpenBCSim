@@ -68,9 +68,6 @@ public:
     // type: "fixed" or "spline"
     void initializeSimulator(const std::string& type);
 
-    // Define the scansequence using data from hdf5 file
-    void setScansequence(const QString h5_file);
-
     // Define the excitation signal using data from hdf5 file
     void setExcitation(const QString h5_file);
 
@@ -85,9 +82,6 @@ private slots:
 
     // Ask user for a h5 file with excitation signal
     void onLoadExcitation();
-
-    // Ask user for a h5 file with scan sequence
-    void onLoadScansequence();
 
     // Simulate using current config
     void onSimulate();
