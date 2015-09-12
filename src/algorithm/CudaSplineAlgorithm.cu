@@ -194,10 +194,10 @@ void CudaSplineAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /
         //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "01_zeroed_rf_line_dump.txt"); }
         
         // do the time-projections
-        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_control_xs->data(),
-                                                                  m_control_ys->data(),
-                                                                  m_control_zs->data(),
-                                                                  m_control_as->data(),
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_control_xs->data(),
+                                                                  m_device_control_ys->data(),
+                                                                  m_device_control_zs->data(),
+                                                                  m_device_control_as->data(),
                                                                   rad_dir,
                                                                   lat_dir,
                                                                   ele_dir,
@@ -285,10 +285,10 @@ void CudaSplineAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scat
     // device memory to hold x, y, z components of all spline control points
     const size_t total_num_cs = m_num_splines*m_num_cs;
     const size_t cs_num_bytes = total_num_cs*sizeof(float);
-    m_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
+    m_device_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
+    m_device_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
+    m_device_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
+    m_device_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
         
     // store the control points with correct memory layout of the host
     std::vector<float> host_control_xs(total_num_cs);
@@ -307,10 +307,10 @@ void CudaSplineAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scat
     }
     
     // copy control points to GPU memory.
-    cudaErrorCheck( cudaMemcpy(m_control_xs->data(), host_control_xs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_control_ys->data(), host_control_ys.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_control_zs->data(), host_control_zs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_control_as->data(), host_control_as.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    cudaErrorCheck( cudaMemcpy(m_device_control_xs->data(), host_control_xs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    cudaErrorCheck( cudaMemcpy(m_device_control_ys->data(), host_control_ys.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    cudaErrorCheck( cudaMemcpy(m_device_control_zs->data(), host_control_zs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    cudaErrorCheck( cudaMemcpy(m_device_control_as->data(), host_control_as.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
 
     // Store the knot vector.
     m_common_knots = scatterers->knot_vector;

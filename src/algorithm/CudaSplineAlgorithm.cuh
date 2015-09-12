@@ -108,10 +108,10 @@ protected:
     std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
     // device memory for spline scatterers control points and amplitudes
-    DeviceBufferRAII<float>::u_ptr      m_control_xs;
-    DeviceBufferRAII<float>::u_ptr      m_control_ys;
-    DeviceBufferRAII<float>::u_ptr      m_control_zs;
-    DeviceBufferRAII<float>::u_ptr      m_control_as;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_xs;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_ys;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_zs;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_as;
     
     // The cuFFT plan used for all transforms.
     CufftPlanRAII::u_ptr                m_fft_plan;
