@@ -36,54 +36,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "discrete_hilbert_mask.hpp"
 #include "common_utils.hpp" // for compute_num_rf_samples
+#include "gpu_alg_common.cuh" // for misc. CUDA kernels
 
 namespace bcsim {
 
-// used to initialize device float memory.
-__global__ void MemsetFloatKernel(float* res, float value, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        res[global_idx] = value;
-    }
-}
-
-// used to create an array of complex numbers with zero imaginary
-// part from a corresponding array of real values [TEMPORARY SOLUTION]
-__global__ void RealToComplexKernel(float* input, cuComplex* output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        output[global_idx].x = input[global_idx];
-        output[global_idx].y = 0.0f;
-    }
-}
-
-// used to multiply the FFTs
-__global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        cufftComplex a = time_proj_fft[global_idx];
-        cufftComplex b = filter_fft[global_idx];
-        time_proj_fft[global_idx] = make_float2(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x); 
-    }
-}
-
-// scale a signal (to avoid losing precision)
-__global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        cufftComplex c     = signal[global_idx];
-        signal[global_idx] = make_float2(c.x*factor, c.y*factor);
-    }
-}
-
-// used to get the absolute value of a complex signal
-__global__ void AbsComplexKernel(cufftComplex* input, float* output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        cufftComplex c     = input[global_idx];
-        output[global_idx] = sqrt(c.x*c.x + c.y*c.y);
-    }
-}
 
 __global__ void FixedAlgKernel(float* point_xs,
                                float* point_ys,
