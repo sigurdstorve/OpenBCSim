@@ -43,6 +43,61 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __constant__ float eval_basis[MAX_CS];
 
+__global__ void SplineAlgKernel(float* control_xs,
+                                float* control_ys,
+                                float* control_zs,
+                                float* control_as,
+                                float3 rad_dir,
+                                float3 lat_dir,
+                                float3 ele_dir,
+                                float3 origin,
+                                float  fs_hertz,
+                                int    num_time_samples,
+                                float  sigma_lateral,
+                                float  sigma_elevational,
+                                float  sound_speed,
+                                int    NUM_CS,
+                                int    NUM_SPLINES,
+                                float* res) {
+
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+    // step 1: evaluate spline
+    // to get from one control point to the next, we have
+    // to make a jump of size equal to number of splines
+    float rendered_x = 0.0f;
+    float rendered_y = 0.0f;
+    float rendered_z = 0.0f;
+    float rendered_a = 0.0f;
+    for (int i = 0; i < NUM_CS; i++) {
+        rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[i];
+        rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[i];
+        rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[i];
+        rendered_a += control_as[NUM_SPLINES*i + global_idx]*eval_basis[i];
+    }
+
+    // step 2: compute projections
+    float3 point = make_float3(rendered_x, rendered_y, rendered_z) - origin;
+    
+    // compute dot products
+    const auto radial_dist  = dot(point, rad_dir);
+    const auto lateral_dist = dot(point, lat_dir);
+    const auto elev_dist    = dot(point, ele_dir);
+
+    // compute weight
+    const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
+    const float two_sigma_elevational_squared = 2.0f*sigma_elevational*sigma_elevational; 
+    const float weight = expf(-(lateral_dist*lateral_dist/two_sigma_lateral_squared + elev_dist*elev_dist/two_sigma_elevational_squared));
+
+    const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
+    
+    if (radial_index >= 0 && radial_index < num_time_samples) {
+        //res[radial_index] += weight;
+        atomicAdd(res+radial_index, weight*rendered_a);
+    }
+}
+
+
 namespace bcsim {
 
 CudaSplineAlgorithm::CudaSplineAlgorithm()
@@ -95,6 +150,16 @@ void CudaSplineAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /
         throw std::runtime_error("No beam profile is set");
     }
     
+    // evaluate the basis functions and upload to constant memory.
+    // HACK: using parameter value from first scanline
+    const float PARAMETER_VAL = m_scan_seq->get_scanline(0).get_timestamp();
+    std::vector<float> host_basis_functions(m_num_cs);
+    for (int i = 0; i < m_num_cs; i++) {
+        host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, PARAMETER_VAL, m_common_knots);
+    }
+    cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, host_basis_functions.data(), m_num_cs*sizeof(float)) );
+    
+    
     int threads_pr_block = 128;
     dim3 grid_size(m_num_scatterers/threads_pr_block, 1, 1);
     dim3 block_size(threads_pr_block, 1, 1);
@@ -129,20 +194,22 @@ void CudaSplineAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /
         //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "01_zeroed_rf_line_dump.txt"); }
         
         // do the time-projections
-//         FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
-//                                                                  m_device_point_ys->data(),
-//                                                                  m_device_point_zs->data(),
-//                                                                  m_device_point_as->data(),
-//                                                                  rad_dir,
-//                                                                  lat_dir,
-//                                                                  ele_dir,
-//                                                                  origin,
-//                                                                  m_excitation.sampling_frequency,
-//                                                                  m_num_time_samples,
-//                                                                  m_beam_profile->getSigmaLateral(),
-//                                                                  m_beam_profile->getSigmaElevational(),
-//                                                                  m_sim_params.sound_speed,
-//                                                                  m_device_time_proj[stream_no]->data());
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_control_xs->data(),
+                                                                  m_control_ys->data(),
+                                                                  m_control_zs->data(),
+                                                                  m_control_as->data(),
+                                                                  rad_dir,
+                                                                  lat_dir,
+                                                                  ele_dir,
+                                                                  origin,
+                                                                  m_excitation.sampling_frequency,
+                                                                  m_num_time_samples,
+                                                                  m_beam_profile->getSigmaLateral(),
+                                                                  m_beam_profile->getSigmaElevational(),
+                                                                  m_sim_params.sound_speed,
+                                                                  m_num_cs,
+                                                                  m_num_splines,
+                                                                  m_device_time_proj[stream_no]->data());
         
             
         //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "02_time_proj_dump.txt"); }
