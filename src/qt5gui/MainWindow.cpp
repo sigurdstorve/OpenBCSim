@@ -160,10 +160,10 @@ MainWindow::MainWindow() {
     m_save_images = false;
 
     // refresh thread setup
-    qRegisterMetaType<InMessage::ptr>();
-    qRegisterMetaType<OutMessage::ptr>();
-    m_refresh_worker = new RefreshWorker(2000);
-    connect(m_refresh_worker, &RefreshWorker::processed_data_available, [&](OutMessage::ptr message) {
+    qRegisterMetaType<refresh_worker::WorkTask::ptr>();
+    qRegisterMetaType<refresh_worker::WorkResult::ptr>();
+    m_refresh_worker = new refresh_worker::RefreshWorker(2000);
+    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr message) {
         qDebug() << "Got output message from output message";
     });
 }
@@ -356,8 +356,6 @@ void MainWindow::onGpuLoadScatterers() {
 
 void MainWindow::onSimulate() {
     doSimulation();
-    auto message = InMessage::ptr(new InMessage);
-    m_refresh_worker->process_data(message);
 }
 
 void MainWindow::onSetSimulatorNoise() {
@@ -507,6 +505,10 @@ void MainWindow::doSimulation() {
         qDebug() << "Caught exception: " << e.what();
     }
     
+    // TODO: Create refresh work task from current geometry and beam space data
+    auto message = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
+    m_refresh_worker->process_data(message);
+
     // timer for all post-processing 
     {
     ScopedCpuTimer scoped_timer([&](int millisec) {

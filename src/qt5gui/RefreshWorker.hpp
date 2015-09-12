@@ -37,34 +37,36 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QQueue>
 #include <QMutexLocker>
 
-class InMessage {
+namespace refresh_worker {
+
+class WorkTask {
 public:
-    typedef std::shared_ptr<InMessage> ptr;
-    InMessage() {
+    typedef std::shared_ptr<WorkTask> ptr;
+    WorkTask() {
         data.resize(32768);
     }
-    ~InMessage() {
-        qDebug() << "InMessage was destroyed";
+    ~WorkTask() {
+        qDebug() << "WorkTask was destroyed";
     }
 private:
     std::vector<unsigned char> data;
 };
 
-class OutMessage {
+class WorkResult {
 public:
-    typedef std::shared_ptr<OutMessage> ptr;
-    OutMessage() {
+    typedef std::shared_ptr<WorkResult> ptr;
+    WorkResult() {
         data.resize(16384);
     }
-    ~OutMessage() {
-        qDebug() << "OutMessage was destroyed";
+    ~WorkResult() {
+        qDebug() << "WorkResult was destroyed";
     }
 private:
     std::vector<unsigned char> data;
 };
 
-Q_DECLARE_METATYPE(InMessage::ptr);
-Q_DECLARE_METATYPE(OutMessage::ptr);
+Q_DECLARE_METATYPE(WorkTask::ptr);
+Q_DECLARE_METATYPE(WorkResult::ptr);
 
 class Worker : public QObject {
 Q_OBJECT
@@ -73,11 +75,11 @@ public:
 
 public slots:
     // enqueue new work item
-    void on_new_data(InMessage::ptr msg) {
+    void on_new_data(WorkTask::ptr msg) {
         QMutexLocker mutex_locker(&m_mutex);
         m_queue.enqueue(msg);
     }
-
+    
 private slots:
     void on_timeout() {
         QMutexLocker mutex_locker(&m_mutex);
@@ -85,18 +87,18 @@ private slots:
         qDebug() << "Refresh timeout @ thread " << QThread::currentThreadId() << ". Number of queued items is" << num_elements;
         if (!m_queue.isEmpty()) {
             auto element = m_queue.dequeue();
-            auto message = OutMessage::ptr(new OutMessage);
+            auto message = WorkResult::ptr(new WorkResult);
             emit finished_processing(message);
         }
     }
 
 signals:
     // finished processing work item
-    void finished_processing(OutMessage::ptr);
+    void finished_processing(WorkResult::ptr);
 
 private:
-    QMutex                  m_mutex;
-    QQueue<InMessage::ptr>  m_queue;
+    QMutex                      m_mutex;
+    QQueue<WorkTask::ptr>       m_queue;
 };
 
 class RefreshWorker : public QObject {
@@ -108,18 +110,18 @@ public:
         m_timer.moveToThread(&m_thread);    // not neccessary according to tutorial.
         m_worker.moveToThread(&m_thread);
         m_thread.start();
-        connect(&m_worker, SIGNAL(finished_processing(OutMessage::ptr)), this, SIGNAL(processed_data_available(OutMessage::ptr)));
+        connect(&m_worker, SIGNAL(finished_processing(WorkResult::ptr)), this, SIGNAL(processed_data_available(WorkResult::ptr)));
     }
 
 public slots:
-    // TODO: accept data and geometry
-    void process_data(InMessage::ptr message) {
+    // new beam space data for processing
+    void process_data(WorkTask::ptr message) {
         m_worker.on_new_data(message);
     }
 
 signals:
-    // Emitted when a processed frame becomes available.
-    void processed_data_available(OutMessage::ptr);
+    // processed beam space data is ready
+    void processed_data_available(WorkResult::ptr);
 
 private:
     QThread     m_thread;
@@ -127,3 +129,4 @@ private:
     Worker      m_worker;
 };
 
+}   // end namespace

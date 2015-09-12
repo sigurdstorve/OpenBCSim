@@ -49,8 +49,10 @@ class SimulationParamsWidget;
 class ProbeWidget;
 class SimTimeWidget;
 class GrayscaleTransformWidget;
-class RefreshWorker;
 class QTimer;
+namespace refresh_worker {
+    class RefreshWorker;
+}
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -169,7 +171,7 @@ private:
 
     GrayscaleTransformWidget*       m_grayscale_widget;
     
-    RefreshWorker*                  m_refresh_worker;
+    refresh_worker::RefreshWorker*  m_refresh_worker;
 };
 
 
