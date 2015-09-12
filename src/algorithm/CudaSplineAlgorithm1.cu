@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cuda_helpers.h"
 #include "bspline.hpp"
 #include "LibBCSim.hpp"
-#include "CudaSplineAlgorithm.cuh"
+#include "CudaSplineAlgorithm1.cuh"
 
 #define MAX_CS 20
 
@@ -75,11 +75,11 @@ __global__ void RenderSplineKernel(const float* control_xs,
 
 namespace bcsim {
 
-CudaSplineAlgorithm::CudaSplineAlgorithm() {
+CudaSplineAlgorithm1::CudaSplineAlgorithm1() {
     m_fixed_alg = std::shared_ptr<CudaFixedAlgorithm>(new CudaFixedAlgorithm);
 }
 
-void CudaSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
+void CudaSplineAlgorithm1::set_scatterers(Scatterers::s_ptr new_scatterers) {
     auto scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);
     if (!scatterers) {
         throw std::runtime_error("Cast to SplineScatterers failed!");
@@ -143,12 +143,12 @@ void CudaSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_common_knots = scatterers->knot_vector;
 }
 
-void CudaSplineAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
+void CudaSplineAlgorithm1::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
     m_fixed_alg->simulate_lines(rf_lines);
 }
 
 
-void CudaSplineAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+void CudaSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
 
     // For now it is a requirement that all lines in the scan sequence have the same
     // timestamp. This limitation will be removed in the future.
@@ -202,7 +202,7 @@ void CudaSplineAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     //std::cout << "set_scan_sequence(): rendering spline scatterers took " << ms << " millisec.\n";
 }
 
-bool CudaSplineAlgorithm::has_equal_timestamps(ScanSequence::s_ptr scan_seq, double tol) {
+bool CudaSplineAlgorithm1::has_equal_timestamps(ScanSequence::s_ptr scan_seq, double tol) {
     const auto num_lines = scan_seq->get_num_lines();
     if (num_lines <= 1) {
         return true;

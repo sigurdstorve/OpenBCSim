@@ -36,13 +36,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class CudaFixedAlgorithm : public IAlgorithm {
+class CudaSplineAlgorithm2 : public IAlgorithm {
 public:
-    friend class CudaSplineAlgorithm1;
 
-    CudaFixedAlgorithm();
+    CudaSplineAlgorithm2();
 
-    virtual ~CudaFixedAlgorithm() {
+    virtual ~CudaSplineAlgorithm2() {
         // cleanup
     }
         
@@ -88,7 +87,7 @@ public:
     }
 
 protected:
-    void copy_scatterers_to_device(FixedScatterers::s_ptr scatterers);
+    void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 
 protected:
     typedef cufftComplex complex;
@@ -104,15 +103,13 @@ protected:
     // number of samples in the time-projection lines [should be a power of two]
     size_t              m_num_time_samples;
 
-    // the number of CUDA streams used when simulating RF lines
-    size_t                              m_num_cuda_streams;
     std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
-    // device memory for fixed scatterers
-    DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_ys;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_zs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_as;
+    // device memory for spline scatterers control points and amplitudes
+    DeviceBufferRAII<float>::u_ptr      m_device_control_xs;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_ys;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_zs;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_as;
     
     // The cuFFT plan used for all transforms.
     CufftPlanRAII::u_ptr                m_fft_plan;
@@ -130,6 +127,12 @@ protected:
 
     // TODO: Figure out how to support LUT beam profiles also.
     std::shared_ptr<bcsim::GaussianBeamProfile>  m_beam_profile;
+    
+    // The knot vector common to all splines.
+    std::vector<float>                          m_common_knots;
+    int                                         m_num_cs;
+    int                                         m_spline_degree;
+    int                                         m_num_splines;
 };
 
 }   // end namespace

@@ -27,35 +27,20 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <stdexcept>
-#include "LibBCSim.hpp"
-#include "bcsim_defines.h"
-#include "algorithm/FixedAlgorithm.hpp"
-#include "algorithm/SplineAlgorithm.hpp"
-#if BCSIM_ENABLE_CUDA
-    #include "algorithm/CudaFixedAlgorithm.cuh"
-    #include "algorithm/CudaSplineAlgorithm1.cuh"
-    #include "algorithm/CudaSplineAlgorithm2.cuh"
-#endif
+#include <cuda.h>
 
-namespace bcsim {
+// used to initialize device float memory.
+__global__ void MemsetFloatKernel(float* res, float value, int num_samples);
 
-IAlgorithm::s_ptr Create(const std::string& sim_type) {
-    if (sim_type == "fixed") {
-        return IAlgorithm::s_ptr(new FixedAlgorithm);
-    } else if (sim_type == "spline") {
-        return IAlgorithm::s_ptr(new SplineAlgorithm);
-#if BCSIM_ENABLE_CUDA
-    } else if (sim_type == "gpu_fixed") {
-        return IAlgorithm::s_ptr(new CudaFixedAlgorithm);
-    } else if (sim_type == "gpu_spline1") {
-        return IAlgorithm::s_ptr(new CudaSplineAlgorithm1);
-    } else if (sim_type == "gpu_spline2") {
-        return IAlgorithm::s_ptr(new CudaSplineAlgorithm2);
-#endif
-    } else {
-        throw std::runtime_error("Illegal algorithm type: " + sim_type);
-    }
-}
+// used to create an array of complex numbers with zero imaginary
+// part from a corresponding array of real values [TEMPORARY SOLUTION]
+__global__ void RealToComplexKernel(float* input, cuComplex* output, int num_samples);
 
-}   // end namespace
+// used to multiply the FFTs
+__global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples);
+
+// scale a signal (to avoid losing precision)
+__global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_samples);
+
+// used to get the absolute value of a complex signal
+__global__ void AbsComplexKernel(cufftComplex* input, float* output, int num_samples);
