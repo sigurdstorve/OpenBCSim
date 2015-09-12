@@ -98,15 +98,14 @@ public:
         m_cartesianator = ICartesianator::u_ptr(new CpuCartesianator);
     }
 
-public slots:
     // enqueue new work item
-    void on_new_data(refresh_worker::WorkTask::ptr msg) {
+    Q_SLOT void on_new_data(refresh_worker::WorkTask::ptr msg) {
         QMutexLocker mutex_locker(&m_mutex);
         m_queue.enqueue(msg);
     }
     
-private slots:
-    void on_timeout() {
+private:
+    Q_SLOT void on_timeout() {
         QMutexLocker mutex_locker(&m_mutex);
         auto num_elements = m_queue.size();
         if (!m_queue.isEmpty()) {
@@ -196,9 +195,8 @@ private slots:
         }
     }
 
-signals:
     // finished processing work item
-    void finished_processing(refresh_worker::WorkResult::ptr);
+    Q_SIGNAL void finished_processing(refresh_worker::WorkResult::ptr);
 
 private:
     QMutex                      m_mutex;
@@ -219,15 +217,13 @@ public:
                 this, SIGNAL(processed_data_available(refresh_worker::WorkResult::ptr)));
     }
 
-public slots:
     // new beam space data for processing
-    void process_data(refresh_worker::WorkTask::ptr message) {
+    Q_SLOT void process_data(refresh_worker::WorkTask::ptr message) {
         m_worker.on_new_data(message);
     }
 
-signals:
     // processed beam space data is ready
-    void processed_data_available(refresh_worker::WorkResult::ptr);
+    Q_SIGNAL void processed_data_available(refresh_worker::WorkResult::ptr);
 
 private:
     QThread     m_thread;
