@@ -172,8 +172,11 @@ MainWindow::MainWindow() {
             qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Writing image to" << filename;
             work_result->image.save(filename);
         }
-        m_grayscale_widget->set_normalization_constant(work_result->updated_normalization_const);
-
+        // store updated normalization constant if enabled.
+        auto temp = m_grayscale_widget->get_values();
+        if (temp.auto_normalize) {
+            m_grayscale_widget->set_normalization_constant(work_result->updated_normalization_const);
+        }
     });
 }
 

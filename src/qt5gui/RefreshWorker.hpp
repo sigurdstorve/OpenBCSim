@@ -146,6 +146,8 @@ private slots:
                     max_values.push_back(max_val);
                 }
                 work_result->updated_normalization_const = *std::max_element(max_values.begin(), max_values.end());
+            } else {
+                work_result->updated_normalization_const = work_task->m_normalize_const;
             }
 
             // TODO: Use convenience functions offered from core library.
