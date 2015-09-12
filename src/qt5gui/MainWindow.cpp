@@ -94,8 +94,6 @@ MainWindow::MainWindow() {
     window->setLayout(v_layout);
     setCentralWidget(window);
 
-    // Create geometry converter
-    m_cartesianator = ICartesianator::u_ptr(new CpuCartesianator);
 
     m_gl_vis_widget = new GLVisualizationWidget;
     h_layout->addWidget(m_gl_vis_widget);
@@ -162,10 +160,21 @@ MainWindow::MainWindow() {
     // refresh thread setup
     qRegisterMetaType<refresh_worker::WorkTask::ptr>();
     qRegisterMetaType<refresh_worker::WorkResult::ptr>();
-    m_refresh_worker = new refresh_worker::RefreshWorker(100);
+    m_refresh_worker = new refresh_worker::RefreshWorker(33);
     connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
-        m_label->setPixmap(work_result->pixmap);
-        qDebug() << "Got output message from output message";
+        qDebug() << "Got work result. Updating visualization.";
+        work_result->image.setColorTable(GrayColortable());
+        
+        m_label->setPixmap(QPixmap::fromImage(work_result->image));
+        if (m_save_images) {
+            // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
+            const auto img_path = m_settings->value("png_output_folder", "d:/temp").toString();
+            const QString filename =  img_path + QString("/frame%1.png").arg(m_num_simulated_frames, 6, 10, QChar('0'));
+            qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Writing image to" << filename;
+            work_result->image.save(filename);
+        }
+        m_grayscale_widget->set_normalization_constant(work_result->updated_normalization_const);
+
     });
 }
 
@@ -424,20 +433,9 @@ void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_
     bcsim::vector3 rot_angles(temp_rot_angles.x(), temp_rot_angles.y(), temp_rot_angles.z());
 
     m_scan_geometry = new_geometry;
-    m_cartesianator->SetGeometry(m_scan_geometry);
     qDebug() << "Probe orientation: " << rot_angles.x << rot_angles.y << rot_angles.z;
     auto new_scanseq = bcsim::OrientScanSequence(bcsim::CreateScanSequence(new_geometry, new_num_lines, cur_time), rot_angles, probe_origin);
 
-    // update size of final image [pixels]
-    auto qimage_dpm = m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat();
-    float qimage_width_m, qimage_height_m;
-    GetCartesianDimensions(m_scan_geometry, qimage_width_m, qimage_height_m);
-    const size_t width_pixels  = qimage_width_m*qimage_dpm;
-    const size_t height_pixels = qimage_height_m*qimage_dpm;
-    
-    // As long as the size doesn't change, this call is not expensive.
-    m_cartesianator->SetOutputSize(width_pixels, height_pixels);
-    
     m_sim->set_scan_sequence(new_scanseq);
     m_gl_vis_widget->setScanSequence(new_scanseq);
     updateOpenGlVisualization();
@@ -494,7 +492,6 @@ void MainWindow::doSimulation() {
 
     std::vector<std::vector<bc_float> > rf_lines;
     int simulation_millisec;
-    int postprocessing_millisec;
 
     try {
         ScopedCpuTimer timer([&](int millisec) {
@@ -502,101 +499,24 @@ void MainWindow::doSimulation() {
         });
         m_sim->simulate_lines(rf_lines);
         m_num_simulated_frames++;
+    
+        // Create refresh work task from current geometry and the beam space data
+        auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
+        refresh_task->set_geometry(m_scan_geometry);
+        refresh_task->set_data(rf_lines);
+        auto grayscale_settings = m_grayscale_widget->get_values();
+        refresh_task->set_normalize_const(grayscale_settings.normalization_const);
+        refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
+        refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+        refresh_task->set_dyn_range(grayscale_settings.dyn_range);
+        refresh_task->set_gain(grayscale_settings.gain); 
+    
+        m_refresh_worker->process_data(refresh_task);
+    
     } catch (const std::runtime_error& e) {
         qDebug() << "Caught exception: " << e.what();
     }
-    
-    // Create refresh work task from current geometry and the beam space data
-    auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
-    refresh_task->set_geometry(m_scan_geometry);
-    refresh_task->set_data(rf_lines);
-    m_refresh_worker->process_data(refresh_task);
-
-    // timer for all post-processing 
-    {
-    ScopedCpuTimer scoped_timer([&](int millisec) {
-        postprocessing_millisec = millisec;
-    });
-    
-    
-    const size_t num_beams = rf_lines.size();
-    const size_t num_range = rf_lines[0].size();
-    if (num_beams <= 0) {
-        throw std::runtime_error("No lines were returned");
-    }
-    
-    auto grayscale_settings = m_grayscale_widget->get_values();
-    float normalize_factor = grayscale_settings.normalization_const;
-
-    if (grayscale_settings.auto_normalize) {
-        // determine max over all beams
-        std::vector<float> max_values;
-        for (auto& rf_line : rf_lines) {
-            const float max_val = *std::max_element(rf_line.begin(), rf_line.end());
-            max_values.push_back(max_val);
-        }
-        normalize_factor = *std::max_element(max_values.begin(), max_values.end());
-        m_grayscale_widget->set_normalization_constant(normalize_factor);
-    }
-
-    // TODO: Use convenience functions offered from core library.
-
-    // log-compression
-    const auto dyn_range   = grayscale_settings.dyn_range;
-    const auto gain_factor = grayscale_settings.gain; 
-    for (auto& rf_line : rf_lines) {
-        // normalize to [0, 1] and scale
-        std::transform(rf_line.begin(), rf_line.end(), rf_line.begin(), [=](bc_float v) {
-            return gain_factor*(v / normalize_factor);
-        });
-        // log-compress
-        std::transform(rf_line.begin(), rf_line.end(), rf_line.begin(), [=](bc_float v) {
-            const auto temp = static_cast<float>(20.0*std::log10(v));
-            return (255.0/dyn_range)*(temp + dyn_range);
-        });
-    }    
-
-    // Copy beamspace data in order to
-    // 1. Get correct memory layout [sample index most rapidly varying,
-    //    beams stored after one another]
-    // 2. Clamp to [0, 255] and convert to unsigned char.
-    std::vector<unsigned char> beamspace_data(num_beams*num_range);
-    for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-        std::transform(std::begin(rf_lines[beam_no]),
-                        std::end(rf_lines[beam_no]),
-                        beamspace_data.data()+num_range*beam_no,
-                        [=](float v) {
-            if (v < 0.0f) v = 0.0f;
-            if (v > 255.0f) v = 255.0f;
-            return static_cast<unsigned char>(v);
-        });
-    }
-
-    // do geometry transform
-    m_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
-    }
-
-    // make QImage from output of Cartesianator
-    size_t out_x, out_y;
-    m_cartesianator->GetOutputSize(out_x, out_y);
-    auto img = QImage(m_cartesianator->GetOutputBuffer(),
-                      static_cast<int>(out_x),
-                      static_cast<int>(out_y),
-                      static_cast<int>(out_x),
-                      QImage::Format_Indexed8);
-    
-    img.setColorTable(GrayColortable());
-    //m_label->setPixmap(QPixmap::fromImage(img));
-
-    statusBar()->showMessage("Simulation time: " + QString::number(simulation_millisec) + " ms  Postprocessing: " + QString::number(postprocessing_millisec) + " ms.");
-    
-    if (m_save_images) {
-        // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
-        const auto img_path = m_settings->value("png_output_folder", "d:/temp").toString();
-        const QString filename =  img_path + QString("/frame%1.png").arg(m_num_simulated_frames, 6, 10, QChar('0'));
-        qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Writing image to" << filename;
-        img.save(filename);
-    }
+    statusBar()->showMessage("Simulation time: " + QString::number(simulation_millisec) + " ms.");
 }
 
 // Currently ignoring weights when visualizing

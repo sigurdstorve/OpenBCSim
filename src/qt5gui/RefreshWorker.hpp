@@ -36,7 +36,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMutex>
 #include <QQueue>
 #include <QMutexLocker>
-#include <QPixmap>
+#include <QImage>
+#include "cartesianator/Cartesianator.hpp"
+#include "ScanGeometry.hpp"
 
 namespace refresh_worker {
 
@@ -50,14 +52,34 @@ public:
         qDebug() << "WorkTask was destroyed";
     }
     void set_geometry(bcsim::ScanGeometry::ptr geometry) {
-        m_geometry = geometry;
+        m_scan_geometry = geometry;
     }
     void set_data(const std::vector<std::vector<bc_float>>& data) {
         m_data = data;
     }
+    void set_auto_normalize(bool status) {
+        m_auto_normalize = status;
+    }
+    void set_normalize_const(float c) {
+        m_normalize_const = c;
+    }
+    void set_dots_per_meter(float dpm) {
+        m_dpm = dpm;
+    }
+    void set_gain(float gain) {
+        m_gain = gain;
+    }
+    void set_dyn_range(float dyn_range) {
+        m_dyn_range = dyn_range;
+    }
 private:
     std::vector<std::vector<bc_float>>  m_data;
-    bcsim::ScanGeometry::ptr            m_geometry;
+    bcsim::ScanGeometry::ptr            m_scan_geometry;
+    bool                                m_auto_normalize;
+    float                               m_normalize_const;
+    float                               m_dpm;
+    float                               m_gain;
+    float                               m_dyn_range;
 };
 
 class WorkResult {
@@ -69,7 +91,8 @@ public:
     ~WorkResult() {
         qDebug() << "WorkResult was destroyed";
     }
-    QPixmap pixmap;
+    QImage  image;
+    float   updated_normalization_const;
 };
 
 Q_DECLARE_METATYPE(WorkTask::ptr);
@@ -78,7 +101,10 @@ Q_DECLARE_METATYPE(WorkResult::ptr);
 class Worker : public QObject {
 Q_OBJECT
 public:
-    Worker() : QObject() { }
+    Worker() : QObject() {
+        // Create geometry converter
+        m_cartesianator = ICartesianator::u_ptr(new CpuCartesianator);
+    }
 
 public slots:
     // enqueue new work item
@@ -91,17 +117,87 @@ private slots:
     void on_timeout() {
         QMutexLocker mutex_locker(&m_mutex);
         auto num_elements = m_queue.size();
-        qDebug() << "Refresh timeout @ thread " << QThread::currentThreadId() << ". Number of queued items is" << num_elements;
         if (!m_queue.isEmpty()) {
-            auto work_task = m_queue.dequeue();
-            qDebug() << "Number of RF lines: " << work_task->m_data.size();
-            qDebug() << "Number of samples: " << work_task->m_data[0].size();
-            
-            // TODO: do work
-            
             // Create output package
             auto work_result = WorkResult::ptr(new WorkResult);
-            work_result->pixmap = QPixmap::fromImage(QImage("d:/Tux.png"));
+            
+            auto work_task = m_queue.dequeue();
+            auto& rf_lines = work_task->m_data;
+
+            m_cartesianator->SetGeometry(work_task->m_scan_geometry);
+
+
+            // update size of final image [pixels]
+            float qimage_width_m, qimage_height_m;
+            GetCartesianDimensions(work_task->m_scan_geometry, qimage_width_m, qimage_height_m);
+            const auto qimage_dpm = work_task->m_dpm;
+            const size_t width_pixels  = qimage_width_m*qimage_dpm;
+            const size_t height_pixels = qimage_height_m*qimage_dpm;
+    
+            // As long as the size doesn't change, this call is not expensive.
+            m_cartesianator->SetOutputSize(width_pixels, height_pixels);
+
+            const size_t num_beams = rf_lines.size();
+            const size_t num_range = rf_lines[0].size();
+            if (num_beams <= 0) {
+                throw std::runtime_error("No lines were returned");
+            }
+    
+
+            if (work_task->m_auto_normalize) {
+                // determine max over all beams
+                std::vector<float> max_values;
+                for (auto& rf_line : rf_lines) {
+                    const float max_val = *std::max_element(rf_line.begin(), rf_line.end());
+                    max_values.push_back(max_val);
+                }
+                work_result->updated_normalization_const = *std::max_element(max_values.begin(), max_values.end());
+            }
+
+            // TODO: Use convenience functions offered from core library.
+
+            // log-compression
+            const auto dyn_range   = work_task->m_dyn_range;
+            const auto gain_factor = work_task->m_gain;
+            for (auto& rf_line : rf_lines) {
+                // normalize to [0, 1] and scale
+                std::transform(rf_line.begin(), rf_line.end(), rf_line.begin(), [=](bc_float v) {
+                    return gain_factor*(v / work_result->updated_normalization_const);
+                });
+                // log-compress
+                std::transform(rf_line.begin(), rf_line.end(), rf_line.begin(), [=](bc_float v) {
+                    const auto temp = static_cast<float>(20.0*std::log10(v));
+                    return (255.0/dyn_range)*(temp + dyn_range);
+                });
+            }    
+
+            // Copy beamspace data in order to
+            // 1. Get correct memory layout [sample index most rapidly varying,
+            //    beams stored after one another]
+            // 2. Clamp to [0, 255] and convert to unsigned char.
+            std::vector<unsigned char> beamspace_data(num_beams*num_range);
+            for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
+                std::transform(std::begin(rf_lines[beam_no]),
+                                std::end(rf_lines[beam_no]),
+                                beamspace_data.data()+num_range*beam_no,
+                                [=](float v) {
+                    if (v < 0.0f) v = 0.0f;
+                    if (v > 255.0f) v = 255.0f;
+                    return static_cast<unsigned char>(v);
+                });
+            }
+
+            // do geometry transform
+            m_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
+    
+            // make QImage from output of Cartesianator
+            size_t out_x, out_y;
+            m_cartesianator->GetOutputSize(out_x, out_y);
+            work_result->image = QImage(m_cartesianator->GetOutputBuffer(),
+                                        static_cast<int>(out_x),
+                                        static_cast<int>(out_y),
+                                        static_cast<int>(out_x),
+                                        QImage::Format_Indexed8);
             emit finished_processing(work_result);
         }
     }
@@ -113,6 +209,7 @@ signals:
 private:
     QMutex                      m_mutex;
     QQueue<WorkTask::ptr>       m_queue;
+    ICartesianator::u_ptr       m_cartesianator;
 };
 
 class RefreshWorker : public QObject {

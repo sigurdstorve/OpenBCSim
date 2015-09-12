@@ -34,7 +34,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSlider>
 #include <QDebug>
 #include "../LibBCSim.hpp"
-#include "cartesianator/Cartesianator.hpp"
 #include "SimTimeManager.hpp"
 
 // Forward decl.
@@ -157,7 +156,6 @@ private:
     // The current scan geometry.
     bcsim::ScanGeometry::ptr         m_scan_geometry;
 
-    ICartesianator::u_ptr           m_cartesianator;
 
     // Invariant: should at all times mirror the configuration of the simulator object.
     bcsim::ExcitationSignal          m_current_excitation;
