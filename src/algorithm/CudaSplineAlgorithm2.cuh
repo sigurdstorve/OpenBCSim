@@ -103,8 +103,6 @@ protected:
     // number of samples in the time-projection lines [should be a power of two]
     size_t              m_num_time_samples;
 
-    // the number of CUDA streams used when simulating RF lines
-    size_t                              m_num_cuda_streams;
     std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
     // device memory for spline scatterers control points and amplitudes

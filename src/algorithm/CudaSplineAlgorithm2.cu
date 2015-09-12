@@ -39,7 +39,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bspline.hpp"
 #include "gpu_alg_common.cuh" // for misc. CUDA kernels
 
+// maximum number of spline control points for each scatterer
 #define MAX_CS 20
+// the number of CUDA streams used when simulating RF lines
+#define NUM_CUDA_STREAMS 2
+
 
 __constant__ float eval_basis[MAX_CS];
 
@@ -102,14 +106,13 @@ namespace bcsim {
 
 CudaSplineAlgorithm2::CudaSplineAlgorithm2()
     : m_verbose(false),
-      m_num_cuda_streams(2),
       m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_beam_profile(nullptr)
 {
     // create CUDA stream wrappers
-    m_stream_wrappers.resize(m_num_cuda_streams);
-    for (int i = 0; i < m_num_cuda_streams; i++) {
+    m_stream_wrappers.resize(NUM_CUDA_STREAMS);
+    for (int i = 0; i < NUM_CUDA_STREAMS; i++) {
         m_stream_wrappers[i] = std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII));
     }
     
@@ -165,7 +168,7 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
     dim3 block_size(threads_pr_block, 1, 1);
 
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
-        size_t stream_no = beam_no % m_num_cuda_streams;
+        size_t stream_no = beam_no % NUM_CUDA_STREAMS;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
 
         if (m_verbose) {
@@ -369,10 +372,10 @@ void CudaSplineAlgorithm2::set_scan_sequence(ScanSequence::s_ptr new_scan_sequen
     // allocate host and device memory related to RF lines
     size_t time_proj_bytes = sizeof(float)*m_num_time_samples;
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
-    m_device_time_proj.resize(m_num_cuda_streams);
-    m_device_rf_lines.resize(m_num_cuda_streams);
-    m_device_rf_lines_env.resize(m_num_cuda_streams);
-    for (size_t i = 0; i < m_num_cuda_streams; i++) {
+    m_device_time_proj.resize(NUM_CUDA_STREAMS);
+    m_device_rf_lines.resize(NUM_CUDA_STREAMS);
+    m_device_rf_lines_env.resize(NUM_CUDA_STREAMS);
+    for (size_t i = 0; i < NUM_CUDA_STREAMS; i++) {
         m_device_time_proj[i]    = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
         m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
         m_device_rf_lines_env[i] = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
