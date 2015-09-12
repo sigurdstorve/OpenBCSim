@@ -141,6 +141,8 @@ if (BCSIM_ENABLE_CUDA)
                      algorithm/gpu_alg_common.cu
                      algorithm/CudaFixedAlgorithm.cu
                      algorithm/CudaFixedAlgorithm.cuh
+                     algorithm/CudaSplineAlgorithm1.cuh
+                     algorithm/CudaSplineAlgorithm1.cu
                      algorithm/CudaSplineAlgorithm2.cu
                      algorithm/CudaSplineAlgorithm2.cuh
                      algorithm/cuda_helpers.h
