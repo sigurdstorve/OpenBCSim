@@ -306,7 +306,7 @@ void MainWindow::onLoadExcitation() {
 
 void MainWindow::onCreateGpuSimulator() {
     QStringList items;
-    items << "gpu_fixed" << "gpu_spline";
+    items << "gpu_fixed" << "gpu_spline1" << "gpu_spline2";
     bool ok;
     QString item = QInputDialog::getItem(this, tr("Select GPU algorithm type"),
                                          tr("Type:"), items, 0, false, &ok);

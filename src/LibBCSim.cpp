@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "algorithm/SplineAlgorithm.hpp"
 #if BCSIM_ENABLE_CUDA
     #include "algorithm/CudaFixedAlgorithm.cuh"
+    #include "algorithm/CudaSplineAlgorithm1.cuh"
     #include "algorithm/CudaSplineAlgorithm2.cuh"
 #endif
 
@@ -47,7 +48,9 @@ IAlgorithm::s_ptr Create(const std::string& sim_type) {
 #if BCSIM_ENABLE_CUDA
     } else if (sim_type == "gpu_fixed") {
         return IAlgorithm::s_ptr(new CudaFixedAlgorithm);
-    } else if (sim_type == "gpu_spline") {
+    } else if (sim_type == "gpu_spline1") {
+        return IAlgorithm::s_ptr(new CudaSplineAlgorithm1);
+    } else if (sim_type == "gpu_spline2") {
         return IAlgorithm::s_ptr(new CudaSplineAlgorithm2);
 #endif
     } else {
