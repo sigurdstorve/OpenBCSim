@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMutex>
 #include <QQueue>
 #include <QMutexLocker>
+#include <QPixmap>
 
 namespace refresh_worker {
 
@@ -64,13 +65,11 @@ public:
     friend class Worker;
     typedef std::shared_ptr<WorkResult> ptr;
     WorkResult() {
-        data.resize(16384);
     }
     ~WorkResult() {
         qDebug() << "WorkResult was destroyed";
     }
-private:
-    std::vector<unsigned char> data;
+    QPixmap pixmap;
 };
 
 Q_DECLARE_METATYPE(WorkTask::ptr);
@@ -97,8 +96,13 @@ private slots:
             auto work_task = m_queue.dequeue();
             qDebug() << "Number of RF lines: " << work_task->m_data.size();
             qDebug() << "Number of samples: " << work_task->m_data[0].size();
-            auto message = WorkResult::ptr(new WorkResult);
-            emit finished_processing(message);
+            
+            // TODO: do work
+            
+            // Create output package
+            auto work_result = WorkResult::ptr(new WorkResult);
+            work_result->pixmap = QPixmap::fromImage(QImage("d:/Tux.png"));
+            emit finished_processing(work_result);
         }
     }
 

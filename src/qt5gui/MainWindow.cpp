@@ -162,8 +162,9 @@ MainWindow::MainWindow() {
     // refresh thread setup
     qRegisterMetaType<refresh_worker::WorkTask::ptr>();
     qRegisterMetaType<refresh_worker::WorkResult::ptr>();
-    m_refresh_worker = new refresh_worker::RefreshWorker(2000);
-    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr message) {
+    m_refresh_worker = new refresh_worker::RefreshWorker(100);
+    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
+        m_label->setPixmap(work_result->pixmap);
         qDebug() << "Got output message from output message";
     });
 }
@@ -585,7 +586,7 @@ void MainWindow::doSimulation() {
                       QImage::Format_Indexed8);
     
     img.setColorTable(GrayColortable());
-    m_label->setPixmap(QPixmap::fromImage(img));
+    //m_label->setPixmap(QPixmap::fromImage(img));
 
     statusBar()->showMessage("Simulation time: " + QString::number(simulation_millisec) + " ms  Postprocessing: " + QString::number(postprocessing_millisec) + " ms.");
     
