@@ -31,15 +31,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "LibBCSim.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
-#include "CudaFixedAlgorithm.cuh"
 
 // NOTE: There is no support for double here!!!
-// NOTE2: This is experimental code.
 
 namespace bcsim {
 
 class CudaSplineAlgorithm : public IAlgorithm {
 public:
+
     CudaSplineAlgorithm();
 
     virtual ~CudaSplineAlgorithm() {
@@ -47,23 +46,26 @@ public:
     }
         
     virtual void set_verbose(bool v) {
-        m_fixed_alg->set_verbose(v);
+        m_verbose = v;
     }
     
     virtual void set_parameters(const SimulationParams& new_params) {
-        m_fixed_alg->set_parameters(new_params);
+        m_sim_params = new_params;
     }
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
     
+    // NOTE: currently requires that set_excitation is called first!
     virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
 
-    virtual void set_excitation(const ExcitationSignal& new_excitation) {
-        m_fixed_alg->set_excitation(new_excitation);
-    }
+    virtual void set_excitation(const ExcitationSignal& new_excitation);
 
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) {
-        m_fixed_alg->set_beam_profile(beam_profile);
+        auto gaussian_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(beam_profile);
+        if (!gaussian_profile) {
+            throw std::runtime_error("GPU algorithm currently only supports analytical beam profiles");
+        }
+        m_beam_profile = gaussian_profile;   
     }
 
     virtual void set_output_type(const std::string& type) {
@@ -84,21 +86,50 @@ public:
         // does not apply in the GPU case (yet)
     }
 
-private:
-    // Test if all scanlines in a scan sequence have the same timestamp
-    bool has_equal_timestamps(ScanSequence::s_ptr scan_seq, double tol=1e-4);
+protected:
+    void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 
-private:
+protected:
+    typedef cufftComplex complex;
 
-    // An internal instance of the fixed simulator algorithm.
-    std::shared_ptr<CudaFixedAlgorithm>     m_fixed_alg;
+    ScanSequence::s_ptr     m_scan_seq;
+    SimulationParams        m_sim_params;
+    bool                    m_verbose;
+    ExcitationSignal        m_excitation;
 
-    // GPU memory for holding the splines
-    DeviceBufferRAII<float>::u_ptr              m_control_xs;
-    DeviceBufferRAII<float>::u_ptr              m_control_ys;
-    DeviceBufferRAII<float>::u_ptr              m_control_zs;
-    DeviceBufferRAII<float>::u_ptr              m_control_as;
+    // At all times equal to the number of scatterers in device memory
+    size_t                  m_num_scatterers;
 
+    // number of samples in the time-projection lines [should be a power of two]
+    size_t              m_num_time_samples;
+
+    // the number of CUDA streams used when simulating RF lines
+    size_t                              m_num_cuda_streams;
+    std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
+    
+    // device memory for spline scatterers control points and amplitudes
+    DeviceBufferRAII<float>::u_ptr      m_control_xs;
+    DeviceBufferRAII<float>::u_ptr      m_control_ys;
+    DeviceBufferRAII<float>::u_ptr      m_control_zs;
+    DeviceBufferRAII<float>::u_ptr      m_control_as;
+    
+    // The cuFFT plan used for all transforms.
+    CufftPlanRAII::u_ptr                m_fft_plan;
+
+    std::vector<DeviceBufferRAII<float>::u_ptr>            m_device_time_proj;    // real-valued
+    std::vector<DeviceBufferRAII<complex>::u_ptr>          m_device_rf_lines;     // complex-valued
+    std::vector<DeviceBufferRAII<float>::u_ptr>            m_device_rf_lines_env; // real-valued
+    std::vector<HostPinnedBufferRAII<float>::u_ptr>        m_host_rf_lines;       // real-valued
+
+    // precomputed excitation FFT with Hilbert mask applied.
+    DeviceBufferRAII<complex>::u_ptr                  m_device_excitation_fft;
+
+    // -1 means not allocated
+    int     m_num_beams_allocated;
+
+    // TODO: Figure out how to support LUT beam profiles also.
+    std::shared_ptr<bcsim::GaussianBeamProfile>  m_beam_profile;
+    
     // The knot vector common to all splines.
     std::vector<float>                          m_common_knots;
     int                                         m_num_cs;

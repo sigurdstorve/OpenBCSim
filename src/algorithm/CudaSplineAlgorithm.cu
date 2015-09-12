@@ -27,63 +27,178 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <iostream>
-#include <vector>
 #include <cuda.h>
-#include <device_launch_parameters.h>
-#include "cuda_helpers.h"
-#include "bspline.hpp"
-#include "LibBCSim.hpp"
+#include <cufft.h>
+#include <complex>
 #include "CudaSplineAlgorithm.cuh"
+#include "cuda_helpers.h"
+#include "cufft_helpers.h"
+#include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
+#include "discrete_hilbert_mask.hpp"
+#include "common_utils.hpp" // for compute_num_rf_samples
+#include "bspline.hpp"
+#include "gpu_alg_common.cuh" // for misc. CUDA kernels
 
 #define MAX_CS 20
 
 __constant__ float eval_basis[MAX_CS];
 
-__global__ void RenderSplineKernel(const float* control_xs,
-                                   const float* control_ys,
-                                   const float* control_zs,
-                                   const float* control_as,
-                                   float* rendered_xs,
-                                   float* rendered_ys,
-                                   float* rendered_zs,
-                                   float* rendered_as,
-                                   int NUM_CS,
-                                   int NUM_SPLINES) {
-
-    const int idx = blockDim.x*blockIdx.x + threadIdx.x;
-    // to get from one control point to the next, we have
-    // to make a jump of size equal to number of splines
-    float rendered_x = 0.0f;
-    float rendered_y = 0.0f;
-    float rendered_z = 0.0f;
-    float rendered_a = 0.0f;
-    for (int i = 0; i < NUM_CS; i++) {
-        rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis[i];
-        rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis[i];
-        rendered_z += control_zs[NUM_SPLINES*i + idx]*eval_basis[i];
-        rendered_a += control_as[NUM_SPLINES*i + idx]*eval_basis[i];
-    }
-
-    // write result to memory
-    rendered_xs[idx] = rendered_x;
-    rendered_ys[idx] = rendered_y;
-    rendered_zs[idx] = rendered_z;
-    rendered_as[idx] = rendered_a;
-}
-
-
 namespace bcsim {
 
-CudaSplineAlgorithm::CudaSplineAlgorithm() {
-    m_fixed_alg = std::shared_ptr<CudaFixedAlgorithm>(new CudaFixedAlgorithm);
+CudaSplineAlgorithm::CudaSplineAlgorithm()
+    : m_verbose(false),
+      m_num_cuda_streams(2),
+      m_num_time_samples(32768),  // TODO: remove this limitation
+      m_num_beams_allocated(-1),
+      m_beam_profile(nullptr)
+{
+    // create CUDA stream wrappers
+    m_stream_wrappers.resize(m_num_cuda_streams);
+    for (int i = 0; i < m_num_cuda_streams; i++) {
+        m_stream_wrappers[i] = std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII));
+    }
+    
+    int device_count;
+    cudaErrorCheck( cudaGetDeviceCount(&device_count) );
+    std::cout << "CUDA device count: " << device_count << std::endl;
+    
+    for (int device_no = 0; device_no < device_count; device_no++) {
+        cudaDeviceProp prop;
+        cudaErrorCheck( cudaGetDeviceProperties(&prop, device_no) );
+        std::cout << "\n\n=== Device " << device_no << ": " << prop.name << std::endl;
+        std::cout << "totalGlobMem: " << prop.totalGlobalMem << std::endl;
+        std::cout << "clockRate: " << prop.clockRate << std::endl;
+        std::cout << "Compute capability: " << prop.major << "." << prop.minor << std::endl;
+        std::cout << "asyncEngineCount: " << prop.asyncEngineCount << std::endl;
+        std::cout << "multiProcessorCount: " << prop.multiProcessorCount << std::endl;
+        std::cout << "kernelExecTimeoutEnabled: " << prop.kernelExecTimeoutEnabled << std::endl;
+        std::cout << "computeMode: " << prop.computeMode << std::endl;
+        std::cout << "concurrentKernels: " << prop.concurrentKernels << std::endl;
+        std::cout << "ECCEnabled: " << prop.ECCEnabled << std::endl;
+        std::cout << "memoryBusWidth: " << prop.memoryBusWidth << std::endl;
+    }
+
+    std::cout << "For now using the first device. TODO: make changable\n";
+    cudaErrorCheck( cudaSetDevice(0) );
+
 }
 
-void CudaSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
-    auto scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);
-    if (!scatterers) {
-        throw std::runtime_error("Cast to SplineScatterers failed!");
+void CudaSplineAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
+
+    auto num_lines      = m_scan_seq->get_num_lines();
+
+    if (num_lines < 1) {
+        throw std::runtime_error("No scanlines in scansequence");
     }
+
+    if (m_beam_profile == nullptr) {
+        throw std::runtime_error("No beam profile is set");
+    }
+    
+    int threads_pr_block = 128;
+    dim3 grid_size(m_num_scatterers/threads_pr_block, 1, 1);
+    dim3 block_size(threads_pr_block, 1, 1);
+
+    for (int beam_no = 0; beam_no < num_lines; beam_no++) {
+        size_t stream_no = beam_no % m_num_cuda_streams;
+        auto cur_stream = m_stream_wrappers[stream_no]->get();
+
+        if (m_verbose) {
+            std::cout << "beam_no = " << beam_no << ", stream_no = " << stream_no << std::endl;
+        }
+
+        // TODO: Move out conversion code            
+        auto scanline = m_scan_seq->get_scanline(beam_no);
+        auto temp_rad_dir = scanline.get_direction();
+        auto temp_lat_dir = scanline.get_lateral_dir();
+        auto temp_ele_dir = scanline.get_elevational_dir();
+        auto temp_origin  = scanline.get_origin();
+        auto rad_dir      = make_float3(temp_rad_dir.x, temp_rad_dir.y, temp_rad_dir.z);
+        auto lat_dir      = make_float3(temp_lat_dir.x, temp_lat_dir.y, temp_lat_dir.z);
+        auto ele_dir      = make_float3(temp_ele_dir.x, temp_ele_dir.y, temp_ele_dir.z);
+        auto origin       = make_float3(temp_origin.x, temp_origin.y, temp_origin.z);
+
+        //std::cout << "origin: " << origin.x << " " << origin.y << " " << origin.z << std::endl;
+
+        int threads_per_line = 128;
+        // clear the time projection buffer the proper way (probably slightly slower than cudaMamSetAsync...)
+        MemsetFloatKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
+                                                                                                    0.0f,
+                                                                                                    m_num_time_samples);
+
+        //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "01_zeroed_rf_line_dump.txt"); }
+        
+        // do the time-projections
+//         FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
+//                                                                  m_device_point_ys->data(),
+//                                                                  m_device_point_zs->data(),
+//                                                                  m_device_point_as->data(),
+//                                                                  rad_dir,
+//                                                                  lat_dir,
+//                                                                  ele_dir,
+//                                                                  origin,
+//                                                                  m_excitation.sampling_frequency,
+//                                                                  m_num_time_samples,
+//                                                                  m_beam_profile->getSigmaLateral(),
+//                                                                  m_beam_profile->getSigmaElevational(),
+//                                                                  m_sim_params.sound_speed,
+//                                                                  m_device_time_proj[stream_no]->data());
+        
+            
+        //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "02_time_proj_dump.txt"); }
+
+
+        // extend the real-valued time-projection signal to complex numbers with zero imaginary part.
+        RealToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
+                                                                                                      m_device_rf_lines[stream_no]->data(),
+                                                                                                      m_num_time_samples);
+        //if (beam_no==0) { dump_device_memory<std::complex<float> >(reinterpret_cast<std::complex<float>*>(device_rf_lines[stream_no]->data()), m_num_time_samples, "03_complex_extension.txt"); }
+
+        // in-place forward FFT            
+        auto rf_ptr = m_device_rf_lines[stream_no]->data();
+        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
+
+        // multiply with FFT of impulse response (can include Hilbert transform also)
+        MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
+                                                                                                    m_device_excitation_fft->data(),
+                                                                                                    m_num_time_samples);
+
+        // in-place inverse FFT
+        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
+            
+        //if (beam_no==0) { dump_device_memory<std::complex<float> >(reinterpret_cast<std::complex<float>*>(rf_ptr), m_num_time_samples, "04_iq_line.txt"); }
+
+        // envelope detection
+        AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
+                                                                                                   m_device_rf_lines_env[stream_no]->data(),
+                                                                                                   m_num_time_samples);
+            
+        //if (beam_no==0) { dump_device_memory<float>(device_rf_lines_env[stream_no]->data(), m_num_time_samples, "05_rf_envelope.txt"); }
+            
+        // copy to host
+        cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_rf_lines_env[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
+    }
+    cudaErrorCheck( cudaDeviceSynchronize() );
+
+    // TODO: eliminate unneccessary data copying: it would e.g. be better to
+    // only copy what is needed in the above kernel.
+    
+    const auto num_return_samples = compute_num_rf_samples(m_sim_params.sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
+
+    // compensate for delay
+    const size_t start_idx = static_cast<size_t>(m_excitation.center_index);
+
+    rf_lines.clear();
+    std::vector<bc_float> temp_samples(num_return_samples);
+    for (size_t line_no = 0; line_no < num_lines; line_no++) {
+        for (size_t i = 0; i < num_return_samples; i++) {
+            temp_samples[i] = m_host_rf_lines[line_no]->data()[i+start_idx];
+        }
+        rf_lines.push_back(temp_samples);
+    }
+}
+
+void CudaSplineAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
 
     m_num_splines = scatterers->num_scatterers();
     if (m_num_splines <= 0) {
@@ -107,7 +222,7 @@ void CudaSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
     m_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
     m_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-
+        
     // store the control points with correct memory layout of the host
     std::vector<float> host_control_xs(total_num_cs);
     std::vector<float> host_control_ys(total_num_cs);
@@ -130,91 +245,90 @@ void CudaSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     cudaErrorCheck( cudaMemcpy(m_control_zs->data(), host_control_zs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
     cudaErrorCheck( cudaMemcpy(m_control_as->data(), host_control_as.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
 
-
-    // device memory to hold x, y, z, a components of rendered splines
-    size_t rendered_num_bytes = m_num_splines*sizeof(float);
-    m_fixed_alg->m_device_point_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(rendered_num_bytes));
-    m_fixed_alg->m_device_point_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(rendered_num_bytes));
-    m_fixed_alg->m_device_point_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(rendered_num_bytes));
-    m_fixed_alg->m_device_point_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(rendered_num_bytes));
-    m_fixed_alg->m_num_scatterers = m_num_splines;
-
     // Store the knot vector.
     m_common_knots = scatterers->knot_vector;
+    
 }
 
-void CudaSplineAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
-    m_fixed_alg->simulate_lines(rf_lines);
+void CudaSplineAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
+    m_excitation = new_excitation;
+    size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
+
+    // setup pre-computed convolution kernel and Hilbert transformer.
+    m_device_excitation_fft = DeviceBufferRAII<complex>::u_ptr(new DeviceBufferRAII<complex>(rf_line_bytes));
+    std::cout << "Number of excitation samples: " << m_excitation.samples.size() << std::endl;
+    // convert to complex with zero imaginary part.
+    std::vector<std::complex<float> > temp(m_num_time_samples);
+    for (size_t i = 0; i < m_excitation.samples.size(); i++) {
+        temp[i] = std::complex<float>(m_excitation.samples[i], 0.0f);
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_excitation_fft->data(), temp.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
+    //dump_device_memory((std::complex<float>*)m_device_excitation_fft.data(), m_num_time_samples, "complex_exitation.txt");
+
+    m_fft_plan = CufftPlanRAII::u_ptr(new CufftPlanRAII(m_num_time_samples, CUFFT_C2C, 1));
+
+    // compute FFT of excitation signal and add the Hilbert transform
+    cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), m_device_excitation_fft->data(), m_device_excitation_fft->data(), CUFFT_FORWARD) );
+    auto mask = discrete_hilbert_mask<std::complex<float> >(m_num_time_samples);
+    DeviceBufferRAII<complex> device_hilbert_mask(rf_line_bytes);
+    cudaErrorCheck( cudaMemcpy(device_hilbert_mask.data(), mask.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
+    
+    ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
+    
+    MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
+    
+    //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 
 
 void CudaSplineAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+    m_scan_seq = new_scan_sequence;
 
-    // For now it is a requirement that all lines in the scan sequence have the same
-    // timestamp. This limitation will be removed in the future.
-    if (!has_equal_timestamps(new_scan_sequence)) {
-        throw std::runtime_error("scan sequences must currently have equal timestamps");
+    // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
+    auto num_rf_samples = compute_num_rf_samples(m_sim_params.sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
+    //std::cout << "num_rf_samples: " << num_rf_samples << std::endl;
+    if (num_rf_samples > m_num_time_samples) {
+        throw std::runtime_error("Too many RF samples required. TODO: remove limitation");
     }
 
-    m_fixed_alg->set_scan_sequence(new_scan_sequence);
-
-    // Ensure that set_scatterers() has been called first
-    if (m_common_knots.size() == 0) {
-        throw std::runtime_error("set_scatterers() must be called before set_scan_sequence");
+    size_t num_beams = m_scan_seq->get_num_lines();
+    // avoid reallocating memory if not necessary.
+    if (m_num_beams_allocated < static_cast<int>(num_beams)) {
+        std::cout << "Allocating HOST and DEVICE memory: had previously allocated memory for " << m_num_beams_allocated << " beams.\n";
+    } else {
+        return;
     }
 
-    const auto num_lines = new_scan_sequence->get_num_lines();
-    if (num_lines <= 0) {
-        throw std::runtime_error("No scanlines");
+    // allocate host and device memory related to RF lines
+    size_t time_proj_bytes = sizeof(float)*m_num_time_samples;
+    size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
+    m_device_time_proj.resize(m_num_cuda_streams);
+    m_device_rf_lines.resize(m_num_cuda_streams);
+    m_device_rf_lines_env.resize(m_num_cuda_streams);
+    for (size_t i = 0; i < m_num_cuda_streams; i++) {
+        m_device_time_proj[i]    = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
+        m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
+        m_device_rf_lines_env[i] = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
     }
-    // HACK: using parameter value from first scanline
-    const float PARAMETER_VAL = new_scan_sequence->get_scanline(0).get_timestamp();
 
-
-
-    // evaluate the basis functions and upload to constant memory.
-    std::vector<float> host_basis_functions(m_num_cs);
-    for (int i = 0; i < m_num_cs; i++) {
-        host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, PARAMETER_VAL, m_common_knots);
+    // allocate host memory for all RF lines
+    m_host_rf_lines.resize(num_beams);
+    for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
+        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<float>::u_ptr( new HostPinnedBufferRAII<float>(time_proj_bytes)) );
     }
-    cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, host_basis_functions.data(), m_num_cs*sizeof(float)) );
-    
-    //EventTimerRAII event_timer;
 
-    // TODO: Handle non-power-of-<num_threads>
-    int num_threads = 128;
-    dim3 grid_size(m_num_splines/num_threads, 1, 1);
-    dim3 block_size(num_threads, 1, 1);
-    
-    //event_timer.restart();
-    RenderSplineKernel<<<grid_size, block_size>>>(m_control_xs->data(),
-                                                  m_control_ys->data(),
-                                                  m_control_zs->data(),
-                                                  m_control_as->data(),
-                                                  m_fixed_alg->m_device_point_xs->data(),
-                                                  m_fixed_alg->m_device_point_ys->data(),
-                                                  m_fixed_alg->m_device_point_zs->data(),
-                                                  m_fixed_alg->m_device_point_as->data(),
-                                                  m_num_cs,
-                                                  m_num_splines);
-    cudaErrorCheck( cudaDeviceSynchronize() );
-    //auto ms = event_timer.stop();
-    //std::cout << "set_scan_sequence(): rendering spline scatterers took " << ms << " millisec.\n";
+    m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
-bool CudaSplineAlgorithm::has_equal_timestamps(ScanSequence::s_ptr scan_seq, double tol) {
-    const auto num_lines = scan_seq->get_num_lines();
-    if (num_lines <= 1) {
-        return true;
+void CudaSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
+    m_num_scatterers = new_scatterers->num_scatterers();
+        
+    auto spline_scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);
+    if (!spline_scatterers) {
+        throw std::runtime_error("Cast failed");
     }
-    const auto common_time = scan_seq->get_scanline(0).get_timestamp();
-    for (int i = 1; i < num_lines; i++) {
-        const auto timestamp = scan_seq->get_scanline(i).get_timestamp();
-        if (std::abs(timestamp-common_time) > tol) {
-            return false;
-        }
-    }
-    return true;
+    copy_scatterers_to_device(spline_scatterers);
 }
+
 
 }   // end namespace
