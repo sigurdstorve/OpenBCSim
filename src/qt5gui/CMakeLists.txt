@@ -51,6 +51,7 @@ add_executable(BCSimGUI
                SimTimeWidget.hpp
                GrayscaleTransformWidget.hpp
                GrayscaleTransformWidget.cpp
+               RefreshWorker.hpp
                )
 
 # Use the Widgets module from Qt5

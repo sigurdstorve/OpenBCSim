@@ -34,7 +34,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSlider>
 #include <QDebug>
 #include "../LibBCSim.hpp"
-#include "cartesianator/Cartesianator.hpp"
 #include "SimTimeManager.hpp"
 
 // Forward decl.
@@ -49,6 +48,10 @@ class SimulationParamsWidget;
 class ProbeWidget;
 class SimTimeWidget;
 class GrayscaleTransformWidget;
+class QTimer;
+namespace refresh_worker {
+    class RefreshWorker;
+}
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -66,9 +69,6 @@ public:
     // type: "fixed" or "spline"
     void initializeSimulator(const std::string& type);
 
-    // Define the scansequence using data from hdf5 file
-    void setScansequence(const QString h5_file);
-
     // Define the excitation signal using data from hdf5 file
     void setExcitation(const QString h5_file);
 
@@ -83,9 +83,6 @@ private slots:
 
     // Ask user for a h5 file with excitation signal
     void onLoadExcitation();
-
-    // Ask user for a h5 file with scan sequence
-    void onLoadScansequence();
 
     // Simulate using current config
     void onSimulate();
@@ -159,7 +156,6 @@ private:
     // The current scan geometry.
     bcsim::ScanGeometry::ptr         m_scan_geometry;
 
-    ICartesianator::u_ptr           m_cartesianator;
 
     // Invariant: should at all times mirror the configuration of the simulator object.
     bcsim::ExcitationSignal          m_current_excitation;
@@ -172,6 +168,8 @@ private:
     SimTimeWidget*                  m_time_widget;
 
     GrayscaleTransformWidget*       m_grayscale_widget;
+    
+    refresh_worker::RefreshWorker*  m_refresh_worker;
 };
 
 
