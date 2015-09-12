@@ -48,9 +48,6 @@ public:
     typedef std::shared_ptr<WorkTask> ptr;
     WorkTask() {
     }
-    ~WorkTask() {
-        qDebug() << "WorkTask was destroyed";
-    }
     void set_geometry(bcsim::ScanGeometry::ptr geometry) {
         m_scan_geometry = geometry;
     }
@@ -87,9 +84,6 @@ public:
     friend class Worker;
     typedef std::shared_ptr<WorkResult> ptr;
     WorkResult() {
-    }
-    ~WorkResult() {
-        qDebug() << "WorkResult was destroyed";
     }
     QImage  image;
     float   updated_normalization_const;
