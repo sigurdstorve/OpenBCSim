@@ -100,7 +100,7 @@ public:
 
 public slots:
     // enqueue new work item
-    void on_new_data(WorkTask::ptr msg) {
+    void on_new_data(refresh_worker::WorkTask::ptr msg) {
         QMutexLocker mutex_locker(&m_mutex);
         m_queue.enqueue(msg);
     }
@@ -198,7 +198,7 @@ private slots:
 
 signals:
     // finished processing work item
-    void finished_processing(WorkResult::ptr);
+    void finished_processing(refresh_worker::WorkResult::ptr);
 
 private:
     QMutex                      m_mutex;
@@ -215,18 +215,19 @@ public:
         m_timer.moveToThread(&m_thread);    // not neccessary according to tutorial.
         m_worker.moveToThread(&m_thread);
         m_thread.start();
-        connect(&m_worker, SIGNAL(finished_processing(WorkResult::ptr)), this, SIGNAL(processed_data_available(WorkResult::ptr)));
+        connect(&m_worker, SIGNAL(finished_processing(refresh_worker::WorkResult::ptr)),
+                this, SIGNAL(processed_data_available(refresh_worker::WorkResult::ptr)));
     }
 
 public slots:
     // new beam space data for processing
-    void process_data(WorkTask::ptr message) {
+    void process_data(refresh_worker::WorkTask::ptr message) {
         m_worker.on_new_data(message);
     }
 
 signals:
     // processed beam space data is ready
-    void processed_data_available(WorkResult::ptr);
+    void processed_data_available(refresh_worker::WorkResult::ptr);
 
 private:
     QThread     m_thread;
