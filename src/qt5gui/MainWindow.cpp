@@ -160,9 +160,11 @@ MainWindow::MainWindow() {
     m_save_images = false;
 
     // refresh thread setup
+    qRegisterMetaType<InMessage::ptr>();
+    qRegisterMetaType<OutMessage::ptr>();
     m_refresh_worker = new RefreshWorker(2000);
-    connect(m_refresh_worker, &RefreshWorker::processed_data_available, [&](int value) {
-        qDebug() << "Got result from worker: " << value;
+    connect(m_refresh_worker, &RefreshWorker::processed_data_available, [&](OutMessage::ptr message) {
+        qDebug() << "Got output message from output message";
     });
 }
 
@@ -368,7 +370,8 @@ void MainWindow::onGpuLoadScatterers() {
 
 void MainWindow::onSimulate() {
     doSimulation();
-    m_refresh_worker->process_data(10);
+    auto message = InMessage::ptr(new InMessage);
+    m_refresh_worker->process_data(message);
 }
 
 void MainWindow::onSetSimulatorNoise() {

@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
+#include <memory>
 #include <QObject>
 #include <QDebug>
 #include <QThread>
@@ -36,6 +37,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QQueue>
 #include <QMutexLocker>
 
+class InMessage {
+public:
+    typedef std::shared_ptr<InMessage> ptr;
+    InMessage() {
+        data.resize(32768);
+    }
+    ~InMessage() {
+        qDebug() << "InMessage was destroyed";
+    }
+private:
+    std::vector<unsigned char> data;
+};
+
+class OutMessage {
+public:
+    typedef std::shared_ptr<OutMessage> ptr;
+    OutMessage() {
+        data.resize(16384);
+    }
+    ~OutMessage() {
+        qDebug() << "OutMessage was destroyed";
+    }
+private:
+    std::vector<unsigned char> data;
+};
+
+Q_DECLARE_METATYPE(InMessage::ptr);
+Q_DECLARE_METATYPE(OutMessage::ptr);
+
 class Worker : public QObject {
 Q_OBJECT
 public:
@@ -43,9 +73,9 @@ public:
 
 public slots:
     // enqueue new work item
-    void on_new_data(int data) {
+    void on_new_data(InMessage::ptr msg) {
         QMutexLocker mutex_locker(&m_mutex);
-        m_queue.enqueue(data);
+        m_queue.enqueue(msg);
     }
 
 private slots:
@@ -55,17 +85,18 @@ private slots:
         qDebug() << "Refresh timeout @ thread " << QThread::currentThreadId() << ". Number of queued items is" << num_elements;
         if (!m_queue.isEmpty()) {
             auto element = m_queue.dequeue();
-            emit finished_processing(42);
+            auto message = OutMessage::ptr(new OutMessage);
+            emit finished_processing(message);
         }
     }
 
 signals:
     // finished processing work item
-    void finished_processing(int);
+    void finished_processing(OutMessage::ptr);
 
 private:
-    QMutex          m_mutex;
-    QQueue<int>     m_queue;
+    QMutex                  m_mutex;
+    QQueue<InMessage::ptr>  m_queue;
 };
 
 class RefreshWorker : public QObject {
@@ -77,18 +108,18 @@ public:
         m_timer.moveToThread(&m_thread);    // not neccessary according to tutorial.
         m_worker.moveToThread(&m_thread);
         m_thread.start();
-        connect(&m_worker, SIGNAL(finished_processing(int)), this, SIGNAL(processed_data_available(int)));
+        connect(&m_worker, SIGNAL(finished_processing(OutMessage::ptr)), this, SIGNAL(processed_data_available(OutMessage::ptr)));
     }
 
 public slots:
     // TODO: accept data and geometry
-    void process_data(int item) {
-        m_worker.on_new_data(item);
+    void process_data(InMessage::ptr message) {
+        m_worker.on_new_data(message);
     }
 
 signals:
     // Emitted when a processed frame becomes available.
-    void processed_data_available(int);
+    void processed_data_available(OutMessage::ptr);
 
 private:
     QThread     m_thread;
