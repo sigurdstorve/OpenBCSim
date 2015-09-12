@@ -45,7 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NUM_CUDA_STREAMS 2
 
 
-__constant__ float eval_basis[MAX_CS];
+__constant__ float eval_basis[MAX_CS*NUM_CUDA_STREAMS];
 
 __global__ void SplineAlgKernel(float* control_xs,
                                 float* control_ys,
@@ -62,7 +62,8 @@ __global__ void SplineAlgKernel(float* control_xs,
                                 float  sound_speed,
                                 int    NUM_CS,
                                 int    NUM_SPLINES,
-                                float* res) {
+                                float* res,
+                                size_t eval_basis_offset_elements) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -74,10 +75,11 @@ __global__ void SplineAlgKernel(float* control_xs,
     float rendered_z = 0.0f;
     float rendered_a = 0.0f;
     for (int i = 0; i < NUM_CS; i++) {
-        rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[i];
-        rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[i];
-        rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[i];
-        rendered_a += control_as[NUM_SPLINES*i + global_idx]*eval_basis[i];
+        size_t eval_basis_i = i + eval_basis_offset_elements;
+        rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
+        rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
+        rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
+        rendered_a += control_as[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
     }
 
     // step 2: compute projections
@@ -153,16 +155,6 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
         throw std::runtime_error("No beam profile is set");
     }
     
-    // evaluate the basis functions and upload to constant memory.
-    // HACK: using parameter value from first scanline
-    const float PARAMETER_VAL = m_scan_seq->get_scanline(0).get_timestamp();
-    std::vector<float> host_basis_functions(m_num_cs);
-    for (int i = 0; i < m_num_cs; i++) {
-        host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, PARAMETER_VAL, m_common_knots);
-    }
-    cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, host_basis_functions.data(), m_num_cs*sizeof(float)) );
-    
-    
     int threads_pr_block = 128;
     dim3 grid_size(m_num_scatterers/threads_pr_block, 1, 1);
     dim3 block_size(threads_pr_block, 1, 1);
@@ -196,6 +188,19 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
 
         //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "01_zeroed_rf_line_dump.txt"); }
         
+        // evaluate the basis functions and upload to constant memory.
+        size_t eval_basis_offset_elements = m_num_cs*stream_no;
+        std::vector<float> host_basis_functions(m_num_cs);
+        for (int i = 0; i < m_num_cs; i++) {
+            host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, scanline.get_timestamp(), m_common_knots);
+        }
+        cudaErrorCheck(cudaMemcpyToSymbolAsync(eval_basis,
+                                               host_basis_functions.data(),
+                                               m_num_cs*sizeof(float),
+                                               eval_basis_offset_elements*sizeof(float),
+                                               cudaMemcpyHostToDevice,
+                                               cur_stream));
+        
         // do the time-projections
         SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_control_xs->data(),
                                                                   m_device_control_ys->data(),
@@ -212,7 +217,8 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
                                                                   m_sim_params.sound_speed,
                                                                   m_num_cs,
                                                                   m_num_splines,
-                                                                  m_device_time_proj[stream_no]->data());
+                                                                  m_device_time_proj[stream_no]->data(),
+                                                                  eval_basis_offset_elements);
         
             
         //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "02_time_proj_dump.txt"); }
