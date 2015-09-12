@@ -162,7 +162,6 @@ MainWindow::MainWindow() {
     qRegisterMetaType<refresh_worker::WorkResult::ptr>();
     m_refresh_worker = new refresh_worker::RefreshWorker(33);
     connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
-        qDebug() << "Got work result. Updating visualization.";
         work_result->image.setColorTable(GrayColortable());
         
         m_label->setPixmap(QPixmap::fromImage(work_result->image));
@@ -433,7 +432,7 @@ void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_
     bcsim::vector3 rot_angles(temp_rot_angles.x(), temp_rot_angles.y(), temp_rot_angles.z());
 
     m_scan_geometry = new_geometry;
-    qDebug() << "Probe orientation: " << rot_angles.x << rot_angles.y << rot_angles.z;
+    //qDebug() << "Probe orientation: " << rot_angles.x << rot_angles.y << rot_angles.z;
     auto new_scanseq = bcsim::OrientScanSequence(bcsim::CreateScanSequence(new_geometry, new_num_lines, cur_time), rot_angles, probe_origin);
 
     m_sim->set_scan_sequence(new_scanseq);
@@ -488,7 +487,7 @@ void MainWindow::doSimulation() {
     auto new_scan_geometry = m_scanseq_widget->get_geometry(new_num_scanlines);
     newScansequence(new_scan_geometry, new_num_scanlines);
     
-    qDebug() << "doSimulation(): simulation time is " << m_sim_time_manager->get_time();
+    //qDebug() << "doSimulation(): simulation time is " << m_sim_time_manager->get_time();
 
     std::vector<std::vector<bc_float> > rf_lines;
     int simulation_millisec;
@@ -635,7 +634,7 @@ void MainWindow::onSetSimTme() {
 void MainWindow::onTimer() {
     m_sim_time_manager->advance();
     ScopedCpuTimer timer([](int millisec) {
-        std::cout << "onTimer(): " << millisec << " ms.\n";
+        std::cout << "onTimer() used: " << millisec << " ms.\n";
     });
     onSimulate();
 }
@@ -665,7 +664,6 @@ void MainWindow::onGetXyExtent() {
 }
 
 void MainWindow::updateOpenGlVisualization() {
-    qDebug() << "updateOpenGlVisualization";
     if (!m_gl_vis_widget) return;
 
     // Update scatterer visualization
