@@ -67,6 +67,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ProbeWidget.hpp"
 #include "SimTimeWidget.hpp"
 #include "GrayscaleTransformWidget.hpp"
+#include "RefreshWorker.hpp"
 
 MainWindow::MainWindow() {
     onLoadIniSettings();
@@ -157,6 +158,12 @@ MainWindow::MainWindow() {
     auto geometry = m_scanseq_widget->get_geometry(num_lines);
     newScansequence(geometry, num_lines);
     m_save_images = false;
+
+    // refresh thread setup
+    m_refresh_worker = new RefreshWorker(2000);
+    connect(m_refresh_worker, &RefreshWorker::processed_data_available, [&](int value) {
+        qDebug() << "Got result from worker: " << value;
+    });
 }
 
 void MainWindow::onLoadIniSettings() {
@@ -361,6 +368,7 @@ void MainWindow::onGpuLoadScatterers() {
 
 void MainWindow::onSimulate() {
     doSimulation();
+    m_refresh_worker->process_data(10);
 }
 
 void MainWindow::onSetSimulatorNoise() {

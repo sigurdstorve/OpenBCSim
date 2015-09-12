@@ -49,6 +49,8 @@ class SimulationParamsWidget;
 class ProbeWidget;
 class SimTimeWidget;
 class GrayscaleTransformWidget;
+class RefreshWorker;
+class QTimer;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -172,6 +174,8 @@ private:
     SimTimeWidget*                  m_time_widget;
 
     GrayscaleTransformWidget*       m_grayscale_widget;
+    
+    RefreshWorker*                  m_refresh_worker;
 };
 
 
