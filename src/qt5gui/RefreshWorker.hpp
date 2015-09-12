@@ -41,19 +41,27 @@ namespace refresh_worker {
 
 class WorkTask {
 public:
+    friend class Worker;
     typedef std::shared_ptr<WorkTask> ptr;
     WorkTask() {
-        data.resize(32768);
     }
     ~WorkTask() {
         qDebug() << "WorkTask was destroyed";
     }
+    void set_geometry(bcsim::ScanGeometry::ptr geometry) {
+        m_geometry = geometry;
+    }
+    void set_data(const std::vector<std::vector<bc_float>>& data) {
+        m_data = data;
+    }
 private:
-    std::vector<unsigned char> data;
+    std::vector<std::vector<bc_float>>  m_data;
+    bcsim::ScanGeometry::ptr            m_geometry;
 };
 
 class WorkResult {
 public:
+    friend class Worker;
     typedef std::shared_ptr<WorkResult> ptr;
     WorkResult() {
         data.resize(16384);
@@ -86,7 +94,9 @@ private slots:
         auto num_elements = m_queue.size();
         qDebug() << "Refresh timeout @ thread " << QThread::currentThreadId() << ". Number of queued items is" << num_elements;
         if (!m_queue.isEmpty()) {
-            auto element = m_queue.dequeue();
+            auto work_task = m_queue.dequeue();
+            qDebug() << "Number of RF lines: " << work_task->m_data.size();
+            qDebug() << "Number of samples: " << work_task->m_data[0].size();
             auto message = WorkResult::ptr(new WorkResult);
             emit finished_processing(message);
         }

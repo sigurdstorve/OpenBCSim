@@ -505,9 +505,11 @@ void MainWindow::doSimulation() {
         qDebug() << "Caught exception: " << e.what();
     }
     
-    // TODO: Create refresh work task from current geometry and beam space data
-    auto message = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
-    m_refresh_worker->process_data(message);
+    // Create refresh work task from current geometry and the beam space data
+    auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
+    refresh_task->set_geometry(m_scan_geometry);
+    refresh_task->set_data(rf_lines);
+    m_refresh_worker->process_data(refresh_task);
 
     // timer for all post-processing 
     {
