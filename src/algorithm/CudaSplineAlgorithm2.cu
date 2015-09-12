@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cuda.h>
 #include <cufft.h>
 #include <complex>
-#include "CudaSplineAlgorithm.cuh"
+#include "CudaSplineAlgorithm2.cuh"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
@@ -100,7 +100,7 @@ __global__ void SplineAlgKernel(float* control_xs,
 
 namespace bcsim {
 
-CudaSplineAlgorithm::CudaSplineAlgorithm()
+CudaSplineAlgorithm2::CudaSplineAlgorithm2()
     : m_verbose(false),
       m_num_cuda_streams(2),
       m_num_time_samples(32768),  // TODO: remove this limitation
@@ -138,7 +138,7 @@ CudaSplineAlgorithm::CudaSplineAlgorithm()
 
 }
 
-void CudaSplineAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
+void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
 
     auto num_lines      = m_scan_seq->get_num_lines();
 
@@ -265,7 +265,7 @@ void CudaSplineAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /
     }
 }
 
-void CudaSplineAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
+void CudaSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
 
     m_num_splines = scatterers->num_scatterers();
     if (m_num_splines <= 0) {
@@ -317,7 +317,7 @@ void CudaSplineAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scat
     
 }
 
-void CudaSplineAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
+void CudaSplineAlgorithm2::set_excitation(const ExcitationSignal& new_excitation) {
     m_excitation = new_excitation;
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
 
@@ -348,7 +348,7 @@ void CudaSplineAlgorithm::set_excitation(const ExcitationSignal& new_excitation)
 }
 
 
-void CudaSplineAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+void CudaSplineAlgorithm2::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     m_scan_seq = new_scan_sequence;
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
@@ -387,7 +387,7 @@ void CudaSplineAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
-void CudaSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
+void CudaSplineAlgorithm2::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_num_scatterers = new_scatterers->num_scatterers();
         
     auto spline_scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);

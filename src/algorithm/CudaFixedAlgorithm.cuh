@@ -38,7 +38,7 @@ namespace bcsim {
 
 class CudaFixedAlgorithm : public IAlgorithm {
 public:
-    friend class CudaSplineAlgorithm;
+    friend class CudaSplineAlgorithm1;
 
     CudaFixedAlgorithm();
 

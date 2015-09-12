@@ -36,12 +36,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class CudaSplineAlgorithm : public IAlgorithm {
+class CudaSplineAlgorithm2 : public IAlgorithm {
 public:
 
-    CudaSplineAlgorithm();
+    CudaSplineAlgorithm2();
 
-    virtual ~CudaSplineAlgorithm() {
+    virtual ~CudaSplineAlgorithm2() {
         // cleanup
     }
         
