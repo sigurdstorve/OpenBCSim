@@ -8,8 +8,8 @@ option(BCSIM_BUILD_UNITTEST
        "Build the main unit testing code" OFF)
 option(BCSIM_USE_HDF_LAYER
        "Build HDF5 interface layer" OFF) 
-option(BCSIM_BUILD_DEMOAPP
-       "Build small demo app (requires HDF5 layer enabled)" OFF)
+option(BCSIM_BUILD_EXAMPLES
+       "Build C++ examples (requires HDF5 layer enabled)" OFF)
 option(BCSIM_BUILD_PYTHON_INTERFACE
        "Build Python interface" OFF)
 option(BCSIM_ENABLE_NAN_CHECK
@@ -164,9 +164,8 @@ if (BCSIM_BUILD_UNITTEST)
     add_subdirectory(unittest)
 endif()
 
-if (BCSIM_BUILD_DEMOAPP) 
-    add_executable(BCSimDemo main.cpp)
-    target_link_libraries(BCSimDemo LibBCSim)
+if (BCSIM_BUILD_EXAMPLES) 
+    add_subdirectory(examples)
 endif()
 
 if (BCSIM_BUILD_PYTHON_INTERFACE)
@@ -229,7 +228,7 @@ install(TARGETS LibBCSim DESTINATION lib)
 if (BCSIM_BUILD_PYTHON_INTERFACE)
     install(TARGETS pyrfsim DESTINATION lib)
 endif()
-if (BCSIM_BUILD_DEMOAPP)
+if (BCSIM_BUILD_EXAMPLES)
     install(TARGETS BCSimDemo DESTINATION bin)
 endif()
 
