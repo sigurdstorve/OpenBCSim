@@ -56,7 +56,6 @@ double DLL_PUBLIC GaussianPulseTimeLimits(double fc, double bw, double bwr=-6.0,
 // fc: center frequency [Hz]
 // bw: fractional bandwidth
 // fs: sampling frequency [Hz]
-// Returns tuple (sample_vector, center_index)
 template <typename T>
 void DLL_PUBLIC MakeGaussianExcitation(T fc, T bw, T fs,
                            std::vector<T>& /*out*/ times,
