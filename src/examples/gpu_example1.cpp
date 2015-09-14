@@ -146,6 +146,7 @@ void example(int argc, char** argv) {
     auto start = std::chrono::high_resolution_clock::now();
     size_t num_beams = 0;
     std::cout << "Simulating...";
+    float elapsed;
     for (;;) {
         // Reconfigure scatterers for each beam - even though they are equal,
         // a host->device PCI express transfer will be triggered.
@@ -160,15 +161,15 @@ void example(int argc, char** argv) {
             std::vector<std::vector<bc_float>> sim_res;
             sim->simulate_lines(sim_res);
         }
+        num_beams++;
 
         // done?
         auto temp = std::chrono::high_resolution_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(temp-start).count();
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(temp-start).count()/1000.0;
         if (elapsed >= num_seconds) break;
-        num_beams++;
     }
-    std::cout << "Done. Processed " << num_beams << " in " << num_seconds << " seconds.\n";
-    const auto prf = num_beams / num_seconds;
+    std::cout << "Done. Processed " << num_beams << " in " << elapsed << " seconds.\n";
+    const auto prf = num_beams / elapsed;
     std::cout << "Achieved a PRF of " << prf << " Hz.\n";
     
 }
