@@ -9,5 +9,6 @@ The algorithm has been extended to optionally use B-splines for representing dyn
 - GPU implementation (using NVIDIA CUDA)
 - Python interface using Boost.Python and numpy-boost
 - Qt5-based interactive GUI front-end
+- Output data type can be radiofrequency (RF) or envelope-detected
 
 This code is still experimental. More documentation, examples, and instructions on how to compile the code will be added soon.
