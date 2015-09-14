@@ -48,4 +48,10 @@ bc_float DLL_PUBLIC get_max_value(const std::vector<std::vector<bc_float> >& env
 // normalize_factor:    Normalization factor [typ. determined as max over all beams in all frames]
 void DLL_PUBLIC log_compress_frame(std::vector<std::vector<bc_float> >& env_frame, float dyn_range, float normalize_factor);
 
+// Evaluate a spline scatterer dataset at a specific time in order to generate
+// a new fixed scatterer dataset.
+// timestamp: the time to evaluate the spline scatterers in
+// NOTE: This code is completely untested!
+Scatterers::s_ptr DLL_PUBLIC render_fixed_scatterers(SplineScatterers::s_ptr spline_scatterers, float timestamp);
+
 }   // end namespace

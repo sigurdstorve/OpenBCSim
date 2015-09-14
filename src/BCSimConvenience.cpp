@@ -28,9 +28,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <algorithm>
+#include <stdexcept>
 #include <cmath>
 #include <stdexcept>
 #include "BCSimConvenience.hpp"
+#include "bspline.hpp"
 
 namespace bcsim {
 
@@ -77,6 +79,39 @@ void log_compress_frame(std::vector<std::vector<bc_float> >& env_frame, float dy
             return pixel;
         });
     }
+}
+
+Scatterers::s_ptr render_fixed_scatterers(SplineScatterers::s_ptr spline_scatterers, float timestamp) {
+    // TODO: can parts of this code be put in a separate function and used both
+    // here and in the CPU spline algoritm to reduce code duplication?
+    auto res = FixedScatterers::s_ptr(new FixedScatterers);
+    const auto num_scatterers = spline_scatterers->num_scatterers();
+    if (num_scatterers == 0) {
+        throw std::runtime_error("No spline scatterers");
+    }
+    
+        
+    // precompute basis functions
+    const auto num_cs = spline_scatterers->nodes[0].size();
+    std::vector<float> basis_fn(num_cs);
+    for (size_t i = 0; i < num_cs; i++) {
+        basis_fn[i] = bspline_storve::bsplineBasis(i, spline_scatterers->spline_degree, timestamp, spline_scatterers->knot_vector);
+    }
+    
+    // evaluate using cached basis functions
+    res->scatterers.resize(num_scatterers);
+    for (size_t spline_no = 0; spline_no < num_scatterers; spline_no++) {
+        PointScatterer scatterer;
+        scatterer.pos       = vector3(0.0f, 0.0f, 0.0f);
+        scatterer.amplitude = 0.0f;
+        for (size_t i = 0; i < num_cs; i++) {
+            scatterer.pos       += spline_scatterers->nodes[spline_no][i].pos*basis_fn[i];
+            scatterer.amplitude += spline_scatterers->nodes[spline_no][i].amplitude*basis_fn[i];
+        }
+        res->scatterers[spline_no] = scatterer;
+    }
+
+    return res;
 }
 
 
