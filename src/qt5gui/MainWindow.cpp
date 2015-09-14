@@ -141,7 +141,14 @@ MainWindow::MainWindow() {
     v_layout->addWidget(m_time_widget);
 
     createMenus();
-    const auto scatterers_file = m_settings->value("default_scatterers").toString();
+    auto scatterers_file = m_settings->value("default_scatterers").toString();
+    if (!QFileInfo(scatterers_file).exists()) {
+        scatterers_file = QFileDialog::getOpenFileName(this, tr("Invalid default file. Select h5 scatterer dataset"), "", tr("h5 files (*.h5)"));
+        if (scatterers_file == "") {
+            qDebug() << "No scatterer dataset selected. Exiting application.";
+            onExit();
+        }
+    }
     loadScatterers(scatterers_file.toUtf8().constData());
 
     m_label = new QLabel("No simulation data");
