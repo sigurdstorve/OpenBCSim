@@ -131,6 +131,8 @@ void BaseAlgorithm::set_output_type(const std::string& type) {
         m_convolver_type = "rf";
     } else if (type == "env") {
         m_convolver_type = "env";
+    } else if (type == "proj") {
+        m_convolver_type = "proj";
     } else {
         throw std::runtime_error("Illegal output type: " + type);
     }
