@@ -247,6 +247,7 @@ install(FILES ScanSequence.hpp     DESTINATION include)
 install(FILES SignalProcessing.hpp DESTINATION include)
 install(FILES to_string.hpp        DESTINATION include)
 install(FILES vector3.hpp          DESTINATION include)
+install(FILES GaussPulse.hpp       DESTINATION include)
 
 
 
