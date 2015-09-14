@@ -477,7 +477,8 @@ void MainWindow::initializeSimulator(const std::string& type) {
     m_sim->set_beam_profile(beam_profile);
 
     // Configure simulator to do envelope detection
-    m_sim->set_output_type("env");
+    const auto output_type = std::string(m_settings->value("sim_output_type", "env").toString().toUtf8().constData());
+    m_sim->set_output_type(output_type);
 
     qDebug() << "Created simulator";
     // force-emit from all widgets to ensure a fully configured simulator.
