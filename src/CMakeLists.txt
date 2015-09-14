@@ -63,7 +63,14 @@ if (BCSIM_ENABLE_CUDA)
 endif()
 
 # Handle Boost (needed by HDF convenience at least)
-find_package(Boost REQUIRED)
+# workaround for annoying program_options linking issue:
+# Setting Boost_USE_STATIC_LIBS to OFF is not enough...
+# (src http://lists.boost.org/boost-users/2009/11/54015.php)
+add_definitions(-DBOOST_ALL_DYN_LINK)
+set(Boost_USE_STATIC_LIBS OFF CACHE BOOL "Use static linking with Boost")
+set(Boost_USE_MULTITHREADED ON CACHE BOOL "Use multithreaded Boost")
+set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static Boost runtime")
+find_package(Boost COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Build simulator core shared library, optionally with HDF5 layer.
@@ -184,9 +191,6 @@ if (BCSIM_BUILD_PYTHON_INTERFACE)
     include_directories(${NumPy_INCLUDE_DIR})
     
     # Handle Boost
-    set(Boost_USE_STATIC_LIBS OFF CACHE BOOL "Use static linking with Boost")
-    set(Boost_USE_MULTITHREADED ON CACHE BOOL "Use multithreaded Boost")
-    set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static Boost runtime")
     find_package(Boost COMPONENTS python system REQUIRED)
     include_directories(${Boost_INCLUDE_DIRS})
     
