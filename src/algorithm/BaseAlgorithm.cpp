@@ -186,27 +186,17 @@ std::vector<bc_float> BaseAlgorithm::simulate_line(const Scanline& line) {
 
     // get the convolver associated with this thread and do FFT-based convolution
     std::vector<bc_float> rf_line = convolvers[thread_idx]->process();
-
-    // compensate for delay caused by excitation having time zero in the middle
-    std::vector<bc_float>::const_iterator first_it = rf_line.begin() + m_excitation.center_index;
-    std::vector<bc_float>::const_iterator last_it = rf_line.end();
-    std::vector<bc_float> return_value(first_it, last_it);
-    
-    return return_value;
+    return rf_line;
 }
 
 void BaseAlgorithm::configure_convolvers_if_possible() {
     if (m_scan_sequence_configured && m_params_configured && m_excitation_configured) {
-        // the length of the excitation signal must also be taken int account by using
-        // the convolution length formula N1+N2-1
-        int num_conv_samples = m_rf_line_num_samples + m_excitation.samples.size() - 1;
-        
         convolvers.clear();
         std::cout << "Recreating convolvers\n";
         for (int i = 0; i < m_omp_num_threads; i++) {
             if (m_verbose) std::cout << "Creating FFT-convolver " << i << " of type " << m_convolver_type << std::endl;
  
-            auto convolver = IBeamConvolver::Create(m_convolver_type, num_conv_samples, m_excitation);
+            auto convolver = IBeamConvolver::Create(m_convolver_type, m_rf_line_num_samples, m_excitation);
             convolvers.push_back(std::move(convolver));
         }
     }

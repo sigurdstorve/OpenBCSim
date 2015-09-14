@@ -39,7 +39,7 @@ public:
     typedef std::unique_ptr<IBeamConvolver> ptr;
     
     // Factory function for creating beam convolvers.
-    // num_proj_samples: Number of time-projection samples.
+    // num_proj_samples: Number of time-projection samples (also number of output samples)
     // excitation: Excitation signal.
     // type: The output data type:
     //      "rf":   Returns RF signal

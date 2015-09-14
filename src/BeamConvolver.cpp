@@ -38,8 +38,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-// TODO: More elegant to do delay compensation here instead of in BaseAlgorithm?
-
 // Common functionality for all the types of convolvers
 class BeamConvolverBase : public IBeamConvolver {
 public:
@@ -50,10 +48,11 @@ public:
         : m_out_transform(out_transform),
           m_excitation_has_been_customized(false)
     {
-        m_num_output_samples = num_proj_samples + excitation.samples.size() - 1;
+        m_num_conv_samples = num_proj_samples + excitation.samples.size() - 1;
         m_time_proj_buffer.resize(num_proj_samples);
-        m_fft_length = next_power_of_two(m_num_output_samples);
+        m_fft_length = next_power_of_two(m_num_conv_samples);
         precompute_excitation_fft(excitation);
+        m_excitation_delay = static_cast<size_t>(excitation.center_index);
         // customization happens later since virtual functions cannot be called here... 
 
         m_temp_buffer.resize(m_fft_length);
@@ -68,8 +67,11 @@ public:
     virtual std::vector<bc_float> process() {
         process_first_stage();
 
-        std::vector<bc_float> res(m_num_output_samples);
-        std::transform(m_temp_buffer.begin(), m_temp_buffer.begin() + m_num_output_samples, res.begin(), [&](std::complex<float> v) {
+        // extract output, compensate for delay introduced by convolving with excitation
+        auto num_proj_samples = m_time_proj_buffer.size();
+        auto start = m_temp_buffer.begin() + m_excitation_delay;
+        std::vector<bc_float> res(num_proj_samples);
+        std::transform(start, start + num_proj_samples, res.begin(), [&](std::complex<float> v) {
             return m_out_transform(v);
         });
         return res;
@@ -110,11 +112,12 @@ protected:
     }
 
 protected:
-    size_t                              m_num_output_samples; // length of convolution output         
+    size_t                              m_num_conv_samples;   // length of convolution output  [len(time_proj)+len(excitation)-1 samples]      
     std::vector<double>                 m_time_proj_buffer;   // where time-projections are stored in projection loop
     size_t                              m_fft_length;         // closest power-of-two >= length(m_time_proj_buffer)
     std::vector<std::complex<float>>    m_excitation_fft;     // Forward FFT of padded excitation, length is m_fft_length
     bool                                m_excitation_has_been_customized;
+    size_t                              m_excitation_delay;   // Compensation offset needed since time zero in the middle.
     std::vector<std::complex<float>>    m_temp_buffer;        // buffer for holding intermediate results, length is m_fft_length
     std::function<bc_float(std::complex<float>)> m_out_transform;
 };
