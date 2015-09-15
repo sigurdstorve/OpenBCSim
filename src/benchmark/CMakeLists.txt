@@ -7,4 +7,12 @@ if (BCSIM_ENABLE_CUDA)
     target_link_libraries(gpu_render_spline_comparison
                           ${CUDA_LIBRARIES}
                           )
+    
+    cuda_add_executable(gpu_memcpy_speedtest
+                        gpu_memcpy_speedtest.cu
+                        ../algorithm/cuda_helpers.h
+                        )
+    target_link_libraries(gpu_memcpy_speedtest
+                          ${CUDA_LIBRARIES}
+                          )
 endif()
