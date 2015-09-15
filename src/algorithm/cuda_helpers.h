@@ -32,6 +32,7 @@ public:
 
     explicit DeviceBufferRAII(size_t num_bytes) {
         cudaErrorCheck( cudaMalloc(&memory, num_bytes) );
+        num_bytes_allocated = num_bytes;
     }
 
     ~DeviceBufferRAII() {
@@ -41,8 +42,14 @@ public:
     T* data() {
         return static_cast<T*>(memory);
     }
+
+    size_t get_num_bytes() {
+        return num_bytes_allocated;
+    }
+
 private:
     void*   memory;
+    size_t  num_bytes_allocated;
 };
 
 // RAII wrapper for pinned host memory.
