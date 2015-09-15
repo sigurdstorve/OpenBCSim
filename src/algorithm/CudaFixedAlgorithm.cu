@@ -238,11 +238,24 @@ void CudaFixedAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatte
     // temporary host memory for scatterer points
     HostPinnedBufferRAII<float> host_temp(points_common_bytes);
 
-    // allocate device memory to hold the fixed scatterers
-    m_device_point_xs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-    m_device_point_ys = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-    m_device_point_zs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-    m_device_point_as = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+    // no point in reallocating if we already have allocated memory and the number of bytes
+    // is the same.
+    bool reallocate_device_mem = true;
+    if (m_device_point_xs && m_device_point_ys && m_device_point_zs && m_device_point_as) {
+        if (   (m_device_point_xs->get_num_bytes() == points_common_bytes)
+            && (m_device_point_ys->get_num_bytes() == points_common_bytes)
+            && (m_device_point_zs->get_num_bytes() == points_common_bytes)
+            && (m_device_point_as->get_num_bytes() == points_common_bytes))
+        {
+            reallocate_device_mem = false;
+        }
+    }
+    if (reallocate_device_mem) {
+        m_device_point_xs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_ys = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_zs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_as = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+    }
 
     // x values
     for (size_t i = 0; i < num_scatterers; i++) {
