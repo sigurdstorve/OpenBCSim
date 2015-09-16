@@ -70,7 +70,13 @@ public:
     }
 
     virtual void set_output_type(const std::string& type) {
-        // does not apply in the GPU case (yet)
+        if (type == "env") {
+            // this is hardcoded for now
+        } else if (type == "rf") {
+            throw std::runtime_error("Output data type 'rf' is not yet supported");
+        } else if (type == "proj") {
+            throw std::runtime_error("Output data type 'proj' is not yet supported");
+        }
     }
 
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
