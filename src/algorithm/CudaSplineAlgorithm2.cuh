@@ -68,8 +68,15 @@ public:
         m_beam_profile = gaussian_profile;   
     }
 
+    // NOTE: currently requires that set_excitation is called first!
     virtual void set_output_type(const std::string& type) {
-        // does not apply in the GPU case (yet)
+        if (type == "env") {
+            m_output_type = "env";
+        } else if (type == "rf") {
+            m_output_type = "rf";
+        } else if (type == "proj") {
+            throw std::runtime_error("Output data type 'proj' is not yet supported");
+        }
     }
 
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
@@ -91,6 +98,9 @@ protected:
 
 protected:
     typedef cufftComplex complex;
+
+    // the output data type
+    std::string             m_output_type;
 
     ScanSequence::s_ptr     m_scan_seq;
     SimulationParams        m_sim_params;
