@@ -212,6 +212,17 @@ def create_lv_spline_phantom():
     args.scale_h5_file = "phantom_data/real_left_ventricle_contraction.h5"
     args.lv_max_amplitude = 1.0
     create_phantom(args)
+
+def create_2d_cyst_phantom():
+    """
+    Create a 2D cyst phantom.
+    """
+    from cyst_phantom_2d import create_phantom
+    args = Args()
+    args.h5_file = os.path.join(out_dir, "cyst_2d.h5")
+    args.density = 500.0
+    args.cyst_scale = 0.3
+    create_phantom(args)
     
 if __name__ == '__main__':
     verify_correct_path()
@@ -223,6 +234,7 @@ if __name__ == '__main__':
     create_rotating_cube_phantom()
     create_random_spline_noise_phantom()
     create_harmonic_box_phantom()
+    create_2d_cyst_phantom()
     print 'NOTE: This is the last script and may take a while to finish...'
     create_artery_phantom()
     
