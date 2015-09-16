@@ -33,7 +33,6 @@ if __name__ == '__main__':
 
     # Create and configure tracker
     if args.use_gpu:
-        raise RuntimeError("GPU cannot be used until it supports RF data as output")
         print "Using GPU"
         sim = RfSimulator("gpu_spline2")
     else:
@@ -43,6 +42,9 @@ if __name__ == '__main__':
     sim.set_verbose(False)
     sim.set_print_debug(False)
     sim.set_parameters(1540)
+
+    # NOTE: because of current limitation with the GPU spline alg. 2, this call
+    # must be placed BEFORE configuring the excitation signal.
     sim.set_output_type("rf")
 
     # Set spline scatterers
