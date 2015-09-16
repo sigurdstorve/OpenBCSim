@@ -44,3 +44,6 @@ __global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_sa
 
 // used to get the absolute value of a complex signal
 __global__ void AbsComplexKernel(cufftComplex* input, float* output, int num_samples);
+
+// used to extract the real part of a complex signal
+__global__ void RealPartKernel(cufftComplex* input, float *output, int num_samples);
