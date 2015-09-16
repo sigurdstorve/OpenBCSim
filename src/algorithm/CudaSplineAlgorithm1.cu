@@ -149,6 +149,8 @@ void CudaSplineAlgorithm1::simulate_lines(std::vector<std::vector<bc_float> >&  
 
 
 void CudaSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+    //EventTimerRAII event_timer;
+    //event_timer.restart();
 
     // For now it is a requirement that all lines in the scan sequence have the same
     // timestamp. This limitation will be removed in the future.
@@ -179,14 +181,12 @@ void CudaSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequen
     }
     cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, host_basis_functions.data(), m_num_cs*sizeof(float)) );
     
-    //EventTimerRAII event_timer;
 
     // TODO: Handle non-power-of-<num_threads>
     int num_threads = 128;
     dim3 grid_size(m_num_splines/num_threads, 1, 1);
     dim3 block_size(num_threads, 1, 1);
     
-    //event_timer.restart();
     RenderSplineKernel<<<grid_size, block_size>>>(m_control_xs->data(),
                                                   m_control_ys->data(),
                                                   m_control_zs->data(),
@@ -199,7 +199,7 @@ void CudaSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequen
                                                   m_num_splines);
     cudaErrorCheck( cudaDeviceSynchronize() );
     //auto ms = event_timer.stop();
-    //std::cout << "set_scan_sequence(): rendering spline scatterers took " << ms << " millisec.\n";
+    //std::cout << "GPU spline alg.1 : set_scan_sequence(): rendering spline scatterers took " << ms << " millisec.\n";
 }
 
 bool CudaSplineAlgorithm1::has_equal_timestamps(ScanSequence::s_ptr scan_seq, double tol) {
