@@ -128,6 +128,8 @@ private slots:
     // Load configuration from .ini file.
     void onLoadIniSettings();
 
+    void onLoadBeamProfileLUT();
+
 private:
     void initializeSplineVisualization(const QString& h5_file);
 

@@ -227,6 +227,10 @@ void MainWindow::createMenus() {
     connect(refresh_settings_act, SIGNAL(triggered()), this, SLOT(onLoadIniSettings()));
     fileMenu->addAction(refresh_settings_act);
 
+    auto load_beamprofile_lut_act = new QAction(tr("Load LUT beamprofile [experimental!]"), this);
+    connect(load_beamprofile_lut_act, SIGNAL(triggered()), this, SLOT(onLoadBeamProfileLUT()));
+    fileMenu->addAction(load_beamprofile_lut_act);
+
     auto exitAct = new QAction(tr("Exit"), this);
     connect(exitAct, SIGNAL(triggered()), this, SLOT(onExit()));
     fileMenu->addAction(exitAct);
@@ -680,4 +684,17 @@ void MainWindow::updateOpenGlVisualization() {
     // Update scatterer visualization
     auto new_timestamp = m_sim_time_manager->get_time();
     m_gl_vis_widget->updateTimestamp(new_timestamp);
+}
+
+void MainWindow::onLoadBeamProfileLUT() {
+    if (!m_sim) {
+        qDebug() << "No active simulator. Ignoring";
+        return;
+    }
+    auto h5_file = QFileDialog::getOpenFileName(this, "Load HDF5 beam profile lookup-table", ".", "HDF5 files (*.h5)");
+    if (h5_file == "") {
+        qDebug() << "No lookup-table file selected. Ignoring.";
+        return;
+    }
+    bcsim::setBeamProfileFromHdf(m_sim, h5_file.toUtf8().constData());
 }
