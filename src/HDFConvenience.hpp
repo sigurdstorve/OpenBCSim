@@ -82,7 +82,6 @@ void DLL_PUBLIC setExcitationFromHdf(IAlgorithm::s_ptr sim, const std::string& h
 IBeamProfile::s_ptr loadBeamProfileFromHdf(const std::string& h5_file);
 
 // LUT beam profile
-// TODO: Implement.
 void DLL_PUBLIC setBeamProfileFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
 
 }   // namespace

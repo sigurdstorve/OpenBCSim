@@ -222,8 +222,55 @@ ExcitationSignal loadExcitationFromHdf(const std::string& h5_file) {
 }
 
 IBeamProfile::s_ptr loadBeamProfileFromHdf(const std::string& h5_file) {
-    throw std::runtime_error("Not yet implemented.");
-    return nullptr;
+    SimpleHDF::SimpleHDF5Reader reader(h5_file);
+    auto lut_samples = reader.readMultiArray<float, 3>("beam_profile");
+    auto rad_extent  = reader.readStdVector<float>("rad_extent");
+    auto lat_extent  = reader.readStdVector<float>("lat_extent");
+    auto ele_extent  = reader.readStdVector<float>("ele_extent");
+    auto lut_samples_shape = lut_samples.shape();
+    
+    // TODO: Consider allowing 2D samples array with the interpretation of being axial symmetric
+    if (lut_samples.num_dimensions() != 3) {
+        throw std::runtime_error("beam_profile data must be a 3D array");
+    }
+    
+    // parse rad, lat, and elev. extents
+    if (rad_extent.size() != 2) {
+        throw std::runtime_error("rad_extent must contain two elements: [min, max]");
+    }
+    const auto r_min = rad_extent[0];
+    const auto r_max = rad_extent[1];
+    if (lat_extent.size() != 2) {
+        throw std::runtime_error("lat_extent must contain two elements: [min, max]");
+    }
+    const auto l_min = lat_extent[0];
+    const auto l_max = lat_extent[1];
+    if (ele_extent.size() != 2) {
+        throw std::runtime_error("ele_extent must contain two elements: [min, max]");
+    }
+    const auto e_min = ele_extent[0];
+    const auto e_max = ele_extent[1];
+
+    // corresponding number of samples
+    const auto num_rad_samples = lut_samples_shape[0];
+    const auto num_lat_samples = lut_samples_shape[1];
+    const auto num_ele_samples = lut_samples_shape[2];
+    
+    auto lut_profile = new LUTBeamProfile(num_rad_samples, num_lat_samples, num_ele_samples,
+                                          Interval(r_min, r_max), Interval(l_min, l_max), Interval(e_min, e_max));
+			
+    // Copy data. TODO: require matching hdf5 layout so that copying can be eliminated
+    // dim0: radial index
+    // dim1: lateral index
+    // dim2: elevational index
+    for (size_t rad_idx = 0; rad_idx < num_rad_samples; rad_idx++) {
+        for (size_t lat_idx = 0; lat_idx < num_lat_samples; lat_idx++) {
+            for (int ele_idx = 0; ele_idx < num_ele_samples; ele_idx++) {
+                lut_profile->setDiscreteSample(rad_idx, lat_idx, ele_idx, lut_samples[rad_idx][lat_idx][ele_idx]);       
+            }
+        }
+    }
+    return IBeamProfile::s_ptr(lut_profile);
 }
 
 SimulationParams loadParametersFromHdf(const std::string& h5_file) {
