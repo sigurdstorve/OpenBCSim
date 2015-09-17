@@ -90,7 +90,6 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
 }
 
 void CudaFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
-    cudaErrorCheck(cudaSetDevice(m_cuda_device_no));
     m_can_change_cuda_device = false;
     
     if (m_stream_wrappers.size() == 0) {

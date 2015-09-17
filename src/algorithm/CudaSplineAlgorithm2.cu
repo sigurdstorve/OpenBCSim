@@ -135,7 +135,6 @@ CudaSplineAlgorithm2::CudaSplineAlgorithm2()
     }
 
     std::cout << "For now using the first device. TODO: make changable\n";
-    cudaErrorCheck( cudaSetDevice(0) );
 }
 
 void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {

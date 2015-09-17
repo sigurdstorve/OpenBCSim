@@ -55,6 +55,7 @@ void CudaBaseAlgorithm::set_parameter(const std::string& key, const std::string&
             throw std::runtime_error("illegal device number");
         }
         m_cuda_device_no = device_no;
+        cudaErrorCheck(cudaSetDevice(m_cuda_device_no));
         print_cuda_device_properties(m_cuda_device_no);
     } else if (key == "sound_speed") {
         m_sound_speed = std::stof(value);
