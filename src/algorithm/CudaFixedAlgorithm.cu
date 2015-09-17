@@ -87,7 +87,6 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
       m_beam_profile(nullptr),
       m_output_type("env")
 {
-    create_cuda_stream_wrappers(m_num_cuda_streams);
     
     int device_count;
     cudaErrorCheck( cudaGetDeviceCount(&device_count) );
@@ -111,6 +110,8 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
 
     std::cout << "For now using the first device. TODO: make changable\n";
     cudaErrorCheck( cudaSetDevice(0) );
+
+    create_cuda_stream_wrappers(m_num_cuda_streams);
 
 }
 

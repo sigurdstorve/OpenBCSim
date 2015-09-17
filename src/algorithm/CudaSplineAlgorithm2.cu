@@ -113,7 +113,6 @@ CudaSplineAlgorithm2::CudaSplineAlgorithm2()
       m_beam_profile(nullptr),
       m_output_type("env")
 {
-    create_cuda_stream_wrappers(NUM_CUDA_STREAMS);
     
     int device_count;
     cudaErrorCheck( cudaGetDeviceCount(&device_count) );
@@ -138,6 +137,7 @@ CudaSplineAlgorithm2::CudaSplineAlgorithm2()
     std::cout << "For now using the first device. TODO: make changable\n";
     cudaErrorCheck( cudaSetDevice(0) );
 
+    create_cuda_stream_wrappers(NUM_CUDA_STREAMS);
 }
 
 void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
