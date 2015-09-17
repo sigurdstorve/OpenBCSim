@@ -45,5 +45,12 @@ void CudaBaseAlgorithm::set_parameter(const std::string& key, const std::string&
     }
 }
 
+void CudaBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
+    m_stream_wrappers.clear();
+    for (int i = 0; i < num_streams; i++) {
+        m_stream_wrappers.push_back(std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII)));
+    }
+}
+
 }   // end namespace
 

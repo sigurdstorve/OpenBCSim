@@ -41,6 +41,9 @@ public:
     virtual void set_parameter(const std::string& key, const std::string& value);
 
 protected:
+    void create_cuda_stream_wrappers(int num_streams);
+    
+protected:
     std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
     // parameters that are comon to all GPU algorithms
