@@ -146,8 +146,8 @@ if (BCSIM_ENABLE_CUDA)
         set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3)
     endif()
     cuda_add_library(BCSimCUDA
-                     algorithm/CudaBaseAlgorithm.hpp
-                     algorithm/CudaBaseAlgorithm.cpp
+                     algorithm/CudaBaseAlgorithm.cuh
+                     algorithm/CudaBaseAlgorithm.cu
                      algorithm/gpu_alg_common.cuh
                      algorithm/gpu_alg_common.cu
                      algorithm/CudaFixedAlgorithm.cu

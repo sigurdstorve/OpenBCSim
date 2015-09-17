@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdexcept>
 #include <iostream>
-#include "CudaBaseAlgorithm.hpp"
+#include "CudaBaseAlgorithm.cuh"
 
 namespace bcsim {
 CudaBaseAlgorithm::CudaBaseAlgorithm()
