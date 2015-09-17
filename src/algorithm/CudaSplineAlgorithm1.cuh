@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class CudaSplineAlgorithm1 : public CudaBaseAlgorithm {
+class CudaSplineAlgorithm1 : public IAlgorithm {
 public:
     CudaSplineAlgorithm1();
 
