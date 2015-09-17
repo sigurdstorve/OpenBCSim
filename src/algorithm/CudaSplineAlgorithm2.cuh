@@ -85,10 +85,6 @@ public:
 
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
     
-    virtual void set_noise_amplitude(float amplitude) {
-        // does not apply in the GPU case (yet)
-    }
-
 protected:
     void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 

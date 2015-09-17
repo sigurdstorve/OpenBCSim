@@ -100,6 +100,9 @@ void BaseAlgorithm::set_parameter(const std::string& key, const std::string& val
             const auto num_cores = static_cast<int>(std::stoi(value));
             set_use_specific_num_cores(num_cores);
         }
+    } else if (key == "noise_amplitude") { 
+        const float noise_amplitude = std::stof(value);
+        set_noise_amplitude(noise_amplitude);
     } else {
         throw std::runtime_error("illegal parameter name");
     }

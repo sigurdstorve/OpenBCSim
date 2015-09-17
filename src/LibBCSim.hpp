@@ -72,11 +72,6 @@ public:
     /* Simulate all RF lines. Returns vector of RF lines.
        Requires that everything is properly configured. */
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) = 0;
-    
-    // Set to zero to disable any noise addition. This is the amplitude of
-    // Gaussian zero-mean noise that will be added to the time-projected
-    // signal prior to convolution.
-    virtual void set_noise_amplitude(float amplitude)                               = 0;
 };
 
 // Factory function for creating simulator instances.

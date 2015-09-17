@@ -78,10 +78,6 @@ public:
 
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
     
-    virtual void set_noise_amplitude(float amplitude) {
-        // does not apply in the GPU case (yet)
-    }
-
 private:
     // Test if all scanlines in a scan sequence have the same timestamp
     bool has_equal_timestamps(ScanSequence::s_ptr scan_seq, double tol=1e-4);

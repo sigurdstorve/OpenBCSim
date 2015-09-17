@@ -387,7 +387,7 @@ void MainWindow::onSetSimulatorNoise() {
     }
 
     qDebug() << "Setting new noise amplitude: " << noise_amplitude;
-    m_sim->set_noise_amplitude(static_cast<float>(noise_amplitude));
+    m_sim->set_parameter("noise_amplitude", std::to_string(noise_amplitude));
 }
 
 void MainWindow::loadScatterers(const QString h5_file) {
