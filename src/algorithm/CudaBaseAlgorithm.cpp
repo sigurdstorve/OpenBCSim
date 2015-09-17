@@ -27,17 +27,35 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdexcept>
+#include <iostream>
 #include "CudaBaseAlgorithm.hpp"
 
 namespace bcsim {
 CudaBaseAlgorithm::CudaBaseAlgorithm()
-    : m_sound_speed(1540.0f)
+    : m_sound_speed(1540.0f),
+      m_cuda_device_no(0),
+      m_can_change_cuda_device(true)
 {
+}
+
+int CudaBaseAlgorithm::get_num_cuda_devices() const {
+    int device_count;
+    cudaErrorCheck( cudaGetDeviceCount(&device_count) );
+    return device_count;
 }
 
 void CudaBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
     if (key == "gpu_device") {
-        throw std::runtime_error("TODO: implement handling of parameter 'gpu_device'");
+        if (!m_can_change_cuda_device) {
+            throw std::runtime_error("cannot change CUDA device now");            
+        }
+        const auto device_count = get_num_cuda_devices();
+        const int device_no = std::stoi(value);
+        if (device_no < 0 || device_no >= device_count) {
+            throw std::runtime_error("illegal device number");
+        }
+        m_cuda_device_no = device_no;
+        print_cuda_device_properties(m_cuda_device_no);
     } else if (key == "sound_speed") {
         m_sound_speed = std::stof(value);
     } else {
@@ -50,6 +68,27 @@ void CudaBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
     for (int i = 0; i < num_streams; i++) {
         m_stream_wrappers.push_back(std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII)));
     }
+    m_can_change_cuda_device = false;
+}
+
+void CudaBaseAlgorithm::print_cuda_device_properties(int device_no) const {
+    const auto num_devices = get_num_cuda_devices();
+    if (device_no < 0 || device_no >= num_devices) {
+        throw std::runtime_error("illegal CUDA device number");
+    }
+    cudaDeviceProp prop;
+    cudaErrorCheck( cudaGetDeviceProperties(&prop, device_no) );
+    std::cout << "\n\n=== Device " << device_no << ": " << prop.name               << std::endl;
+    std::cout << "totalGlobMem: "               << prop.totalGlobalMem             << std::endl;
+    std::cout << "clockRate: "                  << prop.clockRate                  << std::endl;
+    std::cout << "Compute capability: "         << prop.major << "." << prop.minor << std::endl;
+    std::cout << "asyncEngineCount: "           << prop.asyncEngineCount           << std::endl;
+    std::cout << "multiProcessorCount: "        << prop.multiProcessorCount        << std::endl;
+    std::cout << "kernelExecTimeoutEnabled: "   << prop.kernelExecTimeoutEnabled   << std::endl;
+    std::cout << "computeMode: "                << prop.computeMode                << std::endl;
+    std::cout << "concurrentKernels: "          << prop.concurrentKernels          << std::endl;
+    std::cout << "ECCEnabled: "                 << prop.ECCEnabled                 << std::endl;
+    std::cout << "memoryBusWidth: "             << prop.memoryBusWidth             << std::endl;
 }
 
 }   // end namespace

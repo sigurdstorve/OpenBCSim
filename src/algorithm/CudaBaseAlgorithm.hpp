@@ -43,11 +43,20 @@ public:
 protected:
     void create_cuda_stream_wrappers(int num_streams);
     
+    int get_num_cuda_devices() const;
+    
+    void print_cuda_device_properties(int device_no) const;
+    
 protected:
     std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
+    // it is only possible to change CUDA device before any operations
+    // that involve the GPU
+    bool        m_can_change_cuda_device;
+    
     // parameters that are comon to all GPU algorithms
     float       m_sound_speed;
+    int         m_cuda_device_no;
 };
     
 }   // end namespace
