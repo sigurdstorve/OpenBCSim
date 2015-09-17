@@ -22,7 +22,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 sim = RfSimulator("gpu_fixed")
-
+sim.set_parameter("gpu_device", "0")
 
 
 sim.set_verbose(False)
