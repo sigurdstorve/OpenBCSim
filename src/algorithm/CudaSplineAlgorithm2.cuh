@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include "LibBCSim.hpp"
+#include "CudaBaseAlgorithm.cuh"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 
@@ -36,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class CudaSplineAlgorithm2 : public IAlgorithm {
+class CudaSplineAlgorithm2 : public CudaBaseAlgorithm {
 public:
 
     CudaSplineAlgorithm2();
@@ -50,11 +51,7 @@ public:
     }
     
     virtual void set_parameter(const std::string& key, const std::string& value) {
-        if (key == "sound_speed") {
-            m_sound_speed = std::stof(value);
-        } else {
-            throw std::runtime_error("illegal parameter key");
-        }
+        CudaBaseAlgorithm::set_parameter(key, value);
     }
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
@@ -95,7 +92,6 @@ protected:
     std::string             m_output_type;
 
     ScanSequence::s_ptr     m_scan_seq;
-    float                   m_sound_speed;
     bool                    m_verbose;
     ExcitationSignal        m_excitation;
 
@@ -104,8 +100,6 @@ protected:
 
     // number of samples in the time-projection lines [should be a power of two]
     size_t              m_num_time_samples;
-
-    std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
     // device memory for spline scatterers control points and amplitudes
     DeviceBufferRAII<float>::u_ptr      m_device_control_xs;

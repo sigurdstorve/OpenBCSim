@@ -111,42 +111,16 @@ CudaSplineAlgorithm2::CudaSplineAlgorithm2()
       m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_beam_profile(nullptr),
-      m_output_type("env"),
-      m_sound_speed(1540.0f)
+      m_output_type("env")
 {
-    // create CUDA stream wrappers
-    m_stream_wrappers.resize(NUM_CUDA_STREAMS);
-    for (int i = 0; i < NUM_CUDA_STREAMS; i++) {
-        m_stream_wrappers[i] = std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII));
-    }
-    
-    int device_count;
-    cudaErrorCheck( cudaGetDeviceCount(&device_count) );
-    std::cout << "CUDA device count: " << device_count << std::endl;
-    
-    for (int device_no = 0; device_no < device_count; device_no++) {
-        cudaDeviceProp prop;
-        cudaErrorCheck( cudaGetDeviceProperties(&prop, device_no) );
-        std::cout << "\n\n=== Device " << device_no << ": " << prop.name << std::endl;
-        std::cout << "totalGlobMem: " << prop.totalGlobalMem << std::endl;
-        std::cout << "clockRate: " << prop.clockRate << std::endl;
-        std::cout << "Compute capability: " << prop.major << "." << prop.minor << std::endl;
-        std::cout << "asyncEngineCount: " << prop.asyncEngineCount << std::endl;
-        std::cout << "multiProcessorCount: " << prop.multiProcessorCount << std::endl;
-        std::cout << "kernelExecTimeoutEnabled: " << prop.kernelExecTimeoutEnabled << std::endl;
-        std::cout << "computeMode: " << prop.computeMode << std::endl;
-        std::cout << "concurrentKernels: " << prop.concurrentKernels << std::endl;
-        std::cout << "ECCEnabled: " << prop.ECCEnabled << std::endl;
-        std::cout << "memoryBusWidth: " << prop.memoryBusWidth << std::endl;
-    }
-
-    std::cout << "For now using the first device. TODO: make changable\n";
-    cudaErrorCheck( cudaSetDevice(0) );
-
 }
 
 void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
-
+    m_can_change_cuda_device = false;
+    if (m_stream_wrappers.size() == 0) {
+        create_cuda_stream_wrappers(NUM_CUDA_STREAMS);
+    }
+    
     auto num_lines      = m_scan_seq->get_num_lines();
 
     if (num_lines < 1) {
@@ -285,7 +259,8 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
 }
 
 void CudaSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
-
+    m_can_change_cuda_device = false;
+    
     m_num_splines = scatterers->num_scatterers();
     if (m_num_splines <= 0) {
         throw std::runtime_error("No scatterers");
@@ -337,6 +312,8 @@ void CudaSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr sca
 }
 
 void CudaSplineAlgorithm2::set_excitation(const ExcitationSignal& new_excitation) {
+    m_can_change_cuda_device = false;
+    
     m_excitation = new_excitation;
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
 
@@ -370,6 +347,8 @@ void CudaSplineAlgorithm2::set_excitation(const ExcitationSignal& new_excitation
 
 
 void CudaSplineAlgorithm2::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+    m_can_change_cuda_device = false;
+    
     m_scan_seq = new_scan_sequence;
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
@@ -409,6 +388,8 @@ void CudaSplineAlgorithm2::set_scan_sequence(ScanSequence::s_ptr new_scan_sequen
 }
 
 void CudaSplineAlgorithm2::set_scatterers(Scatterers::s_ptr new_scatterers) {
+    m_can_change_cuda_device = false;
+    
     m_num_scatterers = new_scatterers->num_scatterers();
         
     auto spline_scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);

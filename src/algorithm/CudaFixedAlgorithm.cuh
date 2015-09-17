@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include "LibBCSim.hpp"
+#include "CudaBaseAlgorithm.cuh"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 
@@ -36,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class CudaFixedAlgorithm : public IAlgorithm {
+class CudaFixedAlgorithm : public CudaBaseAlgorithm {
 public:
     friend class CudaSplineAlgorithm1;
 
@@ -51,11 +52,7 @@ public:
     }
     
     virtual void set_parameter(const std::string& key, const std::string& value) {
-        if (key == "sound_speed") {
-            m_sound_speed = std::stof(value);
-        } else {
-            throw std::runtime_error("illegal parameter key");
-        }
+        CudaBaseAlgorithm::set_parameter(key, value);
     }
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
@@ -95,7 +92,6 @@ protected:
     std::string             m_output_type;
 
     ScanSequence::s_ptr     m_scan_seq;
-    float                   m_sound_speed;
     bool                    m_verbose;
     ExcitationSignal        m_excitation;
 
@@ -107,7 +103,6 @@ protected:
 
     // the number of CUDA streams used when simulating RF lines
     size_t                              m_num_cuda_streams;
-    std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
     // device memory for fixed scatterers
     DeviceBufferRAII<float>::u_ptr      m_device_point_xs;

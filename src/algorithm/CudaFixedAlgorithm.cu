@@ -85,42 +85,17 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
       m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_beam_profile(nullptr),
-      m_sound_speed(1540.0f),
       m_output_type("env")
 {
-    // create CUDA stream wrappers
-    m_stream_wrappers.resize(m_num_cuda_streams);
-    for (int i = 0; i < m_num_cuda_streams; i++) {
-        m_stream_wrappers[i] = std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII));
-    }
-    
-    int device_count;
-    cudaErrorCheck( cudaGetDeviceCount(&device_count) );
-    std::cout << "CUDA device count: " << device_count << std::endl;
-    
-    for (int device_no = 0; device_no < device_count; device_no++) {
-        cudaDeviceProp prop;
-        cudaErrorCheck( cudaGetDeviceProperties(&prop, device_no) );
-        std::cout << "\n\n=== Device " << device_no << ": " << prop.name << std::endl;
-        std::cout << "totalGlobMem: " << prop.totalGlobalMem << std::endl;
-        std::cout << "clockRate: " << prop.clockRate << std::endl;
-        std::cout << "Compute capability: " << prop.major << "." << prop.minor << std::endl;
-        std::cout << "asyncEngineCount: " << prop.asyncEngineCount << std::endl;
-        std::cout << "multiProcessorCount: " << prop.multiProcessorCount << std::endl;
-        std::cout << "kernelExecTimeoutEnabled: " << prop.kernelExecTimeoutEnabled << std::endl;
-        std::cout << "computeMode: " << prop.computeMode << std::endl;
-        std::cout << "concurrentKernels: " << prop.concurrentKernels << std::endl;
-        std::cout << "ECCEnabled: " << prop.ECCEnabled << std::endl;
-        std::cout << "memoryBusWidth: " << prop.memoryBusWidth << std::endl;
-    }
-
-    std::cout << "For now using the first device. TODO: make changable\n";
-    cudaErrorCheck( cudaSetDevice(0) );
-
 }
 
 void CudaFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
-
+    m_can_change_cuda_device = false;
+    
+    if (m_stream_wrappers.size() == 0) {
+        create_cuda_stream_wrappers(m_num_cuda_streams);
+    }
+    
     auto num_lines      = m_scan_seq->get_num_lines();
 
     if (num_lines < 1) {
@@ -243,6 +218,8 @@ void CudaFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*
 }
 
 void CudaFixedAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
+    m_can_change_cuda_device = false;
+    
     const size_t num_scatterers = scatterers->num_scatterers();
     size_t points_common_bytes = num_scatterers*sizeof(float);
 
@@ -294,6 +271,8 @@ void CudaFixedAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatte
 }
 
 void CudaFixedAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
+    m_can_change_cuda_device = false;
+    
     m_excitation = new_excitation;
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
 
@@ -326,6 +305,7 @@ void CudaFixedAlgorithm::set_excitation(const ExcitationSignal& new_excitation) 
 
 
 void CudaFixedAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+    m_can_change_cuda_device = false;
     m_scan_seq = new_scan_sequence;
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
@@ -365,6 +345,7 @@ void CudaFixedAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence
 }
 
 void CudaFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
+    m_can_change_cuda_device = false;
     m_num_scatterers = new_scatterers->num_scatterers();
         
     auto fixed_scatterers = std::dynamic_pointer_cast<FixedScatterers>(new_scatterers);
