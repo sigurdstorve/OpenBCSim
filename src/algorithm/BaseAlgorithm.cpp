@@ -92,6 +92,14 @@ void BaseAlgorithm::set_parameter(const std::string& key, const std::string& val
         m_sound_speed = std::stof(value);
         // must also update convolvers.
         configure_convolvers_if_possible();
+    } else if (key == "num_cpu_cores") {
+        if (value == "all") {
+            set_use_all_available_cores();
+        } else {
+            // TODO: catch any exceptions
+            const auto num_cores = static_cast<int>(std::stoi(value));
+            set_use_specific_num_cores(num_cores);
+        }
     } else {
         throw std::runtime_error("illegal parameter name");
     }
