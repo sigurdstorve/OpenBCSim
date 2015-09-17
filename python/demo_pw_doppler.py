@@ -38,10 +38,10 @@ if __name__ == '__main__':
     else:
         print "Using CPU"
         sim = RfSimulator("spline")
-        sim.set_use_all_available_cores()
+        sim.set_parameter("num_cpu_cores", "all")
     sim.set_verbose(False)
     sim.set_print_debug(False)
-    sim.set_parameters(1540)
+    sim.set_parameter("sound_speed", "1540.0")
 
     # NOTE: because of current limitation with the GPU spline alg. 2, this call
     # must be placed BEFORE configuring the excitation signal.

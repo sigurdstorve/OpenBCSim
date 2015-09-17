@@ -74,11 +74,10 @@ std::string AutodetectScatteresType(const std::string& h5_file) {
 
 IAlgorithm::s_ptr CreateSimulator(const std::string& config_file,
                                   std::string sim_type) {
-    return CreateSimulator(config_file, config_file, config_file, config_file, sim_type);
+    return CreateSimulator(config_file, config_file, config_file, sim_type);
 }
 
-IAlgorithm::s_ptr CreateSimulator(const std::string& config_file,
-                                  const std::string& scatterer_file,
+IAlgorithm::s_ptr CreateSimulator(const std::string& scatterer_file,
                                   const std::string& scanseq_file,
                                   const std::string& excitation_file,
                                   std::string sim_type) {
@@ -86,7 +85,9 @@ IAlgorithm::s_ptr CreateSimulator(const std::string& config_file,
         sim_type = AutodetectScatteresType(scatterer_file);
     }
     auto res = Create(sim_type);
-    setParametersFromHdf(res,      config_file);
+    // TODO: read "sound_speed" from HDF5 file instead of
+    // using hard-coded value for speed of sound.
+    res->set_parameter("sound_speed", "1540.0");
     if (sim_type == "fixed") {
         setFixedScatterersFromHdf(res, scatterer_file);
     } else if (sim_type == "spline") {
@@ -96,11 +97,6 @@ IAlgorithm::s_ptr CreateSimulator(const std::string& config_file,
     setExcitationFromHdf(res,      excitation_file);
     
     return res;
-}
-
-void setParametersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
-    auto params = loadParametersFromHdf(h5_file);
-    sim->set_parameters(params);
 }
 
 void setFixedScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
@@ -271,13 +267,6 @@ IBeamProfile::s_ptr loadBeamProfileFromHdf(const std::string& h5_file) {
         }
     }
     return IBeamProfile::s_ptr(lut_profile);
-}
-
-SimulationParams loadParametersFromHdf(const std::string& h5_file) {
-    SimpleHDF::SimpleHDF5Reader reader(h5_file);
-    SimulationParams params;
-    params.sound_speed = reader.readScalar<float>("sound_speed");
-    return params;
 }
 
 }   // namespace

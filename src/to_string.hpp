@@ -40,8 +40,6 @@ namespace bcsim {
 
 std::string DLL_PUBLIC to_string(const ExcitationSignal & sig);
 
-std::string DLL_PUBLIC to_string(const SimulationParams & s);
-
 std::string DLL_PUBLIC to_string(const PointScatterer & ps);
 
 std::string DLL_PUBLIC to_string(const Scanline& line);

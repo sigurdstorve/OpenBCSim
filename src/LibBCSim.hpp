@@ -49,8 +49,8 @@ public:
     // Control printing of current line number being simulated.
     virtual void set_verbose(bool v)                                                = 0;
     
-    // Set general simulation parameters from a struct.
-    virtual void set_parameters(const SimulationParams& new_params)                 = 0;
+    // Set misc. parameters. Available keys depends on the algorithm.
+    virtual void set_parameter(const std::string&, const std::string& value)        = 0;
     
     // Configure the scatterers used when simulating.
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers)               = 0;
@@ -72,17 +72,6 @@ public:
     /* Simulate all RF lines. Returns vector of RF lines.
        Requires that everything is properly configured. */
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) = 0;
-    
-    // Use as many cores as possible for simulation.
-    virtual void set_use_all_available_cores()                                      = 0;
-    
-    // Use a specific number of cores for simulation.
-    virtual void set_use_specific_num_cores(int numCores)                           = 0;
-
-    // Set to zero to disable any noise addition. This is the amplitude of
-    // Gaussian zero-mean noise that will be added to the time-projected
-    // signal prior to convolution.
-    virtual void set_noise_amplitude(float amplitude)                               = 0;
 };
 
 // Factory function for creating simulator instances.

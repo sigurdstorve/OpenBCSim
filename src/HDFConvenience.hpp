@@ -45,8 +45,7 @@ IAlgorithm::s_ptr DLL_PUBLIC CreateSimulator(const std::string& config_file,
                                              std::string sim_type="");
 
 // Create a simulator object from HDF5 data files.
-IAlgorithm::s_ptr DLL_PUBLIC CreateSimulator(const std::string& configFile,
-                                             const std::string& scattererFile,
+IAlgorithm::s_ptr DLL_PUBLIC CreateSimulator(const std::string& scattererFile,
                                              const std::string& scanseqFile,
                                              const std::string& excitationFile,
                                              std::string sim_type="");
@@ -55,10 +54,6 @@ IAlgorithm::s_ptr DLL_PUBLIC CreateSimulator(const std::string& configFile,
 // Returns "fixed" or "spline".
 // Throws on error.
 std::string DLL_PUBLIC AutodetectScatteresType(const std::string& h5_file);
-
-SimulationParams DLL_PUBLIC loadParametersFromHdf(const std::string& h5_file);
-
-void DLL_PUBLIC setParametersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
 
 // Specific loader for fixed scatterers
 Scatterers::s_ptr DLL_PUBLIC loadFixedScatterersFromHdf(const std::string& h5_file);

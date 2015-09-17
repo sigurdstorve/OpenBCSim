@@ -64,7 +64,7 @@ void FixedAlgorithm::projection_loop(const Scanline& line, double* time_proj_sig
         bc_float e = temp.dot(line.get_elevational_dir()); // elevational component
         
         // Add scaled amplitude to closest index
-        int closest_index = (int) std::floor(r*2.0*m_excitation.sampling_frequency/(m_params.sound_speed)+0.5f);
+        int closest_index = (int) std::floor(r*2.0*m_excitation.sampling_frequency/(m_sound_speed)+0.5f);
         
         bc_float scaled_ampl = m_beamProfile->sampleProfile(r,l,e)*scatterer.amplitude;
         

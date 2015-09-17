@@ -41,12 +41,6 @@ std::string to_string(const ExcitationSignal& sig) {
     return ss.str();
 }
 
-std::string to_string(const SimulationParams& s) {
-    std::stringstream ss;
-    ss  << "Sound speed: " << s.sound_speed << " [m/s]"  << std::endl;
-    return ss.str();
-}
-
 std::string to_string(const PointScatterer& ps) {
     std::stringstream ss;
     ss << "@" << to_string(ps.pos) << ",A=" << ps.amplitude;
