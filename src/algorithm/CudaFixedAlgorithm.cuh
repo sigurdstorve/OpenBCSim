@@ -52,11 +52,7 @@ public:
     }
     
     virtual void set_parameter(const std::string& key, const std::string& value) {
-        if (key == "sound_speed") {
-            m_sound_speed = std::stof(value);
-        } else {
-            CudaBaseAlgorithm::set_parameter(key, value);
-        }
+        CudaBaseAlgorithm::set_parameter(key, value);
     }
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
@@ -96,7 +92,6 @@ protected:
     std::string             m_output_type;
 
     ScanSequence::s_ptr     m_scan_seq;
-    float                   m_sound_speed;
     bool                    m_verbose;
     ExcitationSignal        m_excitation;
 

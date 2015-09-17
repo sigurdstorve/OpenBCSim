@@ -85,7 +85,6 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
       m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_beam_profile(nullptr),
-      m_sound_speed(1540.0f),
       m_output_type("env")
 {
     // create CUDA stream wrappers

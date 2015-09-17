@@ -36,6 +36,10 @@ public:
     CudaBaseAlgorithm();
     
     virtual void set_parameter(const std::string& key, const std::string& value);
+
+protected:
+    // parameters that are comon to all GPU algorithms
+    float       m_sound_speed;
 };
     
 }   // end namespace

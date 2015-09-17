@@ -30,12 +30,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CudaBaseAlgorithm.hpp"
 
 namespace bcsim {
-CudaBaseAlgorithm::CudaBaseAlgorithm() {
+CudaBaseAlgorithm::CudaBaseAlgorithm()
+    : m_sound_speed(1540.0f)
+{
 }
 
 void CudaBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
     if (key == "gpu_device") {
         throw std::runtime_error("TODO: implement handling of parameter 'gpu_device'");
+    } else if (key == "sound_speed") {
+        m_sound_speed = std::stof(value);
     } else {
         throw std::runtime_error("illegal parameter key");
     }
