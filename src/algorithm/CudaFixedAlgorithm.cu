@@ -87,11 +87,7 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
       m_beam_profile(nullptr),
       m_output_type("env")
 {
-    // create CUDA stream wrappers
-    m_stream_wrappers.resize(m_num_cuda_streams);
-    for (int i = 0; i < m_num_cuda_streams; i++) {
-        m_stream_wrappers[i] = std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII));
-    }
+    create_cuda_stream_wrappers(m_num_cuda_streams);
     
     int device_count;
     cudaErrorCheck( cudaGetDeviceCount(&device_count) );

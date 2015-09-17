@@ -113,11 +113,7 @@ CudaSplineAlgorithm2::CudaSplineAlgorithm2()
       m_beam_profile(nullptr),
       m_output_type("env")
 {
-    // create CUDA stream wrappers
-    m_stream_wrappers.resize(NUM_CUDA_STREAMS);
-    for (int i = 0; i < NUM_CUDA_STREAMS; i++) {
-        m_stream_wrappers[i] = std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII));
-    }
+    create_cuda_stream_wrappers(NUM_CUDA_STREAMS);
     
     int device_count;
     cudaErrorCheck( cudaGetDeviceCount(&device_count) );
