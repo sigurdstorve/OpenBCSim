@@ -47,8 +47,7 @@ public:
     // Control printing of current line number being simulated.
     virtual void set_verbose(bool v);
     
-    // Set general simulation parameters from a struct.
-    virtual void set_parameters(const SimulationParams& new_params);
+    virtual void set_parameter(const std::string& key, const std::string& value);
     
     // Set scan sequence to use when simulating all RF lines.
     virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
@@ -98,8 +97,8 @@ protected:
     virtual void projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) = 0;
 
 protected:
-    // General simulation parameters.
-    SimulationParams                         m_params;        
+    // Speed of sound
+    float                                   m_sound_speed;        
     // Geometry of all lines to be simulated in a frame.
     ScanSequence::s_ptr                      m_scan_sequence;
     // Excitation RF signal.
@@ -117,7 +116,6 @@ protected:
 
     // Configuration flags needed to ensure everything is configured
     // before doing the simulations.
-    bool m_params_configured;
     bool m_scan_sequence_configured;
     bool m_excitation_configured;
     bool m_beam_profile_configured; 

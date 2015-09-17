@@ -332,9 +332,7 @@ void MainWindow::onCreateGpuSimulator() {
         onGpuLoadScatterers();
 
         // GPU-specific hack.
-        bcsim::SimulationParams params;
-        params.sound_speed = 1540.0f;
-        m_sim->set_parameters(params);
+        m_sim->set_parameter("sound_speed", "1540.0");
 
         // configure excitation
         m_sim->set_excitation(m_current_excitation);
@@ -478,9 +476,7 @@ void MainWindow::initializeSimulator(const std::string& type) {
     m_sim->set_verbose(false);
     const int num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
     m_sim->set_use_specific_num_cores(num_cores);
-    bcsim::SimulationParams params;
-    params.sound_speed = 1540.0f;
-    m_sim->set_parameters(params);
+    m_sim->set_parameter("sound_speed", "1540.0");
 
     // For now hardcoded to use analytic Gaussian beam profile
     //auto beam_profile = m_beamprofile_widget->getValue();

@@ -50,8 +50,8 @@ public:
         m_fixed_alg->set_verbose(v);
     }
     
-    virtual void set_parameters(const SimulationParams& new_params) {
-        m_fixed_alg->set_parameters(new_params);
+    virtual void set_parameter(const std::string& key, const std::string& value) {
+        m_fixed_alg->set_parameter(key, value);
     }
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);

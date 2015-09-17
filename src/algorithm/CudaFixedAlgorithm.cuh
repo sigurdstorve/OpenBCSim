@@ -50,8 +50,12 @@ public:
         m_verbose = v;
     }
     
-    virtual void set_parameters(const SimulationParams& new_params) {
-        m_sim_params = new_params;
+    virtual void set_parameter(const std::string& key, const std::string& value) {
+        if (key == "sound_speed") {
+            m_sound_speed = std::stof(value);
+        } else {
+            throw std::runtime_error("illegal parameter key");
+        }
     }
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
@@ -100,7 +104,7 @@ protected:
     typedef cufftComplex complex;
 
     ScanSequence::s_ptr     m_scan_seq;
-    SimulationParams        m_sim_params;
+    float                   m_sound_speed;
     bool                    m_verbose;
     ExcitationSignal        m_excitation;
 

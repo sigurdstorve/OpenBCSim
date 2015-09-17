@@ -84,7 +84,8 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
       m_num_cuda_streams(2),
       m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
-      m_beam_profile(nullptr)
+      m_beam_profile(nullptr),
+      m_sound_speed(1540.0f)
 {
     // create CUDA stream wrappers
     m_stream_wrappers.resize(m_num_cuda_streams);
@@ -175,7 +176,7 @@ void CudaFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*
                                                                  m_num_time_samples,
                                                                  m_beam_profile->getSigmaLateral(),
                                                                  m_beam_profile->getSigmaElevational(),
-                                                                 m_sim_params.sound_speed,
+                                                                 m_sound_speed,
                                                                  m_device_time_proj[stream_no]->data());
             
         //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "02_time_proj_dump.txt"); }
@@ -216,7 +217,7 @@ void CudaFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*
     // TODO: eliminate unneccessary data copying: it would e.g. be better to
     // only copy what is needed in the above kernel.
     
-    const auto num_return_samples = compute_num_rf_samples(m_sim_params.sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
+    const auto num_return_samples = compute_num_rf_samples(m_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
 
     // compensate for delay
     const size_t start_idx = static_cast<size_t>(m_excitation.center_index);
@@ -317,7 +318,7 @@ void CudaFixedAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence
     m_scan_seq = new_scan_sequence;
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
-    auto num_rf_samples = compute_num_rf_samples(m_sim_params.sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
+    auto num_rf_samples = compute_num_rf_samples(m_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
     //std::cout << "num_rf_samples: " << num_rf_samples << std::endl;
     if (num_rf_samples > m_num_time_samples) {
         throw std::runtime_error("Too many RF samples required. TODO: remove limitation");

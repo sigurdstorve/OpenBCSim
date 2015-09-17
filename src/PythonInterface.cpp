@@ -72,10 +72,8 @@ public:
         m_print_debug = val;
     }
     
-    void set_parameters(float speed_of_sound) {
-        SimulationParams s;
-        s.sound_speed = speed_of_sound;
-        m_rf_simulator->set_parameters(s);
+    void set_parameter(const std::string& key, const std::string& value) {
+        m_rf_simulator->set_parameter(key, value);
     }
     
     void set_output_type(const std::string& type) {
@@ -322,7 +320,7 @@ BOOST_PYTHON_MODULE(pyrfsim) {
         .def("set_verbose",                 &RfSimulatorWrapper::set_verbose)
         .def("set_print_debug",             &RfSimulatorWrapper::set_print_debug)
         .def("set_output_type",             &RfSimulatorWrapper::set_output_type)
-        .def("set_parameters",              &RfSimulatorWrapper::set_parameters)
+        .def("set_parameter ",              &RfSimulatorWrapper::set_parameter)
         .def("set_fixed_scatterers",        &RfSimulatorWrapper::set_fixed_scatterers)
         .def("set_spline_scatterers",       &RfSimulatorWrapper::set_spline_scatterers)
         .def("set_scan_sequence",           &RfSimulatorWrapper::set_scan_sequence)

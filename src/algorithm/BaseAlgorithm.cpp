@@ -48,7 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace bcsim {
 
 BaseAlgorithm::BaseAlgorithm()
-        : m_params_configured(false),
+        : m_sound_speed(1540.0f),
           m_scan_sequence_configured(false),
           m_excitation_configured(false),
           m_verbose(false),
@@ -87,10 +87,14 @@ void BaseAlgorithm::set_verbose(bool v) {
     m_verbose = v;
 }
 
-void BaseAlgorithm::set_parameters(const SimulationParams& new_params) {
-    m_params = new_params;
-    m_params_configured = true;
-    configure_convolvers_if_possible();
+void BaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
+    if (key == "sound_speed") {
+        m_sound_speed = std::stof(value);
+        // must also update convolvers.
+        configure_convolvers_if_possible();
+    } else {
+        throw std::runtime_error("illegal parameter name");
+    }
 }
 
 void BaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
@@ -98,9 +102,6 @@ void BaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
         throw std::runtime_error("scan sequence is invalid");
     }
     
-    if (!m_params_configured) {
-        throw std::runtime_error("Parameters must be configured before scan sequence");        
-    }
     if (!m_excitation_configured) {
         throw std::runtime_error("Excitation must be configured before scan sequence");        
     }
@@ -109,7 +110,7 @@ void BaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     m_scan_sequence_configured = true;
 
     const auto line_length = m_scan_sequence->line_length;
-    m_rf_line_num_samples = compute_num_rf_samples(m_params.sound_speed, line_length, m_excitation.sampling_frequency);
+    m_rf_line_num_samples = compute_num_rf_samples(m_sound_speed, line_length, m_excitation.sampling_frequency);
 
     configure_convolvers_if_possible();
 }
@@ -144,7 +145,7 @@ void BaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLines
     rfLines.resize(num_scanlines);
 
     if (m_verbose) {
-        std::cout << to_string(m_params) << std::endl;
+        std::cout << "Sound speed: " << m_sound_speed << std::endl;
         std::cout << "Number of scan lines: " << num_scanlines << std::endl;
     }
     if (m_verbose) std::cout << "Setting " << m_omp_num_threads << " OpenMP threads." << std::endl;
@@ -190,7 +191,7 @@ std::vector<bc_float> BaseAlgorithm::simulate_line(const Scanline& line) {
 }
 
 void BaseAlgorithm::configure_convolvers_if_possible() {
-    if (m_scan_sequence_configured && m_params_configured && m_excitation_configured) {
+    if (m_scan_sequence_configured && m_excitation_configured) {
         convolvers.clear();
         std::cout << "Recreating convolvers\n";
         for (int i = 0; i < m_omp_num_threads; i++) {
@@ -203,7 +204,6 @@ void BaseAlgorithm::configure_convolvers_if_possible() {
 }
 
 void BaseAlgorithm::throw_if_not_configured() {
-    if (!m_params_configured)           throw std::runtime_error("Parameters not configured.");
     if (!m_scan_sequence_configured)    throw std::runtime_error("Scan sequence not configured.");
     if (!m_excitation_configured)       throw std::runtime_error("Excitation not configured.");
     if (!m_beam_profile_configured)     throw std::runtime_error("Beam profile not configured.");

@@ -85,7 +85,7 @@ void SplineAlgorithm::projection_loop(const Scanline& line, double* time_proj_si
         
         // Add scaled amplitude to closest index
         const bc_float sampling_time_step = 1.0/m_excitation.sampling_frequency;
-        int closest_index = (int) std::floor(r*2.0/(m_params.sound_speed*sampling_time_step)+0.5f);
+        int closest_index = (int) std::floor(r*2.0/(m_sound_speed*sampling_time_step)+0.5f);
         
         bc_float scaled_ampl = m_beamProfile->sampleProfile(r,l,e)*scatterer.amplitude;
         

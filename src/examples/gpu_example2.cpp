@@ -104,10 +104,8 @@ void example(int argc, char** argv) {
     // configure output type (currently noe effect)
     sim->set_output_type("rf");
 
-    // configure parameters
-    bcsim::SimulationParams sim_params;
-    sim_params.sound_speed = 1540.0f;
-    sim->set_parameters(sim_params);
+    // configure sound speed
+    sim->set_parameter("sound_speed", "1540.0");
 
     // configure a scan sequence consisting of a single RF line
     const auto line_length = 0.12f;

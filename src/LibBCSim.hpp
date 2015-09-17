@@ -49,8 +49,8 @@ public:
     // Control printing of current line number being simulated.
     virtual void set_verbose(bool v)                                                = 0;
     
-    // Set general simulation parameters from a struct.
-    virtual void set_parameters(const SimulationParams& new_params)                 = 0;
+    // Set misc. parameters. Available keys depends on the algorithm.
+    virtual void set_parameter(const std::string&, const std::string& value)        = 0;
     
     // Configure the scatterers used when simulating.
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers)               = 0;

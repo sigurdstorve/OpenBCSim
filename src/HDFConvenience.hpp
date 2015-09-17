@@ -58,8 +58,6 @@ std::string DLL_PUBLIC AutodetectScatteresType(const std::string& h5_file);
 
 SimulationParams DLL_PUBLIC loadParametersFromHdf(const std::string& h5_file);
 
-void DLL_PUBLIC setParametersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
-
 // Specific loader for fixed scatterers
 Scatterers::s_ptr DLL_PUBLIC loadFixedScatterersFromHdf(const std::string& h5_file);
 
