@@ -39,7 +39,7 @@ scatterers_data[:,3] = np.random.uniform(low=0.0, high=1.0, size=(args.num_scatt
 sim.set_fixed_scatterers(scatterers_data)
 
 # configure simulation parameters
-sim.set_parameters(1540.0)
+sim.set_parameter("sound_speed", "1540.0")
 
 # configure the RF excitation
 fs = 100e6

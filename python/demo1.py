@@ -13,10 +13,10 @@ import numpy as np
 sim = RfSimulator("fixed")
 sim.set_verbose(True)
 sim.set_print_debug(True)
-sim.set_use_all_available_cores()
 
 # Set general simulation parameters
-sim.set_parameters(1540)
+sim.set_parameter("sound_speed", "1540.0")
+sim.set_parameter("num_cpu_cores", "all")
 sim.set_output_type("rf")
 
 # Set scatterers
