@@ -85,7 +85,8 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
       m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_beam_profile(nullptr),
-      m_sound_speed(1540.0f)
+      m_sound_speed(1540.0f),
+      m_output_type("env")
 {
     // create CUDA stream wrappers
     m_stream_wrappers.resize(m_num_cuda_streams);
@@ -202,11 +203,20 @@ void CudaFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*
             
         //if (beam_no==0) { dump_device_memory<std::complex<float> >(reinterpret_cast<std::complex<float>*>(rf_ptr), m_num_time_samples, "04_iq_line.txt"); }
 
-        // envelope detection
-        AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                   m_device_rf_lines_env[stream_no]->data(),
-                                                                                                   m_num_time_samples);
+        if (m_output_type == "env") {
+            // envelope detection
+            AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
+                                                                                                    m_device_rf_lines_env[stream_no]->data(),
+                                                                                                    m_num_time_samples);
+        } else if (m_output_type == "rf") {
+            // rf data
+            RealPartKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
+                                                                                                     m_device_rf_lines_env[stream_no]->data(),
+                                                                                                     m_num_time_samples);
             
+        } else {
+            throw std::logic_error("illegal output type");        
+        }
         //if (beam_no==0) { dump_device_memory<float>(device_rf_lines_env[stream_no]->data(), m_num_time_samples, "05_rf_envelope.txt"); }
             
         // copy to host
@@ -308,8 +318,9 @@ void CudaFixedAlgorithm::set_excitation(const ExcitationSignal& new_excitation) 
     
     ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
     
-    MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
-    
+    if (m_output_type == "env") {
+        MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
+    }
     //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 

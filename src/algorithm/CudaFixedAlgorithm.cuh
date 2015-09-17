@@ -75,9 +75,9 @@ public:
 
     virtual void set_output_type(const std::string& type) {
         if (type == "env") {
-            // this is hardcoded for now
+            m_output_type = "env";
         } else if (type == "rf") {
-            throw std::runtime_error("Output data type 'rf' is not yet supported");
+            m_output_type = "rf";
         } else if (type == "proj") {
             throw std::runtime_error("Output data type 'proj' is not yet supported");
         }
@@ -90,6 +90,9 @@ protected:
 
 protected:
     typedef cufftComplex complex;
+    
+    // the output datatype
+    std::string             m_output_type;
 
     ScanSequence::s_ptr     m_scan_seq;
     float                   m_sound_speed;
