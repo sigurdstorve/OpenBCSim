@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include "LibBCSim.hpp"
+#include "CudaBaseAlgorithm.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 #include "CudaFixedAlgorithm.cuh"
@@ -38,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class CudaSplineAlgorithm1 : public IAlgorithm {
+class CudaSplineAlgorithm1 : public CudaBaseAlgorithm {
 public:
     CudaSplineAlgorithm1();
 
