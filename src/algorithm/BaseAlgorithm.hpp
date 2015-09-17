@@ -64,12 +64,6 @@ public:
     // Requires that everything is properly configured.
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
 
-    // Use as many cores as possible for simulation.
-    virtual void set_use_all_available_cores();
-    
-    // Use a specific number of cores for simulation.
-    virtual void set_use_specific_num_cores(int num_cores);
-
     // Set to zero to disable any noise addition.
     virtual void set_noise_amplitude(float noise_amplitude) {
         m_noise_amplitude = noise_amplitude;
@@ -79,6 +73,12 @@ public:
     }
     
 protected:
+    // Use as many cores as possible for simulation.
+    virtual void set_use_all_available_cores();
+    
+    // Use a specific number of cores for simulation.
+    virtual void set_use_specific_num_cores(int num_cores);
+
     // Configure the convolvers to reflect the parameter settings
     // if all relevant have values.
     // Delete any old convolvers and create new which reflects the

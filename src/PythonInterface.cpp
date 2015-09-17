@@ -293,14 +293,6 @@ public:
         return array_object;
     }
 
-    void set_use_all_available_cores() {
-        m_rf_simulator->set_use_all_available_cores();
-    }
-
-    void set_use_specific_num_cores(int num_cores) {
-        m_rf_simulator->set_use_specific_num_cores(num_cores);
-    }
-
 protected:
     IAlgorithm::s_ptr       m_rf_simulator;
     bool                    m_print_debug;
@@ -328,7 +320,5 @@ BOOST_PYTHON_MODULE(pyrfsim) {
         .def("set_analytical_beam_profile", &RfSimulatorWrapper::set_analytical_beam_profile)
         .def("set_lut_beam_profile",        &RfSimulatorWrapper::set_lut_beam_profile)
         .def("simulate_lines",              &RfSimulatorWrapper::simulate_lines)
-        .def("set_use_all_available_cores", &RfSimulatorWrapper::set_use_all_available_cores)
-        .def("set_use_specific_num_cores",  &RfSimulatorWrapper::set_use_specific_num_cores)
     ;
 }

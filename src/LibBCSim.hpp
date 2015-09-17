@@ -73,12 +73,6 @@ public:
        Requires that everything is properly configured. */
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) = 0;
     
-    // Use as many cores as possible for simulation.
-    virtual void set_use_all_available_cores()                                      = 0;
-    
-    // Use a specific number of cores for simulation.
-    virtual void set_use_specific_num_cores(int numCores)                           = 0;
-
     // Set to zero to disable any noise addition. This is the amplitude of
     // Gaussian zero-mean noise that will be added to the time-projected
     // signal prior to convolution.

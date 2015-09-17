@@ -85,14 +85,6 @@ public:
 
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
     
-    virtual void set_use_all_available_cores() {
-        // does not apply in the GPU case.
-    }
-    
-    virtual void set_use_specific_num_cores(int numCores) {
-        // does not apply in the GPU case.
-    }
-
     virtual void set_noise_amplitude(float amplitude) {
         // does not apply in the GPU case (yet)
     }
