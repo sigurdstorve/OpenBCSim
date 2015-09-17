@@ -27,6 +27,9 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
+#include <vector>
+#include <memory>
+#include "cuda_helpers.h"
 #include "LibBCSim.hpp"
 
 namespace bcsim {
@@ -38,6 +41,8 @@ public:
     virtual void set_parameter(const std::string& key, const std::string& value);
 
 protected:
+    std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
+    
     // parameters that are comon to all GPU algorithms
     float       m_sound_speed;
 };

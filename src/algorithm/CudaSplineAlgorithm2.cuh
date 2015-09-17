@@ -100,8 +100,6 @@ protected:
 
     // number of samples in the time-projection lines [should be a power of two]
     size_t              m_num_time_samples;
-
-    std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
     // device memory for spline scatterers control points and amplitudes
     DeviceBufferRAII<float>::u_ptr      m_device_control_xs;

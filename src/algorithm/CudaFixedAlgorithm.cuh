@@ -103,7 +103,6 @@ protected:
 
     // the number of CUDA streams used when simulating RF lines
     size_t                              m_num_cuda_streams;
-    std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
     // device memory for fixed scatterers
     DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
