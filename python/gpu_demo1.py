@@ -19,10 +19,11 @@ if __name__ == '__main__':
     parser.add_argument("--num_frames", help="Each frame is equal, but can be used to test performance", type=int, default=1)
     parser.add_argument("--visualize", help="Visualize the middle RF line", action="store_true")
     parser.add_argument("--save_pdf", help="Save .pdf image", action="store_true")
+    parser.add_argument("--device_no", help="GPU device no to use", type=int, default=0)
     args = parser.parse_args()
 
 sim = RfSimulator("gpu_fixed")
-sim.set_parameter("gpu_device", "0")
+sim.set_parameter("gpu_device", "%d"%args.device_no)
 
 
 sim.set_verbose(False)
