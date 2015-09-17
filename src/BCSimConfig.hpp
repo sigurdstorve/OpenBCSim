@@ -67,15 +67,6 @@ struct ExcitationSignal {
     float sampling_frequency;        
 };
 
-// Datastucture containing simulation parameters.
-struct SimulationParams {
-    SimulationParams() :
-        sound_speed(0.0f) { }
-
-    // Speed of sound in [m/s]
-    float sound_speed;
-};
-
 // Description of a single point scatterer.
 struct PointScatterer {
     // Position in space
