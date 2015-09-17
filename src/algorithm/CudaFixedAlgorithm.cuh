@@ -55,7 +55,7 @@ public:
         if (key == "sound_speed") {
             m_sound_speed = std::stof(value);
         } else {
-            throw std::runtime_error("illegal parameter key");
+            CudaBaseAlgorithm::set_parameter(key, value);
         }
     }
     

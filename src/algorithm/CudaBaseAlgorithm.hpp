@@ -34,6 +34,8 @@ namespace bcsim {
 class CudaBaseAlgorithm : public IAlgorithm {
 public:
     CudaBaseAlgorithm();
+    
+    virtual void set_parameter(const std::string& key, const std::string& value);
 };
     
 }   // end namespace

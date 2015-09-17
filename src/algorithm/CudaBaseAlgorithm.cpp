@@ -26,12 +26,20 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <stdexcept>
 #include "CudaBaseAlgorithm.hpp"
 
 namespace bcsim {
 CudaBaseAlgorithm::CudaBaseAlgorithm() {
 }
 
-    
+void CudaBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
+    if (key == "gpu_device") {
+        throw std::runtime_error("TODO: implement handling of parameter 'gpu_device'");
+    } else {
+        throw std::runtime_error("illegal parameter key");
+    }
+}
+
 }   // end namespace
 
