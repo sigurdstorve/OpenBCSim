@@ -136,12 +136,13 @@ CudaSplineAlgorithm2::CudaSplineAlgorithm2()
 
     std::cout << "For now using the first device. TODO: make changable\n";
     cudaErrorCheck( cudaSetDevice(0) );
-
-    create_cuda_stream_wrappers(NUM_CUDA_STREAMS);
 }
 
 void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
-
+    if (m_stream_wrappers.size() == 0) {
+        create_cuda_stream_wrappers(NUM_CUDA_STREAMS);
+    }
+    
     auto num_lines      = m_scan_seq->get_num_lines();
 
     if (num_lines < 1) {

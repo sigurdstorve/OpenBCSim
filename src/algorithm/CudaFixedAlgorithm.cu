@@ -110,13 +110,13 @@ CudaFixedAlgorithm::CudaFixedAlgorithm()
 
     std::cout << "For now using the first device. TODO: make changable\n";
     cudaErrorCheck( cudaSetDevice(0) );
-
-    create_cuda_stream_wrappers(m_num_cuda_streams);
-
 }
 
 void CudaFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
-
+    if (m_stream_wrappers.size() == 0) {
+        create_cuda_stream_wrappers(m_num_cuda_streams);
+    }
+    
     auto num_lines      = m_scan_seq->get_num_lines();
 
     if (num_lines < 1) {
