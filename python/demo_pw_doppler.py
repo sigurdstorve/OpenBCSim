@@ -1,8 +1,6 @@
 import sys
 import argparse
 from pyrfsim import RfSimulator
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import numpy as np
 import h5py
 from scipy.signal import hilbert, gausspulse
@@ -36,6 +34,8 @@ if __name__ == '__main__':
     parser.add_argument('--sigma_lateral', help='Lateral beamwidth', type=float, default=0.5e-3)
     parser.add_argument('--sigma_elevational', help='Elevational beamwidth', type=float, default=1e-3)
     parser.add_argument('--use_gpu', help='Perform simulations using the gpu_spline2 algorithm', action='store_true')
+    parser.add_argument('--save_pdf', help='Save pdf figures', action='store_true')
+    parser.add_argument('--visualize', help='Interactive figures', action='store_true')
     args = parser.parse_args()
     
     c0 = 1540.0
@@ -70,12 +70,24 @@ if __name__ == '__main__':
     samples = np.array(gausspulse(t_vector, bw=args.bw, fc=args.fc), dtype='float32')
     center_index = int(len(t_vector)/2) 
     sim.set_excitation(samples, center_index, args.fs)
-    plt.figure()
-    plt.plot(t_vector, samples)
-    plt.title('Excitation signal - close figure to continue')
-    plt.show()
+    if args.save_pdf:
+        import matplotlib as mpl
+        # HACK needed for saving plots on a Linux server with
+        # no display configured.
+        mpl.use('Agg')
     
-    
+    if args.save_pdf or args.visualize:
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        
+        plt.figure()
+        plt.plot(t_vector, samples)
+        plt.title('Excitation signal')
+    if args.save_pdf:
+        plt.savefig('figure1.pdf')
+    if args.visualize:
+        plt.show()
+        
     # Create big scan sequence
     origins      = np.empty((args.num_beams, 3), dtype='float32')
     directions   = np.empty((args.num_beams, 3), dtype='float32')
@@ -119,8 +131,13 @@ if __name__ == '__main__':
     slowtime_samples = np.array(slowtime_samples)
     print 'Done.'
     
-    plt.figure()
-    plt.plot(timestamps, slowtime_samples.real)
+    if args.visualize or args.save_pdf:
+        plt.figure()
+        plt.plot(timestamps, slowtime_samples.real)
+        plt.title('Slowtime samples')
+        plt.xlabel('Slow time')
+    if args.save_pdf:
+        plt.savefig('figure2.pdf')
     
     fft_len = 256
     nd = 5
@@ -134,7 +151,6 @@ if __name__ == '__main__':
         temp_fft = np.fft.fftshift(np.fft.fft(temp))
         temp_fft = temp_fft[::-1] # flip y axis
         pixels[:, spect_no] = abs(temp_fft)
-    plt.figure()
     
     # Normalize to [0, 1]
     max_value = np.max(abs(pixels.flatten()))
@@ -154,13 +170,18 @@ if __name__ == '__main__':
     min_vel = min_freq*c0/(2.0*args.fc)
     max_vel = max_freq*c0/(2.0*args.fc)
     
-    plt.imshow(pixels, cmap=cm.Greys_r, aspect='auto', extent=[timestamps[0], timestamps[-1], min_vel, max_vel])
-    plt.xlabel('Time [s]')
-    plt.ylabel('Velocity [m/s]')
+    if args.visualize or args.save_pdf:
+        plt.figure()
+        plt.imshow(pixels, cmap=cm.Greys_r, aspect='auto', extent=[timestamps[0], timestamps[-1], min_vel, max_vel])
+        plt.xlabel('Time [s]')
+        plt.ylabel('Velocity [m/s]')
+        plt.axhline(0.0, linestyle='--', c='w', linewidth=2)
+        #plt.colorbar()
+    if args.save_pdf:
+        plt.savefig('figure3.pdf')
     
-    plt.axhline(0.0, linestyle='--', c='w', linewidth=2)
-    #plt.colorbar()
-    plt.show()
+    if args.visualize:
+        plt.show()
     
     if args.store_audio:
         from scipy.io.wavfile import write
