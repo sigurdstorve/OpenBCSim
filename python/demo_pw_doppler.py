@@ -11,14 +11,21 @@ import math
 
 description=\
 """
-    An example script for performing a PW Doppler scan
-    along the z-axis on a spline-phantom loaded from
-    disk.
+    An example script for performing a PW Doppler scan.
+    
+    The line starts in the origin and is directed along
+    the positive z-axis.
+    The scanning is performed on a user-supplied spline-
+    phantom file.
+    
+    The use of CPU or GPU can be controlled by using the
+    flag 'use_gpu'.
 """
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('scatterer_file', help='Scatterer dataset (spline)')
+    parser.add_argument('--line_length', help='Length of Doppler beam', type=float, default=0.1)
     parser.add_argument('--sample_pos', help='Normalized sample pos in [0,1] along the beam.', type=float, default=0.5)
     parser.add_argument('--prf', help='Pulse repetition frequency [Hz]', type=int, default=5000)
     parser.add_argument('--num_beams', help='Number of Doppler beams', type=int, default=5000)
@@ -30,7 +37,9 @@ if __name__ == '__main__':
     parser.add_argument('--sigma_elevational', help='Elevational beamwidth', type=float, default=1e-3)
     parser.add_argument('--use_gpu', help='Perform simulations using the gpu_spline2 algorithm', action='store_true')
     args = parser.parse_args()
-
+    
+    c0 = 1540.0
+    
     # Create and configure tracker
     if args.use_gpu:
         print "Using GPU"
@@ -41,7 +50,7 @@ if __name__ == '__main__':
         sim.set_parameter("num_cpu_cores", "all")
     sim.set_verbose(False)
     sim.set_print_debug(False)
-    sim.set_parameter("sound_speed", "1540.0")
+    sim.set_parameter("sound_speed", "%f" % c0)
 
     # NOTE: because of current limitation with the GPU spline alg. 2, this call
     # must be placed BEFORE configuring the excitation signal.
@@ -76,9 +85,8 @@ if __name__ == '__main__':
         origins[beam_no, :]      = [0.0, 0.0, 0.0]
         directions[beam_no, :]   = [0.0, 0.0, 1.0]
         lateral_dirs[beam_no, :] = [1.0, 0.0, 0.0]
-    length = 0.1
     timestamps = np.array(range(args.num_beams), dtype='float32')/args.prf
-    sim.set_scan_sequence(origins, directions, length, lateral_dirs, timestamps)
+    sim.set_scan_sequence(origins, directions, args.line_length, lateral_dirs, timestamps)
 
     # Set the beam profile
     sim.set_analytical_beam_profile(args.sigma_lateral, args.sigma_elevational)
@@ -137,10 +145,19 @@ if __name__ == '__main__':
     pixels = 127*30*np.log10(pixels)/db_range + 127
     # var np.log10(pixels) frr
     pixels[pixels < 0] = 0
-    plt.imshow(pixels, cmap=cm.Greys_r, aspect='auto', extent=[timestamps[0], timestamps[-1], -1, 1])
     
-    plt.gca().yaxis.set_major_locator(plt.NullLocator())        
+    # spectrum freq. limits
+    min_freq = -0.5*args.prf
+    max_freq = 0.5*args.prf
+    
+    # use Doppler equation to map freq. to speed
+    min_vel = min_freq*c0/(2.0*args.fc)
+    max_vel = max_freq*c0/(2.0*args.fc)
+    
+    plt.imshow(pixels, cmap=cm.Greys_r, aspect='auto', extent=[timestamps[0], timestamps[-1], min_vel, max_vel])
     plt.xlabel('Time [s]')
+    plt.ylabel('Velocity [m/s]')
+    
     plt.axhline(0.0, linestyle='--', c='w', linewidth=2)
     #plt.colorbar()
     plt.show()
