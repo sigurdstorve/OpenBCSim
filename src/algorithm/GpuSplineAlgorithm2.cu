@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "bspline.hpp"
 #include "gpu_alg_common.cuh" // for misc. CUDA kernels
-#include "common_utils.hpp" // for compute_num_rf_samples
+#include <math_functions.h> // for copysignf()
 
 // maximum number of spline control points for each scatterer
 #define MAX_CS 20
@@ -83,9 +83,14 @@ __global__ void SplineAlgKernel(float* control_xs,
     float3 point = make_float3(rendered_x, rendered_y, rendered_z) - origin;
     
     // compute dot products
-    const auto radial_dist  = dot(point, rad_dir);
+    auto radial_dist  = dot(point, rad_dir);
     const auto lateral_dist = dot(point, lat_dir);
     const auto elev_dist    = dot(point, ele_dir);
+
+    // Use "arc projection" in the radial direction: use length of vector from
+    // beam's origin to the scatterer with the same sign as the projection onto
+    // the line.
+    radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
 
     // compute weight
     const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
