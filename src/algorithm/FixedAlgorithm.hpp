@@ -30,14 +30,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <vector>
 #include "bcsim_defines.h"
-#include "BaseAlgorithm.hpp"
+#include "CpuBaseAlgorithm.hpp"
 #include "BCSimConfig.hpp"
 
 namespace bcsim {
 
 // Concrete algorithm implementation that operates on a set of fixed
 // point scatterers.
-class FixedAlgorithm : public BaseAlgorithm {
+class FixedAlgorithm : public CpuBaseAlgorithm {
 public:
     FixedAlgorithm();
     

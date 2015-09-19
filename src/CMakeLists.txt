@@ -106,6 +106,8 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      vector3.hpp
      algorithm/BaseAlgorithm.hpp
      algorithm/BaseAlgorithm.cpp
+     algorithm/CpuBaseAlgorithm.hpp
+     algorithm/CpuBaseAlgorithm.cpp
      algorithm/FixedAlgorithm.hpp
      algorithm/FixedAlgorithm.cpp
      algorithm/SplineAlgorithm.hpp

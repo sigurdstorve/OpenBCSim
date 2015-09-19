@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace bcsim {
 
 FixedAlgorithm::FixedAlgorithm()
-    : BaseAlgorithm() { }
+    : CpuBaseAlgorithm() { }
 
 void FixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers = std::dynamic_pointer_cast<FixedScatterers>(new_scatterers);

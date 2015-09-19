@@ -30,14 +30,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <vector>
 #include "bcsim_defines.h"
-#include "BaseAlgorithm.hpp"
+#include "CpuBaseAlgorithm.hpp"
 #include "BCSimConfig.hpp"
 
 namespace bcsim {
 
 // Concrete implementation of the algorithm where scatterers are allowed
 // to be time-dependent by representing them as spline curves.
-class SplineAlgorithm : public BaseAlgorithm {
+class SplineAlgorithm : public CpuBaseAlgorithm {
 public:
     SplineAlgorithm();
     

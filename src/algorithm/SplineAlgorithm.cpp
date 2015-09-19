@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace bcsim {
 
 SplineAlgorithm::SplineAlgorithm()
-        : BaseAlgorithm() { }
+        : CpuBaseAlgorithm() { }
      
 void SplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);
