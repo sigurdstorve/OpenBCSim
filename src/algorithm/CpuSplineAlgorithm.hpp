@@ -37,9 +37,9 @@ namespace bcsim {
 
 // Concrete implementation of the algorithm where scatterers are allowed
 // to be time-dependent by representing them as spline curves.
-class SplineAlgorithm : public CpuBaseAlgorithm {
+class CpuSplineAlgorithm : public CpuBaseAlgorithm {
 public:
-    SplineAlgorithm();
+    CpuSplineAlgorithm();
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
 

@@ -37,9 +37,9 @@ namespace bcsim {
 
 // Concrete algorithm implementation that operates on a set of fixed
 // point scatterers.
-class FixedAlgorithm : public CpuBaseAlgorithm {
+class CpuFixedAlgorithm : public CpuBaseAlgorithm {
 public:
-    FixedAlgorithm();
+    CpuFixedAlgorithm();
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
 

@@ -31,15 +31,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <stdexcept>
 #include "bcsim_defines.h"
-#include "FixedAlgorithm.hpp"
+#include "CpuFixedAlgorithm.hpp"
 #include "safe_omp.h"
 
 namespace bcsim {
 
-FixedAlgorithm::FixedAlgorithm()
+CpuFixedAlgorithm::CpuFixedAlgorithm()
     : CpuBaseAlgorithm() { }
 
-void FixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
+void CpuFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers = std::dynamic_pointer_cast<FixedScatterers>(new_scatterers);
     
     if (m_scatterers == nullptr) {
@@ -50,7 +50,7 @@ void FixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers_configured = true;
 }
 
-void FixedAlgorithm::projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) {
+void CpuFixedAlgorithm::projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->scatterers.size();
     for (int scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {

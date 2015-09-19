@@ -31,16 +31,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <stdexcept>
 #include "bcsim_defines.h"
-#include "SplineAlgorithm.hpp"
+#include "CpuSplineAlgorithm.hpp"
 #include "bspline.hpp"
 #include "safe_omp.h"
 
 namespace bcsim {
 
-SplineAlgorithm::SplineAlgorithm()
+CpuSplineAlgorithm::CpuSplineAlgorithm()
         : CpuBaseAlgorithm() { }
      
-void SplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
+void CpuSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);
 
     if (m_scatterers == nullptr) {
@@ -51,7 +51,7 @@ void SplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers_configured = true;
 }
 
-void SplineAlgorithm::projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) {
+void CpuSplineAlgorithm::projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->nodes.size();
     // TODO: Improve. Use that all splines have same number of control points
