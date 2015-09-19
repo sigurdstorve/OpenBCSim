@@ -29,21 +29,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include "LibBCSim.hpp"
-#include "CudaBaseAlgorithm.cuh"
+#include "GpuBaseAlgorithm.cuh"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
-#include "CudaFixedAlgorithm.cuh"
+#include "GpuFixedAlgorithm.cuh"
 
 // NOTE: There is no support for double here!!!
 // NOTE2: This is experimental code.
 
 namespace bcsim {
 
-class CudaSplineAlgorithm1 : public IAlgorithm {
+class GpuSplineAlgorithm1 : public IAlgorithm {
 public:
-    CudaSplineAlgorithm1();
+    GpuSplineAlgorithm1();
 
-    virtual ~CudaSplineAlgorithm1() {
+    virtual ~GpuSplineAlgorithm1() {
         // cleanup
     }
         
@@ -80,7 +80,7 @@ private:
 private:
 
     // An internal instance of the fixed simulator algorithm.
-    std::shared_ptr<CudaFixedAlgorithm>     m_fixed_alg;
+    std::shared_ptr<GpuFixedAlgorithm>     m_fixed_alg;
 
     // GPU memory for holding the splines
     DeviceBufferRAII<float>::u_ptr              m_control_xs;

@@ -30,67 +30,42 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cuda.h>
 #include <cufft.h>
 #include <complex>
-#include "CudaSplineAlgorithm2.cuh"
+#include "GpuFixedAlgorithm.cuh"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "discrete_hilbert_mask.hpp"
 #include "common_utils.hpp" // for compute_num_rf_samples
-#include "bspline.hpp"
 #include "gpu_alg_common.cuh" // for misc. CUDA kernels
 
-// maximum number of spline control points for each scatterer
-#define MAX_CS 20
-// the number of CUDA streams used when simulating RF lines
-#define NUM_CUDA_STREAMS 2
+namespace bcsim {
 
 
-__constant__ float eval_basis[MAX_CS*NUM_CUDA_STREAMS];
-
-__global__ void SplineAlgKernel(float* control_xs,
-                                float* control_ys,
-                                float* control_zs,
-                                float* control_as,
-                                float3 rad_dir,
-                                float3 lat_dir,
-                                float3 ele_dir,
-                                float3 origin,
-                                float  fs_hertz,
-                                int    num_time_samples,
-                                float  sigma_lateral,
-                                float  sigma_elevational,
-                                float  sound_speed,
-                                int    NUM_CS,
-                                int    NUM_SPLINES,
-                                float* res,
-                                size_t eval_basis_offset_elements) {
+__global__ void FixedAlgKernel(float* point_xs,
+                               float* point_ys,
+                               float* point_zs,
+                               float* point_as,
+                               float3 rad_dir,
+                               float3 lat_dir,
+                               float3 ele_dir,
+                               float3 origin,
+                               float  fs_hertz,
+                               int    num_time_samples,
+                               float  sigma_lateral,
+                               float  sigma_elevational,
+                               float  sound_speed,
+                               float* res) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
 
-    // step 1: evaluate spline
-    // to get from one control point to the next, we have
-    // to make a jump of size equal to number of splines
-    float rendered_x = 0.0f;
-    float rendered_y = 0.0f;
-    float rendered_z = 0.0f;
-    float rendered_a = 0.0f;
-    for (int i = 0; i < NUM_CS; i++) {
-        size_t eval_basis_i = i + eval_basis_offset_elements;
-        rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_a += control_as[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-    }
-
-    // step 2: compute projections
-    float3 point = make_float3(rendered_x, rendered_y, rendered_z) - origin;
+    float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
     
     // compute dot products
     const auto radial_dist  = dot(point, rad_dir);
     const auto lateral_dist = dot(point, lat_dir);
     const auto elev_dist    = dot(point, ele_dir);
 
-    // compute weight
+
     const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
     const float two_sigma_elevational_squared = 2.0f*sigma_elevational*sigma_elevational; 
     const float weight = expf(-(lateral_dist*lateral_dist/two_sigma_lateral_squared + elev_dist*elev_dist/two_sigma_elevational_squared));
@@ -99,15 +74,14 @@ __global__ void SplineAlgKernel(float* control_xs,
     
     if (radial_index >= 0 && radial_index < num_time_samples) {
         //res[radial_index] += weight;
-        atomicAdd(res+radial_index, weight*rendered_a);
+        atomicAdd(res+radial_index, weight*point_as[global_idx]);
     }
 }
 
 
-namespace bcsim {
-
-CudaSplineAlgorithm2::CudaSplineAlgorithm2()
+GpuFixedAlgorithm::GpuFixedAlgorithm()
     : m_verbose(false),
+      m_num_cuda_streams(2),
       m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_beam_profile(nullptr),
@@ -115,10 +89,11 @@ CudaSplineAlgorithm2::CudaSplineAlgorithm2()
 {
 }
 
-void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
+void GpuFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
     m_can_change_cuda_device = false;
+    
     if (m_stream_wrappers.size() == 0) {
-        create_cuda_stream_wrappers(NUM_CUDA_STREAMS);
+        create_cuda_stream_wrappers(m_num_cuda_streams);
     }
     
     auto num_lines      = m_scan_seq->get_num_lines();
@@ -136,7 +111,7 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
     dim3 block_size(threads_pr_block, 1, 1);
 
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
-        size_t stream_no = beam_no % NUM_CUDA_STREAMS;
+        size_t stream_no = beam_no % m_num_cuda_streams;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
 
         if (m_verbose) {
@@ -164,38 +139,21 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
 
         //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "01_zeroed_rf_line_dump.txt"); }
         
-        // evaluate the basis functions and upload to constant memory.
-        size_t eval_basis_offset_elements = m_num_cs*stream_no;
-        std::vector<float> host_basis_functions(m_num_cs);
-        for (int i = 0; i < m_num_cs; i++) {
-            host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, scanline.get_timestamp(), m_common_knots);
-        }
-        cudaErrorCheck(cudaMemcpyToSymbolAsync(eval_basis,
-                                               host_basis_functions.data(),
-                                               m_num_cs*sizeof(float),
-                                               eval_basis_offset_elements*sizeof(float),
-                                               cudaMemcpyHostToDevice,
-                                               cur_stream));
-        
         // do the time-projections
-        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_control_xs->data(),
-                                                                  m_device_control_ys->data(),
-                                                                  m_device_control_zs->data(),
-                                                                  m_device_control_as->data(),
-                                                                  rad_dir,
-                                                                  lat_dir,
-                                                                  ele_dir,
-                                                                  origin,
-                                                                  m_excitation.sampling_frequency,
-                                                                  m_num_time_samples,
-                                                                  m_beam_profile->getSigmaLateral(),
-                                                                  m_beam_profile->getSigmaElevational(),
-                                                                  m_sound_speed,
-                                                                  m_num_cs,
-                                                                  m_num_splines,
-                                                                  m_device_time_proj[stream_no]->data(),
-                                                                  eval_basis_offset_elements);
-        
+        FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
+                                                                 m_device_point_ys->data(),
+                                                                 m_device_point_zs->data(),
+                                                                 m_device_point_as->data(),
+                                                                 rad_dir,
+                                                                 lat_dir,
+                                                                 ele_dir,
+                                                                 origin,
+                                                                 m_excitation.sampling_frequency,
+                                                                 m_num_time_samples,
+                                                                 m_beam_profile->getSigmaLateral(),
+                                                                 m_beam_profile->getSigmaElevational(),
+                                                                 m_sound_speed,
+                                                                 m_device_time_proj[stream_no]->data());
             
         //if (beam_no==0) { dump_device_memory<float>(device_time_proj[stream_no]->data(), m_num_time_samples, "02_time_proj_dump.txt"); }
 
@@ -223,15 +181,16 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
         if (m_output_type == "env") {
             // envelope detection
             AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                       m_device_rf_lines_env[stream_no]->data(),
-                                                                                                       m_num_time_samples);
-        } else if (m_output_type == "rf") {
-            // rf signal
-            RealPartKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                   m_device_rf_lines_env[stream_no]->data(),
+                                                                                                    m_device_rf_lines_env[stream_no]->data(),
                                                                                                     m_num_time_samples);
+        } else if (m_output_type == "rf") {
+            // rf data
+            RealPartKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
+                                                                                                     m_device_rf_lines_env[stream_no]->data(),
+                                                                                                     m_num_time_samples);
+            
         } else {
-            throw std::logic_error("invalid output type");
+            throw std::logic_error("illegal output type");        
         }
         //if (beam_no==0) { dump_device_memory<float>(device_rf_lines_env[stream_no]->data(), m_num_time_samples, "05_rf_envelope.txt"); }
             
@@ -258,60 +217,60 @@ void CudaSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  
     }
 }
 
-void CudaSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
+void GpuFixedAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
     m_can_change_cuda_device = false;
     
-    m_num_splines = scatterers->num_scatterers();
-    if (m_num_splines <= 0) {
-        throw std::runtime_error("No scatterers");
-    }
-    m_spline_degree = scatterers->spline_degree;
-    m_num_cs = scatterers->nodes[0].size();
+    const size_t num_scatterers = scatterers->num_scatterers();
+    size_t points_common_bytes = num_scatterers*sizeof(float);
 
-    if (m_num_cs > MAX_CS) {
-        throw std::runtime_error("Too many control points in spline");
-    }
+    // temporary host memory for scatterer points
+    HostPinnedBufferRAII<float> host_temp(points_common_bytes);
 
-    std::cout << "Num spline scatterers: " << m_num_splines << std::endl;
-    std::cout << "Allocating memory on host for reorganizing spline data\n";
-
-
-    // device memory to hold x, y, z components of all spline control points
-    const size_t total_num_cs = m_num_splines*m_num_cs;
-    const size_t cs_num_bytes = total_num_cs*sizeof(float);
-    m_device_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_device_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_device_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_device_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-        
-    // store the control points with correct memory layout of the host
-    std::vector<float> host_control_xs(total_num_cs);
-    std::vector<float> host_control_ys(total_num_cs);
-    std::vector<float> host_control_zs(total_num_cs);
-    std::vector<float> host_control_as(total_num_cs);
-
-    for (size_t spline_no = 0; spline_no < m_num_splines; spline_no++) {
-        for (size_t i = 0; i < m_num_cs; i++) {
-            const size_t offset = spline_no + i*m_num_splines;
-            host_control_xs[offset] = scatterers->nodes[spline_no][i].pos.x;
-            host_control_ys[offset] = scatterers->nodes[spline_no][i].pos.y;
-            host_control_zs[offset] = scatterers->nodes[spline_no][i].pos.z;
-            host_control_as[offset] = scatterers->nodes[spline_no][i].amplitude;
+    // no point in reallocating if we already have allocated memory and the number of bytes
+    // is the same.
+    bool reallocate_device_mem = true;
+    if (m_device_point_xs && m_device_point_ys && m_device_point_zs && m_device_point_as) {
+        if (   (m_device_point_xs->get_num_bytes() == points_common_bytes)
+            && (m_device_point_ys->get_num_bytes() == points_common_bytes)
+            && (m_device_point_zs->get_num_bytes() == points_common_bytes)
+            && (m_device_point_as->get_num_bytes() == points_common_bytes))
+        {
+            reallocate_device_mem = false;
         }
     }
-    
-    // copy control points to GPU memory.
-    cudaErrorCheck( cudaMemcpy(m_device_control_xs->data(), host_control_xs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_device_control_ys->data(), host_control_ys.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_device_control_zs->data(), host_control_zs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_device_control_as->data(), host_control_as.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    if (reallocate_device_mem) {
+        m_device_point_xs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_ys = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_zs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_as = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+    }
 
-    // Store the knot vector.
-    m_common_knots = scatterers->knot_vector;
-    
+    // x values
+    for (size_t i = 0; i < num_scatterers; i++) {
+        host_temp.data()[i] = scatterers->scatterers[i].pos.x;
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_point_xs->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+
+    // y values
+    for (size_t i = 0; i < num_scatterers; i++) {
+        host_temp.data()[i] = scatterers->scatterers[i].pos.y;
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_point_ys->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+
+    // z values
+    for (size_t i = 0; i < num_scatterers; i++) {
+        host_temp.data()[i] = scatterers->scatterers[i].pos.z;
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_point_zs->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+
+    // a values
+    for (size_t i = 0; i < num_scatterers; i++) {
+        host_temp.data()[i] = scatterers->scatterers[i].amplitude;
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_point_as->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
 }
 
-void CudaSplineAlgorithm2::set_excitation(const ExcitationSignal& new_excitation) {
+void GpuFixedAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     m_can_change_cuda_device = false;
     
     m_excitation = new_excitation;
@@ -338,7 +297,6 @@ void CudaSplineAlgorithm2::set_excitation(const ExcitationSignal& new_excitation
     
     ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
     
-    std::cout << "m_output_type is " << m_output_type << std::endl;
     if (m_output_type == "env") {
         MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     }
@@ -346,9 +304,8 @@ void CudaSplineAlgorithm2::set_excitation(const ExcitationSignal& new_excitation
 }
 
 
-void CudaSplineAlgorithm2::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+void GpuFixedAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     m_can_change_cuda_device = false;
-    
     m_scan_seq = new_scan_sequence;
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
@@ -369,10 +326,10 @@ void CudaSplineAlgorithm2::set_scan_sequence(ScanSequence::s_ptr new_scan_sequen
     // allocate host and device memory related to RF lines
     size_t time_proj_bytes = sizeof(float)*m_num_time_samples;
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
-    m_device_time_proj.resize(NUM_CUDA_STREAMS);
-    m_device_rf_lines.resize(NUM_CUDA_STREAMS);
-    m_device_rf_lines_env.resize(NUM_CUDA_STREAMS);
-    for (size_t i = 0; i < NUM_CUDA_STREAMS; i++) {
+    m_device_time_proj.resize(m_num_cuda_streams);
+    m_device_rf_lines.resize(m_num_cuda_streams);
+    m_device_rf_lines_env.resize(m_num_cuda_streams);
+    for (size_t i = 0; i < m_num_cuda_streams; i++) {
         m_device_time_proj[i]    = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
         m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
         m_device_rf_lines_env[i] = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
@@ -387,16 +344,15 @@ void CudaSplineAlgorithm2::set_scan_sequence(ScanSequence::s_ptr new_scan_sequen
     m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
-void CudaSplineAlgorithm2::set_scatterers(Scatterers::s_ptr new_scatterers) {
+void GpuFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_can_change_cuda_device = false;
-    
     m_num_scatterers = new_scatterers->num_scatterers();
         
-    auto spline_scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);
-    if (!spline_scatterers) {
+    auto fixed_scatterers = std::dynamic_pointer_cast<FixedScatterers>(new_scatterers);
+    if (!fixed_scatterers) {
         throw std::runtime_error("Cast failed");
     }
-    copy_scatterers_to_device(spline_scatterers);
+    copy_scatterers_to_device(fixed_scatterers);
 }
 
 

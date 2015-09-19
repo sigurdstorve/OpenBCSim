@@ -34,9 +34,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class CudaBaseAlgorithm : public BaseAlgorithm {
+class GpuBaseAlgorithm : public BaseAlgorithm {
 public:
-    CudaBaseAlgorithm();
+    GpuBaseAlgorithm();
     
     virtual void set_parameter(const std::string& key, const std::string& value);
 

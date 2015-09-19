@@ -148,16 +148,16 @@ if (BCSIM_ENABLE_CUDA)
         set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3)
     endif()
     cuda_add_library(BCSimCUDA
-                     algorithm/CudaBaseAlgorithm.cuh
-                     algorithm/CudaBaseAlgorithm.cu
+                     algorithm/GpuBaseAlgorithm.cuh
+                     algorithm/GpuBaseAlgorithm.cu
                      algorithm/gpu_alg_common.cuh
                      algorithm/gpu_alg_common.cu
-                     algorithm/CudaFixedAlgorithm.cu
-                     algorithm/CudaFixedAlgorithm.cuh
-                     algorithm/CudaSplineAlgorithm1.cuh
-                     algorithm/CudaSplineAlgorithm1.cu
-                     algorithm/CudaSplineAlgorithm2.cu
-                     algorithm/CudaSplineAlgorithm2.cuh
+                     algorithm/GpuFixedAlgorithm.cu
+                     algorithm/GpuFixedAlgorithm.cuh
+                     algorithm/GpuSplineAlgorithm1.cuh
+                     algorithm/GpuSplineAlgorithm1.cu
+                     algorithm/GpuSplineAlgorithm2.cu
+                     algorithm/GpuSplineAlgorithm2.cuh
                      algorithm/cuda_helpers.h
                      algorithm/cufft_helpers.h
                      )

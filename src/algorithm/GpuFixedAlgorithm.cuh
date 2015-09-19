@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include "LibBCSim.hpp"
-#include "CudaBaseAlgorithm.cuh"
+#include "GpuBaseAlgorithm.cuh"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 
@@ -37,13 +37,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class CudaFixedAlgorithm : public CudaBaseAlgorithm {
+class GpuFixedAlgorithm : public GpuBaseAlgorithm {
 public:
-    friend class CudaSplineAlgorithm1;
+    friend class GpuSplineAlgorithm1;
 
-    CudaFixedAlgorithm();
+    GpuFixedAlgorithm();
 
-    virtual ~CudaFixedAlgorithm() {
+    virtual ~GpuFixedAlgorithm() {
         // cleanup
     }
         
@@ -52,7 +52,7 @@ public:
     }
     
     virtual void set_parameter(const std::string& key, const std::string& value) {
-        CudaBaseAlgorithm::set_parameter(key, value);
+        GpuBaseAlgorithm::set_parameter(key, value);
     }
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);

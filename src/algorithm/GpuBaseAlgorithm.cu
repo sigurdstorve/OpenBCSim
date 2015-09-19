@@ -28,23 +28,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdexcept>
 #include <iostream>
-#include "CudaBaseAlgorithm.cuh"
+#include "GpuBaseAlgorithm.cuh"
 
 namespace bcsim {
-CudaBaseAlgorithm::CudaBaseAlgorithm()
+GpuBaseAlgorithm::GpuBaseAlgorithm()
     : m_sound_speed(1540.0f),
       m_cuda_device_no(0),
       m_can_change_cuda_device(true)
 {
 }
 
-int CudaBaseAlgorithm::get_num_cuda_devices() const {
+int GpuBaseAlgorithm::get_num_cuda_devices() const {
     int device_count;
     cudaErrorCheck( cudaGetDeviceCount(&device_count) );
     return device_count;
 }
 
-void CudaBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
+void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
     if (key == "gpu_device") {
         if (!m_can_change_cuda_device) {
             throw std::runtime_error("cannot change CUDA device now");            
@@ -64,7 +64,7 @@ void CudaBaseAlgorithm::set_parameter(const std::string& key, const std::string&
     }
 }
 
-void CudaBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
+void GpuBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
     m_stream_wrappers.clear();
     for (int i = 0; i < num_streams; i++) {
         m_stream_wrappers.push_back(std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII)));
@@ -72,7 +72,7 @@ void CudaBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
     m_can_change_cuda_device = false;
 }
 
-void CudaBaseAlgorithm::print_cuda_device_properties(int device_no) const {
+void GpuBaseAlgorithm::print_cuda_device_properties(int device_no) const {
     const auto num_devices = get_num_cuda_devices();
     if (device_no < 0 || device_no >= num_devices) {
         throw std::runtime_error("illegal CUDA device number");

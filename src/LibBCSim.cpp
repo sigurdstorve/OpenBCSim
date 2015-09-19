@@ -33,9 +33,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "algorithm/CpuFixedAlgorithm.hpp"
 #include "algorithm/CpuSplineAlgorithm.hpp"
 #if BCSIM_ENABLE_CUDA
-    #include "algorithm/CudaFixedAlgorithm.cuh"
-    #include "algorithm/CudaSplineAlgorithm1.cuh"
-    #include "algorithm/CudaSplineAlgorithm2.cuh"
+    #include "algorithm/GpuFixedAlgorithm.cuh"
+    #include "algorithm/GpuSplineAlgorithm1.cuh"
+    #include "algorithm/GpuSplineAlgorithm2.cuh"
 #endif
 
 namespace bcsim {
@@ -47,11 +47,11 @@ IAlgorithm::s_ptr Create(const std::string& sim_type) {
         return IAlgorithm::s_ptr(new CpuSplineAlgorithm);
 #if BCSIM_ENABLE_CUDA
     } else if (sim_type == "gpu_fixed") {
-        return IAlgorithm::s_ptr(new CudaFixedAlgorithm);
+        return IAlgorithm::s_ptr(new GpuFixedAlgorithm);
     } else if (sim_type == "gpu_spline1") {
-        return IAlgorithm::s_ptr(new CudaSplineAlgorithm1);
+        return IAlgorithm::s_ptr(new GpuSplineAlgorithm1);
     } else if (sim_type == "gpu_spline2") {
-        return IAlgorithm::s_ptr(new CudaSplineAlgorithm2);
+        return IAlgorithm::s_ptr(new GpuSplineAlgorithm2);
 #endif
     } else {
         throw std::runtime_error("Illegal algorithm type: " + sim_type);
