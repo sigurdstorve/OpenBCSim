@@ -30,11 +30,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <memory>
 #include "cuda_helpers.h"
-#include "LibBCSim.hpp"
+#include "BaseAlgorithm.hpp"
 
 namespace bcsim {
 
-class CudaBaseAlgorithm : public IAlgorithm {
+class CudaBaseAlgorithm : public BaseAlgorithm {
 public:
     CudaBaseAlgorithm();
     

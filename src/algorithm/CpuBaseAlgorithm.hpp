@@ -35,12 +35,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ScanSequence.hpp"
 #include "BeamProfile.hpp"
 #include "BeamConvolver.hpp"
-#include "LibBCSim.hpp"
+#include "BaseAlgorithm.hpp"
 
 namespace bcsim {
 
 // Implementation common functionality for the CPU-based algorithms.
-class CpuBaseAlgorithm : public IAlgorithm {
+class CpuBaseAlgorithm : public BaseAlgorithm {
 public:
     CpuBaseAlgorithm();
     
