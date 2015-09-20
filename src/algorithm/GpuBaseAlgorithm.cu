@@ -246,6 +246,8 @@ void GpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     if (m_param_verbose) {
         std::cout << "Output datatype is " << to_string(m_param_output_type) << std::endl;
     }
+    // TODO: Actually, this can be done anyway since when only the real part is used when the output data type
+    // if RF-data and the Hilbert transform only affects the imaginary components..
     if (m_param_output_type == OutputType::ENVELOPE_DATA) {
         MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     }
