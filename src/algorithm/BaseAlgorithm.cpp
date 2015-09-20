@@ -58,7 +58,8 @@ IBeamConvolver::ptr CreateBeamConvolver(const OutputType& output_type,
     
 BaseAlgorithm::BaseAlgorithm()
     : m_param_verbose(0),
-      m_param_output_type(OutputType::RF_DATA)
+      m_param_output_type(OutputType::RF_DATA),
+      m_param_sound_speed(1540.0f)
 {
 }
 
@@ -76,6 +77,12 @@ void BaseAlgorithm::set_parameter(const std::string& key, const std::string& val
         } else {
             throw std::runtime_error(std::string("Illegal output_type '") + value + std::string("'"));
         }
+    } else if (key == "sound_speed") {
+        const auto new_speed = std::stof(value);
+        if (new_speed <= 0) {
+            throw std::runtime_error("illegal sound speed");
+        }
+        m_param_sound_speed = new_speed;
     } else {
         const auto err_msg = std::string("illegal parameter name: '") + key + std::string("'");
         throw std::runtime_error(err_msg);

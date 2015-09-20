@@ -108,7 +108,7 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                              m_num_time_samples,
                                                              m_beam_profile->getSigmaLateral(),
                                                              m_beam_profile->getSigmaElevational(),
-                                                             m_sound_speed,
+                                                             m_param_sound_speed,
                                                              m_device_time_proj[stream_no]->data());
     
 }

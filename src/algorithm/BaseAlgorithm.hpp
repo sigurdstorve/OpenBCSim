@@ -57,6 +57,7 @@ public:
     virtual void set_parameter(const std::string& key, const std::string& value);
     
 protected:
+    float       m_param_sound_speed;
     int         m_param_verbose;
     OutputType  m_param_output_type;
 };

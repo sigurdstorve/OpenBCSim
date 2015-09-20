@@ -162,7 +162,7 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                                               m_num_time_samples,
                                                               m_beam_profile->getSigmaLateral(),
                                                               m_beam_profile->getSigmaElevational(),
-                                                              m_sound_speed,
+                                                              m_param_sound_speed,
                                                               m_num_cs,
                                                               m_num_splines,
                                                               m_device_time_proj[stream_no]->data(),

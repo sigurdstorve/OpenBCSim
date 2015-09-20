@@ -87,8 +87,6 @@ protected:
     virtual void projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) = 0;
 
 protected:
-    // Speed of sound
-    float                                   m_sound_speed;        
     // Geometry of all lines to be simulated in a frame.
     ScanSequence::s_ptr                      m_scan_sequence;
     // Excitation RF signal.

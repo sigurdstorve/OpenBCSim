@@ -48,8 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace bcsim {
 
 CpuBaseAlgorithm::CpuBaseAlgorithm()
-        : m_sound_speed(1540.0f),
-          m_scan_sequence_configured(false),
+        : m_scan_sequence_configured(false),
           m_excitation_configured(false),
           m_beam_profile_configured(false),
           m_scatterers_configured(false),
@@ -82,8 +81,8 @@ void CpuBaseAlgorithm::set_use_specific_num_cores(int num_threads) {
 
 void CpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
     if (key == "sound_speed") {
-        m_sound_speed = std::stof(value);
-        // must also update convolvers.
+        BaseAlgorithm::set_parameter(key, value);
+        // convolvers must be updated after sound speed has changed.
         configure_convolvers_if_possible();
     } else if (key == "num_cpu_cores") {
         if (value == "all") {
@@ -114,7 +113,7 @@ void CpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     m_scan_sequence_configured = true;
 
     const auto line_length = m_scan_sequence->line_length;
-    m_rf_line_num_samples = compute_num_rf_samples(m_sound_speed, line_length, m_excitation.sampling_frequency);
+    m_rf_line_num_samples = compute_num_rf_samples(m_param_sound_speed, line_length, m_excitation.sampling_frequency);
 
     configure_convolvers_if_possible();
 }
@@ -137,7 +136,7 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLi
     rfLines.resize(num_scanlines);
 
     if (m_param_verbose) {
-        std::cout << "Sound speed: " << m_sound_speed << std::endl;
+        std::cout << "Sound speed: " << m_param_sound_speed << std::endl;
         std::cout << "Number of scan lines: " << num_scanlines << std::endl;
         std::cout << "Setting " << m_omp_num_threads << " OpenMP threads." << std::endl;
     }    

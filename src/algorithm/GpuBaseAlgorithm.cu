@@ -36,8 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 GpuBaseAlgorithm::GpuBaseAlgorithm()
-    : m_sound_speed(1540.0f),
-      m_cuda_device_no(0),
+    : m_cuda_device_no(0),
       m_can_change_cuda_device(true),
       m_param_num_cuda_streams(2),
       m_num_time_samples(32768),  // TODO: remove this limitation
@@ -66,8 +65,6 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         m_cuda_device_no = device_no;
         cudaErrorCheck(cudaSetDevice(m_cuda_device_no));
         print_cuda_device_properties(m_cuda_device_no);
-    } else if (key == "sound_speed") {
-        m_sound_speed = std::stof(value);
     } else if (key == "cuda_streams") {
         const auto num_streams = std::stoi(value);
         if (num_streams <= 0) {
@@ -143,7 +140,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*ou
     if ((m_param_output_type == OutputType::RF_DATA) || (m_param_output_type == OutputType::ENVELOPE_DATA)) {
         delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
     }
-    const auto num_return_samples = compute_num_rf_samples(m_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
+    const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
     
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
@@ -261,7 +258,7 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     m_scan_seq = new_scan_sequence;
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
-    auto num_rf_samples = compute_num_rf_samples(m_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
+    auto num_rf_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
     //std::cout << "num_rf_samples: " << num_rf_samples << std::endl;
     if (num_rf_samples > m_num_time_samples) {
         throw std::runtime_error("Too many RF samples required. TODO: remove limitation");
