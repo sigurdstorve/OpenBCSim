@@ -197,6 +197,9 @@ void GpuFixedAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     
     ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
     
+    if (m_param_verbose) {
+        std::cout << "Output datatype is " << to_string(m_param_output_type) << std::endl;
+    }
     if (m_param_output_type == OutputType::ENVELOPE_DATA) {
         MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     }
@@ -206,6 +209,7 @@ void GpuFixedAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
 
 void GpuFixedAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     m_can_change_cuda_device = false;
+    
     m_scan_seq = new_scan_sequence;
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
