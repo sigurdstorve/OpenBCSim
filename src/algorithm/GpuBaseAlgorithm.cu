@@ -77,6 +77,8 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
             throw std::runtime_error("invalid number of threads per block");            
         }
         m_param_threads_per_block = threads_per_block;
+    } else if (key == "noise_amplitude") {
+        throw std::runtime_error("noise is not yet implemented in GPU algorithms");
     } else {
         BaseAlgorithm::set_parameter(key, value);
     }

@@ -61,14 +61,6 @@ protected:
     // Use a specific number of cores for simulation.
     void set_use_specific_num_cores(int num_cores);
 
-    // Set to zero to disable any noise addition.
-    void set_noise_amplitude(float noise_amplitude) {
-        m_noise_amplitude = noise_amplitude;
-        if (m_noise_amplitude > 0.0f) {
-            m_normal_dist = std::normal_distribution<float>(0.0f, noise_amplitude);
-        }
-    }
-
     // Configure the convolvers to reflect the parameter settings
     // if all relevant have values.
     // Delete any old convolvers and create new which reflects the
@@ -111,7 +103,6 @@ protected:
 
     // Amplitude of Gaussian noise that will be added to the time-projected
     // signal prior to convolution.
-    float                           m_noise_amplitude;
     std::default_random_engine      m_random_engine;
     std::normal_distribution<float> m_normal_dist;
 };

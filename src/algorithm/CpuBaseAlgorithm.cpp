@@ -56,7 +56,6 @@ CpuBaseAlgorithm::CpuBaseAlgorithm()
     
     // use all cores by default
     set_use_all_available_cores();
-    set_noise_amplitude(0.0f);
 }
 
 void CpuBaseAlgorithm::set_use_all_available_cores() {
@@ -93,8 +92,8 @@ void CpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
             set_use_specific_num_cores(num_cores);
         }
     } else if (key == "noise_amplitude") { 
-        const float noise_amplitude = std::stof(value);
-        set_noise_amplitude(noise_amplitude);
+        BaseAlgorithm::set_parameter(key, value);
+        m_normal_dist = std::normal_distribution<float>(0.0f, m_param_noise_amplitude);
     } else {
         BaseAlgorithm::set_parameter(key, value);
     }
@@ -171,7 +170,7 @@ std::vector<bc_float> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
 #endif
 
     // add Gaussian noise if desirable.
-    if (m_noise_amplitude > 0.0f) {
+    if (m_param_noise_amplitude > 0.0f) {
         std::transform(time_proj_signal, time_proj_signal + m_rf_line_num_samples, time_proj_signal, [&](float v) {
             return v + m_normal_dist(m_random_engine);
         });

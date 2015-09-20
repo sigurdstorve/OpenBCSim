@@ -60,6 +60,7 @@ protected:
     float       m_param_sound_speed;
     int         m_param_verbose;
     OutputType  m_param_output_type;
+    float       m_param_noise_amplitude;
 };
 
 }   // end namespace
