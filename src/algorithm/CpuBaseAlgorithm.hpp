@@ -44,25 +44,25 @@ class CpuBaseAlgorithm : public BaseAlgorithm {
 public:
     CpuBaseAlgorithm();
         
-    virtual void set_parameter(const std::string& key, const std::string& value);
+    virtual void set_parameter(const std::string& key, const std::string& value)        override;
     
-    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
+    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               override;
 
-    virtual void set_excitation(const ExcitationSignal& new_excitation);
+    virtual void set_excitation(const ExcitationSignal& new_excitation)                 override;
 
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile);
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     override;
 
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
+    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) override;
     
 protected:
     // Use as many cores as possible for simulation.
-    virtual void set_use_all_available_cores();
+    void set_use_all_available_cores();
     
     // Use a specific number of cores for simulation.
-    virtual void set_use_specific_num_cores(int num_cores);
+    void set_use_specific_num_cores(int num_cores);
 
     // Set to zero to disable any noise addition.
-    virtual void set_noise_amplitude(float noise_amplitude) {
+    void set_noise_amplitude(float noise_amplitude) {
         m_noise_amplitude = noise_amplitude;
         if (m_noise_amplitude > 0.0f) {
             m_normal_dist = std::normal_distribution<float>(0.0f, noise_amplitude);

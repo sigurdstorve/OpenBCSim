@@ -41,16 +41,16 @@ class GpuBaseAlgorithm : public BaseAlgorithm {
 public:
     GpuBaseAlgorithm();
     
-    virtual void set_parameter(const std::string& key, const std::string& value);
+    virtual void set_parameter(const std::string& key, const std::string& value)        override;
 
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
+    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) override;
     
     // NOTE: currently requires that set_excitation is called first!
-    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
+    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               override;
 
-    virtual void set_excitation(const ExcitationSignal& new_excitation);
+    virtual void set_excitation(const ExcitationSignal& new_excitation)                 override;
     
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile);
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     override;
 
 protected:
     void create_cuda_stream_wrappers(int num_streams);
