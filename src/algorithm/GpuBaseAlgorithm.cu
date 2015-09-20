@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 GpuBaseAlgorithm::GpuBaseAlgorithm()
-    : m_cuda_device_no(0),
+    : m_param_cuda_device_no(0),
       m_can_change_cuda_device(true),
       m_param_num_cuda_streams(2),
       m_num_time_samples(32768),  // TODO: remove this limitation
@@ -62,9 +62,9 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         if (device_no < 0 || device_no >= device_count) {
             throw std::runtime_error("illegal device number");
         }
-        m_cuda_device_no = device_no;
-        cudaErrorCheck(cudaSetDevice(m_cuda_device_no));
-        print_cuda_device_properties(m_cuda_device_no);
+        m_param_cuda_device_no = device_no;
+        cudaErrorCheck(cudaSetDevice(m_param_cuda_device_no));
+        print_cuda_device_properties(m_param_cuda_device_no);
     } else if (key == "cuda_streams") {
         const auto num_streams = std::stoi(value);
         if (num_streams <= 0) {
