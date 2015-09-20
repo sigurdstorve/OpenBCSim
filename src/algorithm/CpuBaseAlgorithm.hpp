@@ -55,8 +55,6 @@ public:
     // Set the beam profile object to use when simulating.
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile);
 
-    virtual void set_output_type(const std::string& type);
-
     // Simulate all RF lines. Returns vector of RF lines.
     // Requires that everything is properly configured.
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
@@ -105,9 +103,6 @@ protected:
     // The beam profile (analytical expression or LUT)
     IBeamProfile::s_ptr                      m_beamProfile;
     
-    // Which type of beam convolver to use for processing time projections
-    std::string                             m_convolver_type;
-
     // The number of time samples in each RF line in the scan sequence.
     size_t                                  m_rf_line_num_samples;
 

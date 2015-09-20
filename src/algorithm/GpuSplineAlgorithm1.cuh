@@ -63,10 +63,6 @@ public:
         m_fixed_alg->set_beam_profile(beam_profile);
     }
 
-    virtual void set_output_type(const std::string& type) {
-        m_fixed_alg->set_output_type(type);    
-    }
-
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
     
 private:

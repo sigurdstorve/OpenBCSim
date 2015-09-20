@@ -29,9 +29,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <string>
 #include "LibBCSim.hpp"
+#include "BeamConvolver.hpp"
 
 namespace bcsim {
 
+enum class OutputType {
+    RF_DATA,        // Real-valued radiofrequency data
+    ENVELOPE_DATA,  // The real-valued envelope of the RF data
+    PROJECTIONS     // Scatterer projections only [no convolution]
+};
+
+// Convert enum class OutputType to a string equivalent
+std::string to_string(const OutputType& output_type);
+
+// Helper function for creating a beam convolver when the type is
+// specified using the enum class OutputType
+IBeamConvolver::ptr CreateBeamConvolver(const OutputType& output_type,
+                                        size_t num_proj_samples,
+                                        const ExcitationSignal& excitation);
+    
 // Common functionality for CPU- and GPU-algorithms.
 class BaseAlgorithm : public IAlgorithm {
 public:
@@ -39,9 +55,10 @@ public:
     
     // Handle common parameters for all algorithm implementations.
     virtual void set_parameter(const std::string& key, const std::string& value);
-
+    
 protected:
     int         m_param_verbose;
+    OutputType  m_param_output_type;
 };
 
 }   // end namespace

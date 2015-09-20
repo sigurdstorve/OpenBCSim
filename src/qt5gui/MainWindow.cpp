@@ -484,7 +484,7 @@ void MainWindow::initializeSimulator(const std::string& type) {
 
     // Configure simulator to do envelope detection
     const auto output_type = std::string(m_settings->value("sim_output_type", "env").toString().toUtf8().constData());
-    m_sim->set_output_type(output_type);
+    m_sim->set_parameter("output_type", output_type);
 
     qDebug() << "Created simulator";
     // force-emit from all widgets to ensure a fully configured simulator.

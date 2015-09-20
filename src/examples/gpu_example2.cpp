@@ -102,7 +102,7 @@ void example(int argc, char** argv) {
     sim->set_excitation(ex);
 
     // configure output type (currently noe effect)
-    sim->set_output_type("rf");
+    sim->set_parameter("output_type", "rf");
 
     // configure sound speed
     sim->set_parameter("sound_speed", "1540.0");

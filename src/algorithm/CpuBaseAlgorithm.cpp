@@ -53,8 +53,7 @@ CpuBaseAlgorithm::CpuBaseAlgorithm()
           m_excitation_configured(false),
           m_beam_profile_configured(false),
           m_scatterers_configured(false),
-          m_omp_num_threads(1),
-          m_convolver_type("rf") {
+          m_omp_num_threads(1) {
     
     // use all cores by default
     set_use_all_available_cores();
@@ -132,18 +131,6 @@ void CpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
     m_beam_profile_configured = true;
 }
 
-void CpuBaseAlgorithm::set_output_type(const std::string& type) {
-    if (type == "rf") {
-        m_convolver_type = "rf";
-    } else if (type == "env") {
-        m_convolver_type = "env";
-    } else if (type == "proj") {
-        m_convolver_type = "proj";
-    } else {
-        throw std::runtime_error("Illegal output type: " + type);
-    }
-}
-
 void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLines) {
     throw_if_not_configured();
     int num_scanlines = m_scan_sequence->get_num_lines();
@@ -201,9 +188,12 @@ void CpuBaseAlgorithm::configure_convolvers_if_possible() {
         convolvers.clear();
         std::cout << "Recreating convolvers\n";
         for (int i = 0; i < m_omp_num_threads; i++) {
-            if (m_param_verbose) std::cout << "Creating FFT-convolver " << i << " of type " << m_convolver_type << std::endl;
- 
-            auto convolver = IBeamConvolver::Create(m_convolver_type, m_rf_line_num_samples, m_excitation);
+            if (m_param_verbose) {
+                std::cout << "Creating FFT-convolver " << i 
+                          << " of type " << to_string(m_param_output_type) << std::endl;
+            }
+            
+            auto convolver = CreateBeamConvolver(m_param_output_type, m_rf_line_num_samples, m_excitation);
             convolvers.push_back(std::move(convolver));
         }
     }

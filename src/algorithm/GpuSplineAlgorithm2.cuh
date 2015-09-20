@@ -65,17 +65,6 @@ public:
         m_beam_profile = gaussian_profile;   
     }
 
-    // NOTE: currently requires that set_excitation is called first!
-    virtual void set_output_type(const std::string& type) {
-        if (type == "env") {
-            m_output_type = "env";
-        } else if (type == "rf") {
-            m_output_type = "rf";
-        } else if (type == "proj") {
-            throw std::runtime_error("Output data type 'proj' is not yet supported");
-        }
-    }
-
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
     
 protected:

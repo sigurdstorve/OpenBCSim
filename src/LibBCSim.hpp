@@ -43,7 +43,7 @@ class IAlgorithm {
 public:
     typedef std::shared_ptr<IAlgorithm> s_ptr;
     typedef std::unique_ptr<IAlgorithm> u_ptr;
-
+    
     virtual ~IAlgorithm() { }
             
     // Set misc. parameters. Available keys depends on the algorithm.
@@ -60,11 +60,6 @@ public:
 
     // Set the beam profile object to use when simulating.
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                 = 0;
-
-    // Set the type of data generated (sampling frequency is the same):
-    // "rf": raw RF-data
-    // "env": enevlope detected RF data
-    virtual void set_output_type(const std::string& type)                           = 0;
 
     /* Simulate all RF lines. Returns vector of RF lines.
        Requires that everything is properly configured. */

@@ -71,10 +71,6 @@ public:
         m_rf_simulator->set_parameter(key, value);
     }
     
-    void set_output_type(const std::string& type) {
-	m_rf_simulator->set_output_type(type); 
-    }
-
     void set_fixed_scatterers(numpy_boost<float, 2> data) {
         auto dimensions = get_dimensions(data);
         size_t numScatterers = dimensions[0];
@@ -305,7 +301,6 @@ BOOST_PYTHON_MODULE(pyrfsim) {
 
     class_<RfSimulatorWrapper>("RfSimulator", init<std::string>())
         .def("set_print_debug",             &RfSimulatorWrapper::set_print_debug)
-        .def("set_output_type",             &RfSimulatorWrapper::set_output_type)
         .def("set_parameter",               &RfSimulatorWrapper::set_parameter)
         .def("set_fixed_scatterers",        &RfSimulatorWrapper::set_fixed_scatterers)
         .def("set_spline_scatterers",       &RfSimulatorWrapper::set_spline_scatterers)
