@@ -546,7 +546,7 @@ void MainWindow::doSimulation() {
         const auto temp = sim_milliseconds[i]-mean_ms;
         std_ms += temp*temp;
     }
-    std_ms = std::sqrtf(std_ms/num_ms);
+    std_ms = std::sqrt(std_ms/num_ms);
     if (num_ms == 1) {
         statusBar()->showMessage("Simulation time: " + QString::number(sim_milliseconds[0]) + " ms.");
     } else {
