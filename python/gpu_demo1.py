@@ -23,10 +23,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 sim = RfSimulator("gpu_fixed")
+sim.set_parameter("output_type", "env") # envelope-detected RF data as output
 sim.set_parameter("gpu_device", "%d"%args.device_no)
 
 
-sim.set_verbose(False)
+sim.set_parameter("verbose", "0")
 
 # configure scatterers (in a 3D cube)
 x0 = -0.04; x1 = 0.04

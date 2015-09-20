@@ -41,10 +41,10 @@ class CpuSplineAlgorithm : public CpuBaseAlgorithm {
 public:
     CpuSplineAlgorithm();
     
-    virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
+    virtual void set_scatterers(Scatterers::s_ptr new_scatterers) override;
 
 protected:
-    virtual void projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples);
+    virtual void projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) override;
 
 private:
     SplineScatterers::s_ptr    m_scatterers;

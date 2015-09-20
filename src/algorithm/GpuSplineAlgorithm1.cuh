@@ -47,31 +47,23 @@ public:
         // cleanup
     }
         
-    virtual void set_verbose(bool v) {
-        m_fixed_alg->set_verbose(v);
-    }
-    
-    virtual void set_parameter(const std::string& key, const std::string& value) {
+    virtual void set_parameter(const std::string& key, const std::string& value) override {
         m_fixed_alg->set_parameter(key, value);
     }
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
     
-    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
+    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) override;
 
-    virtual void set_excitation(const ExcitationSignal& new_excitation) {
+    virtual void set_excitation(const ExcitationSignal& new_excitation) override {
         m_fixed_alg->set_excitation(new_excitation);
     }
 
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) {
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) override {
         m_fixed_alg->set_beam_profile(beam_profile);
     }
 
-    virtual void set_output_type(const std::string& type) {
-        m_fixed_alg->set_output_type(type);    
-    }
-
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
+    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) override;
     
 private:
     // Test if all scanlines in a scan sequence have the same timestamp

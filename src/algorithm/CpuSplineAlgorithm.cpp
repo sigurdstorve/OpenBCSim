@@ -47,7 +47,9 @@ void CpuSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
         throw std::runtime_error("Cast to SplineScatterers failed");
     }
 
-    if (m_verbose) std::cout << "Number of spline scatterers: " << m_scatterers->num_scatterers() << std::endl;
+    if (m_param_verbose) {
+        std::cout << "Number of spline scatterers: " << m_scatterers->num_scatterers() << std::endl;
+    }
     m_scatterers_configured = true;
 }
 
@@ -85,7 +87,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, double* time_proj
         
         // Add scaled amplitude to closest index
         const bc_float sampling_time_step = 1.0/m_excitation.sampling_frequency;
-        int closest_index = (int) std::floor(r*2.0/(m_sound_speed*sampling_time_step)+0.5f);
+        int closest_index = (int) std::floor(r*2.0/(m_param_sound_speed*sampling_time_step)+0.5f);
         
         bc_float scaled_ampl = m_beamProfile->sampleProfile(r,l,e)*scatterer.amplitude;
         

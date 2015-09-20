@@ -43,41 +43,23 @@ namespace bcsim {
 class CpuBaseAlgorithm : public BaseAlgorithm {
 public:
     CpuBaseAlgorithm();
+        
+    virtual void set_parameter(const std::string& key, const std::string& value)        override;
     
-    // Control printing of current line number being simulated.
-    virtual void set_verbose(bool v);
-    
-    virtual void set_parameter(const std::string& key, const std::string& value);
-    
-    // Set scan sequence to use when simulating all RF lines.
-    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
+    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               override;
 
-    // Set the excitation signal to use when convolving.
-    virtual void set_excitation(const ExcitationSignal& new_excitation);
+    virtual void set_excitation(const ExcitationSignal& new_excitation)                 override;
 
-    // Set the beam profile object to use when simulating.
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile);
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     override;
 
-    virtual void set_output_type(const std::string& type);
-
-    // Simulate all RF lines. Returns vector of RF lines.
-    // Requires that everything is properly configured.
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
+    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) override;
     
 protected:
     // Use as many cores as possible for simulation.
-    virtual void set_use_all_available_cores();
+    void set_use_all_available_cores();
     
     // Use a specific number of cores for simulation.
-    virtual void set_use_specific_num_cores(int num_cores);
-
-    // Set to zero to disable any noise addition.
-    virtual void set_noise_amplitude(float noise_amplitude) {
-        m_noise_amplitude = noise_amplitude;
-        if (m_noise_amplitude > 0.0f) {
-            m_normal_dist = std::normal_distribution<float>(0.0f, noise_amplitude);
-        }
-    }
+    void set_use_specific_num_cores(int num_cores);
 
     // Configure the convolvers to reflect the parameter settings
     // if all relevant have values.
@@ -97,8 +79,6 @@ protected:
     virtual void projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) = 0;
 
 protected:
-    // Speed of sound
-    float                                   m_sound_speed;        
     // Geometry of all lines to be simulated in a frame.
     ScanSequence::s_ptr                      m_scan_sequence;
     // Excitation RF signal.
@@ -108,9 +88,6 @@ protected:
     // The beam profile (analytical expression or LUT)
     IBeamProfile::s_ptr                      m_beamProfile;
     
-    // Which type of beam convolver to use for processing time projections
-    std::string                             m_convolver_type;
-
     // The number of time samples in each RF line in the scan sequence.
     size_t                                  m_rf_line_num_samples;
 
@@ -121,14 +98,11 @@ protected:
     bool m_beam_profile_configured; 
     bool m_scatterers_configured;   
     
-    // Print status information e.g. current line no
-    bool m_verbose;
     // Number of threads to use for simulation.
     int  m_omp_num_threads;
 
     // Amplitude of Gaussian noise that will be added to the time-projected
     // signal prior to convolution.
-    float                           m_noise_amplitude;
     std::default_random_engine      m_random_engine;
     std::normal_distribution<float> m_normal_dist;
 };

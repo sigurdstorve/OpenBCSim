@@ -284,6 +284,10 @@ void MainWindow::createMenus() {
     connect(playback_speed_act, &QAction::triggered, this, &MainWindow::onSetPlaybackSpeed);
     simulateMenu->addAction(playback_speed_act);
 
+    auto set_parameter_act = new QAction(tr("Set simulator parameter"), this);
+    connect(set_parameter_act, &QAction::triggered, this, &MainWindow::onSetSimulatorParameter);
+    simulateMenu->addAction(set_parameter_act);
+    
     // Actions in about menu
     auto about_scatterers_act = new QAction(tr("Scatterers details"), this);
     connect(about_scatterers_act, &QAction::triggered, this, &MainWindow::onAboutScatterers);
@@ -333,7 +337,8 @@ void MainWindow::onCreateGpuSimulator() {
 
         // GPU-specific hack.
         m_sim->set_parameter("sound_speed", "1540.0");
-
+        m_sim->set_parameter("output_type", "env");
+        
         // configure excitation
         m_sim->set_excitation(m_current_excitation);
         
@@ -472,8 +477,7 @@ void MainWindow::initializeSimulator(const std::string& type) {
         qDebug() << "Caught exception: " << e.what();
         onExit();
     }
-
-    m_sim->set_verbose(false);
+    m_sim->set_parameter("verbose", "0");
     const int num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
     m_sim->set_parameter("num_cpu_cores", std::to_string(num_cores));
     m_sim->set_parameter("sound_speed", "1540.0");
@@ -485,7 +489,7 @@ void MainWindow::initializeSimulator(const std::string& type) {
 
     // Configure simulator to do envelope detection
     const auto output_type = std::string(m_settings->value("sim_output_type", "env").toString().toUtf8().constData());
-    m_sim->set_output_type(output_type);
+    m_sim->set_parameter("output_type", output_type);
 
     qDebug() << "Created simulator";
     // force-emit from all widgets to ensure a fully configured simulator.
@@ -693,4 +697,20 @@ void MainWindow::onLoadBeamProfileLUT() {
         return;
     }
     bcsim::setBeamProfileFromHdf(m_sim, h5_file.toUtf8().constData());
+}
+
+void MainWindow::onSetSimulatorParameter() {
+    if (!m_sim) {
+        qDebug() << "No valid simulator. Ignoring.";        
+    }
+    bool ok;
+    auto key = QInputDialog::getText(this, tr("Parameter key"), tr("key:"), QLineEdit::Normal, "", &ok);
+    if (!ok || key.isEmpty()) {
+        qDebug() << "Invalid key. Ignoring.";
+    }
+    auto value = QInputDialog::getText(this, tr("Parameter value"), tr("value:"), QLineEdit::Normal, "", &ok);
+    if (!ok || key.isEmpty()) {
+        qDebug() << "Invalid value. Ignoring.";
+    }
+    m_sim->set_parameter(key.toUtf8().constData(), value.toUtf8().constData());
 }

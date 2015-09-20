@@ -87,7 +87,7 @@ void example(int argc, char** argv) {
 
     // create an instance of the fixed-scatterer GPU algorithm
     auto sim = bcsim::Create("gpu_spline2");
-    sim->set_verbose(false);
+    sim->set_parameter("verbose", "0");
     
     // use an analytical Gaussian beam profile
     sim->set_beam_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(1e-3, 3e-3)));
@@ -102,7 +102,7 @@ void example(int argc, char** argv) {
     sim->set_excitation(ex);
 
     // configure output type (currently noe effect)
-    sim->set_output_type("rf");
+    sim->set_parameter("output_type", "rf");
 
     // configure sound speed
     sim->set_parameter("sound_speed", "1540.0");
