@@ -65,43 +65,43 @@ protected:
 protected:
     typedef cufftComplex complex;
     
-    std::vector<CudaStreamRAII::s_ptr>  m_stream_wrappers;
+    std::vector<CudaStreamRAII::s_ptr>                  m_stream_wrappers;
 
-    ScanSequence::s_ptr     m_scan_seq;
-    ExcitationSignal        m_excitation;
+    ScanSequence::s_ptr                                 m_scan_seq;
+    ExcitationSignal                                    m_excitation;
 
     // TODO: Figure out how to support LUT beam profiles also.
-    std::shared_ptr<bcsim::GaussianBeamProfile>  m_beam_profile;
+    std::shared_ptr<bcsim::GaussianBeamProfile>         m_beam_profile;
 
-    // At all times equal to the number of scatterers in device memory
-    size_t                  m_num_scatterers;
+    // always times equal to the number of scatterers in device memory
+    size_t                                              m_num_scatterers;
 
     // number of samples in the time-projection lines [should be a power of two]
-    size_t              m_num_time_samples;
+    size_t                                              m_num_time_samples;
 
     // The cuFFT plan used for all transforms.
-    CufftPlanRAII::u_ptr                m_fft_plan;
+    CufftPlanRAII::u_ptr                                m_fft_plan;
 
-    std::vector<DeviceBufferRAII<float>::u_ptr>            m_device_time_proj;    // real-valued
-    std::vector<DeviceBufferRAII<complex>::u_ptr>          m_device_rf_lines;     // complex-valued
-    std::vector<DeviceBufferRAII<float>::u_ptr>            m_device_rf_lines_env; // real-valued
-    std::vector<HostPinnedBufferRAII<float>::u_ptr>        m_host_rf_lines;       // real-valued
+    std::vector<DeviceBufferRAII<float>::u_ptr>         m_device_time_proj;    // real-valued
+    std::vector<DeviceBufferRAII<complex>::u_ptr>       m_device_rf_lines;     // complex-valued
+    std::vector<DeviceBufferRAII<float>::u_ptr>         m_device_rf_lines_env; // real-valued (bad name, not just for env-data...)
+    std::vector<HostPinnedBufferRAII<float>::u_ptr>     m_host_rf_lines;       // real-valued
 
-    // precomputed excitation FFT with Hilbert mask applied.
-    DeviceBufferRAII<complex>::u_ptr                  m_device_excitation_fft;
+    // precomputed excitation FFT, optionally with Hilbert mask applied.
+    DeviceBufferRAII<complex>::u_ptr                    m_device_excitation_fft;
 
-    // -1 means not allocated
-    int     m_num_beams_allocated;
+    // the value -1 means not allocated
+    int                                                 m_num_beams_allocated;
     
     // it is only possible to change CUDA device before any operations
     // that involve the GPU
-    bool        m_can_change_cuda_device;
+    bool                                                m_can_change_cuda_device;
     
     // parameters that are comon to all GPU algorithms
-    float       m_sound_speed;
-    int         m_cuda_device_no;
-    int         m_param_num_cuda_streams;
-    int         m_param_threads_per_block;
+    float                                               m_sound_speed;
+    int                                                 m_cuda_device_no;
+    int                                                 m_param_num_cuda_streams;
+    int                                                 m_param_threads_per_block;
 };
     
 }   // end namespace
