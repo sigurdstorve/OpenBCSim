@@ -60,7 +60,7 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
     } else if (key == "sound_speed") {
         m_sound_speed = std::stof(value);
     } else {
-        throw std::runtime_error("illegal parameter key");
+        BaseAlgorithm::set_parameter(key, value);
     }
 }
 

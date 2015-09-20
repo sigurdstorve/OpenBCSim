@@ -73,9 +73,6 @@ protected:
 protected:
     typedef cufftComplex complex;
 
-    // the output data type
-    std::string             m_output_type;
-
     ScanSequence::s_ptr     m_scan_seq;
     ExcitationSignal        m_excitation;
 

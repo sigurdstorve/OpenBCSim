@@ -333,7 +333,8 @@ void MainWindow::onCreateGpuSimulator() {
 
         // GPU-specific hack.
         m_sim->set_parameter("sound_speed", "1540.0");
-
+        m_sim->set_parameter("output_type", "env");
+        
         // configure excitation
         m_sim->set_excitation(m_current_excitation);
         

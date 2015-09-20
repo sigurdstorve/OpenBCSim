@@ -109,8 +109,7 @@ namespace bcsim {
 GpuSplineAlgorithm2::GpuSplineAlgorithm2()
     : m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
-      m_beam_profile(nullptr),
-      m_output_type("env")
+      m_beam_profile(nullptr)
 {
 }
 
@@ -219,18 +218,18 @@ void GpuSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /
             
         //if (beam_no==0) { dump_device_memory<std::complex<float> >(reinterpret_cast<std::complex<float>*>(rf_ptr), m_num_time_samples, "04_iq_line.txt"); }
 
-        if (m_output_type == "env") {
-            // envelope detection
+        if (m_param_output_type == OutputType::ENVELOPE_DATA) {
             AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
                                                                                                        m_device_rf_lines_env[stream_no]->data(),
                                                                                                        m_num_time_samples);
-        } else if (m_output_type == "rf") {
-            // rf signal
+        } else if (m_param_output_type == OutputType::RF_DATA) {
             RealPartKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
                                                                                                    m_device_rf_lines_env[stream_no]->data(),
                                                                                                     m_num_time_samples);
+        } else if (m_param_output_type == OutputType::PROJECTIONS) {
+            throw std::runtime_error("GpuSplineAlgorithm2 does not yet support output type PROJECTIONS");        
         } else {
-            throw std::logic_error("invalid output type");
+            throw std::logic_error("illegal output type");
         }
         //if (beam_no==0) { dump_device_memory<float>(device_rf_lines_env[stream_no]->data(), m_num_time_samples, "05_rf_envelope.txt"); }
             
@@ -337,8 +336,10 @@ void GpuSplineAlgorithm2::set_excitation(const ExcitationSignal& new_excitation)
     
     ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
     
-    std::cout << "m_output_type is " << m_output_type << std::endl;
-    if (m_output_type == "env") {
+    if (m_param_verbose) {
+        std::cout << "Output datatype is " << to_string(m_param_output_type) << std::endl;
+    }
+    if (m_param_output_type == OutputType::ENVELOPE_DATA) {
         MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     }
     //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
