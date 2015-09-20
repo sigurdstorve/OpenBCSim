@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <vector>
 #include <stdexcept>
+#include <cmath>
 #include "bcsim_defines.h"
 #include "CpuFixedAlgorithm.hpp"
 #include "safe_omp.h"
@@ -62,6 +63,17 @@ void CpuFixedAlgorithm::projection_loop(const Scanline& line, double* time_proj_
         bc_float r = temp.dot(line.get_direction());       // radial component
         bc_float l = temp.dot(line.get_lateral_dir());     // lateral component
         bc_float e = temp.dot(line.get_elevational_dir()); // elevational component
+        
+        // Use "arc projection" in the radial direction: use length of vector from
+        // beam's origin to the scatterer with the same sign as the projection onto
+        // the line.
+        if (m_param_use_arc_projection) {
+#ifdef __GNUC__
+            r = std::copysign(temp.norm(), r);
+#else
+            r = _copysignf(temp.norm(), r);
+#endif            
+        }
         
         // Add scaled amplitude to closest index
         int closest_index = (int) std::floor(r*2.0*m_excitation.sampling_frequency/(m_param_sound_speed)+0.5f);

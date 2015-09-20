@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cufft_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "gpu_alg_common.cuh" // for misc. CUDA kernels
-#include "common_utils.hpp" // for compute_num_rf_samples
+#include <math_functions.h> // for copysignf
 
 namespace bcsim {
 
@@ -51,17 +51,24 @@ __global__ void FixedAlgKernel(float* point_xs,
                                float  sigma_lateral,
                                float  sigma_elevational,
                                float  sound_speed,
-                               float* res) {
+                               float* res,
+                               bool   use_arc_projection) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
 
     float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
     
     // compute dot products
-    const auto radial_dist  = dot(point, rad_dir);
+    auto radial_dist  = dot(point, rad_dir);
     const auto lateral_dist = dot(point, lat_dir);
     const auto elev_dist    = dot(point, ele_dir);
 
+    if (use_arc_projection) {
+        // Use "arc projection" in the radial direction: use length of vector from
+        // beam's origin to the scatterer with the same sign as the projection onto
+        // the line.
+        radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
+    }
 
     const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
     const float two_sigma_elevational_squared = 2.0f*sigma_elevational*sigma_elevational; 
@@ -109,7 +116,8 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                              m_beam_profile->getSigmaLateral(),
                                                              m_beam_profile->getSigmaElevational(),
                                                              m_param_sound_speed,
-                                                             m_device_time_proj[stream_no]->data());
+                                                             m_device_time_proj[stream_no]->data(),
+                                                             m_param_use_arc_projection);
     
 }
 
