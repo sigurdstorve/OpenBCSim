@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
         std::cout << "Caught exception when creating simulator instance: " << e.what() << std::endl;
         exit(0);
     }
-    simulator->set_verbose(true);
+    simulator->set_parameter("verbose", "1");
 
     // Create the beam profile object to use for all lines.
     // Either analytical or lookup table.

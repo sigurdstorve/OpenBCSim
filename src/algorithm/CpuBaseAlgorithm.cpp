@@ -82,11 +82,6 @@ void CpuBaseAlgorithm::set_use_specific_num_cores(int num_threads) {
     configure_convolvers_if_possible();
 }
 
-
-void CpuBaseAlgorithm::set_verbose(bool v) {
-    m_verbose = v;
-}
-
 void CpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
     if (key == "sound_speed") {
         m_sound_speed = std::stof(value);

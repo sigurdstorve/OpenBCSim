@@ -45,10 +45,7 @@ public:
     typedef std::unique_ptr<IAlgorithm> u_ptr;
 
     virtual ~IAlgorithm() { }
-        
-    // Control printing of current line number being simulated.
-    virtual void set_verbose(bool v)                                                = 0;
-    
+            
     // Set misc. parameters. Available keys depends on the algorithm.
     virtual void set_parameter(const std::string&, const std::string& value)        = 0;
     

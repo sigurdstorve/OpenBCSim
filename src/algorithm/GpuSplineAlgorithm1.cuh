@@ -47,10 +47,6 @@ public:
         // cleanup
     }
         
-    virtual void set_verbose(bool v) {
-        m_fixed_alg->set_verbose(v);
-    }
-    
     virtual void set_parameter(const std::string& key, const std::string& value) {
         m_fixed_alg->set_parameter(key, value);
     }

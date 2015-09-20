@@ -43,10 +43,7 @@ namespace bcsim {
 class CpuBaseAlgorithm : public BaseAlgorithm {
 public:
     CpuBaseAlgorithm();
-    
-    // Control printing of current line number being simulated.
-    virtual void set_verbose(bool v);
-    
+        
     virtual void set_parameter(const std::string& key, const std::string& value);
     
     // Set scan sequence to use when simulating all RF lines.

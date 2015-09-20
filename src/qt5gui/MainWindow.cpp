@@ -472,8 +472,7 @@ void MainWindow::initializeSimulator(const std::string& type) {
         qDebug() << "Caught exception: " << e.what();
         onExit();
     }
-
-    m_sim->set_verbose(false);
+    m_sim->set_parameter("verbose", "0");
     const int num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
     m_sim->set_parameter("num_cpu_cores", std::to_string(num_cores));
     m_sim->set_parameter("sound_speed", "1540.0");
