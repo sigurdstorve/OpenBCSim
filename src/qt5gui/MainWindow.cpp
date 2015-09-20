@@ -505,13 +505,17 @@ void MainWindow::doSimulation() {
     //qDebug() << "doSimulation(): simulation time is " << m_sim_time_manager->get_time();
 
     std::vector<std::vector<bc_float> > rf_lines;
-    int simulation_millisec;
+    
+    std::vector<float> sim_milliseconds;
+    const auto num_rep = m_settings->value("simulate_lines_num_rep", 1).toInt();
 
     try {
-        ScopedCpuTimer timer([&](int millisec) {
-            simulation_millisec = millisec;
-        });
-        m_sim->simulate_lines(rf_lines);
+        for (int rep_no = 0; rep_no < num_rep; rep_no++) {
+            ScopedCpuTimer timer([&](int millisec) {
+                sim_milliseconds.push_back(millisec);
+            });
+            m_sim->simulate_lines(rf_lines);
+        }
         m_num_simulated_frames++;
     
         // Create refresh work task from current geometry and the beam space data
@@ -530,7 +534,26 @@ void MainWindow::doSimulation() {
     } catch (const std::runtime_error& e) {
         qDebug() << "Caught exception: " << e.what();
     }
-    statusBar()->showMessage("Simulation time: " + QString::number(simulation_millisec) + " ms.");
+
+    float mean_ms = 0.0f;
+    float std_ms = 0.0f;
+    const auto num_ms = sim_milliseconds.size();
+    for (size_t i = 0; i < num_ms; i++) {
+        mean_ms += sim_milliseconds[i];
+    }
+    mean_ms = mean_ms / num_ms;
+    for (size_t i = 0; i < num_ms; i++) {
+        const auto temp = sim_milliseconds[i]-mean_ms;
+        std_ms += temp*temp;
+    }
+    std_ms = std::sqrtf(std_ms/num_ms);
+    if (num_ms == 1) {
+        statusBar()->showMessage("Simulation time: " + QString::number(sim_milliseconds[0]) + " ms.");
+    } else {
+        statusBar()->showMessage("Simulation time: " + QString::number(mean_ms) 
+                                 + " +- " + QString::number(std_ms) + " ms."
+                                 + " (N=" + QString::number(num_ms) + ").");
+    }
 }
 
 // Currently ignoring weights when visualizing
