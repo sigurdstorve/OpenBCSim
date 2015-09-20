@@ -71,8 +71,6 @@ protected:
     void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 
 protected:
-    typedef cufftComplex complex;
-
     ScanSequence::s_ptr     m_scan_seq;
     ExcitationSignal        m_excitation;
 

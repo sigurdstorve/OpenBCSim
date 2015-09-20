@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <vector>
 #include <memory>
+#include <cufft.h>
 #include "cuda_helpers.h"
 #include "BaseAlgorithm.hpp"
 
@@ -48,6 +49,8 @@ protected:
     void print_cuda_device_properties(int device_no) const;
     
 protected:
+    typedef cufftComplex complex;
+    
     std::vector<CudaStreamRAII::u_ptr>  m_stream_wrappers;
     
     // it is only possible to change CUDA device before any operations
