@@ -129,6 +129,8 @@ private slots:
     void onLoadIniSettings();
 
     void onLoadBeamProfileLUT();
+    
+    void onSetSimulatorParameter();
 
 private:
     void initializeSplineVisualization(const QString& h5_file);

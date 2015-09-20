@@ -284,6 +284,10 @@ void MainWindow::createMenus() {
     connect(playback_speed_act, &QAction::triggered, this, &MainWindow::onSetPlaybackSpeed);
     simulateMenu->addAction(playback_speed_act);
 
+    auto set_parameter_act = new QAction(tr("Set simulator parameter"), this);
+    connect(set_parameter_act, &QAction::triggered, this, &MainWindow::onSetSimulatorParameter);
+    simulateMenu->addAction(set_parameter_act);
+    
     // Actions in about menu
     auto about_scatterers_act = new QAction(tr("Scatterers details"), this);
     connect(about_scatterers_act, &QAction::triggered, this, &MainWindow::onAboutScatterers);
@@ -693,4 +697,20 @@ void MainWindow::onLoadBeamProfileLUT() {
         return;
     }
     bcsim::setBeamProfileFromHdf(m_sim, h5_file.toUtf8().constData());
+}
+
+void MainWindow::onSetSimulatorParameter() {
+    if (!m_sim) {
+        qDebug() << "No valid simulator. Ignoring.";        
+    }
+    bool ok;
+    auto key = QInputDialog::getText(this, tr("Parameter key"), tr("key:"), QLineEdit::Normal, "", &ok);
+    if (!ok || key.isEmpty()) {
+        qDebug() << "Invalid key. Ignoring.";
+    }
+    auto value = QInputDialog::getText(this, tr("Parameter value"), tr("value:"), QLineEdit::Normal, "", &ok);
+    if (!ok || key.isEmpty()) {
+        qDebug() << "Invalid value. Ignoring.";
+    }
+    m_sim->set_parameter(key.toUtf8().constData(), value.toUtf8().constData());
 }
