@@ -28,7 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
 #include "LibBCSim.hpp"
-#include "BaseAlgorithm.hpp"
 
 namespace bcsim {
 
