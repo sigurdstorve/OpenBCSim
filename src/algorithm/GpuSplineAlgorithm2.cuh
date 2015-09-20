@@ -62,44 +62,19 @@ public:
         }
         m_beam_profile = gaussian_profile;   
     }
-
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
     
 protected:
     void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 
+    virtual void projection_kernel(int stream_no, const Scanline& scanline);
+    
 protected:
-    ScanSequence::s_ptr     m_scan_seq;
-    ExcitationSignal        m_excitation;
-
-    // At all times equal to the number of scatterers in device memory
-    size_t                  m_num_scatterers;
-
-    // number of samples in the time-projection lines [should be a power of two]
-    size_t              m_num_time_samples;
     
     // device memory for spline scatterers control points and amplitudes
     DeviceBufferRAII<float>::u_ptr      m_device_control_xs;
     DeviceBufferRAII<float>::u_ptr      m_device_control_ys;
     DeviceBufferRAII<float>::u_ptr      m_device_control_zs;
     DeviceBufferRAII<float>::u_ptr      m_device_control_as;
-    
-    // The cuFFT plan used for all transforms.
-    CufftPlanRAII::u_ptr                m_fft_plan;
-
-    std::vector<DeviceBufferRAII<float>::u_ptr>            m_device_time_proj;    // real-valued
-    std::vector<DeviceBufferRAII<complex>::u_ptr>          m_device_rf_lines;     // complex-valued
-    std::vector<DeviceBufferRAII<float>::u_ptr>            m_device_rf_lines_env; // real-valued
-    std::vector<HostPinnedBufferRAII<float>::u_ptr>        m_host_rf_lines;       // real-valued
-
-    // precomputed excitation FFT with Hilbert mask applied.
-    DeviceBufferRAII<complex>::u_ptr                  m_device_excitation_fft;
-
-    // -1 means not allocated
-    int     m_num_beams_allocated;
-
-    // TODO: Figure out how to support LUT beam profiles also.
-    std::shared_ptr<bcsim::GaussianBeamProfile>  m_beam_profile;
     
     // The knot vector common to all splines.
     std::vector<float>                          m_common_knots;
