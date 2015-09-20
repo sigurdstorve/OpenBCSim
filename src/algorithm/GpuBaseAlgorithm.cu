@@ -113,6 +113,15 @@ void GpuBaseAlgorithm::print_cuda_device_properties(int device_no) const {
     std::cout << "memoryBusWidth: "             << prop.memoryBusWidth             << std::endl;
 }
 
+void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
+    auto gaussian_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(beam_profile);
+    if (!gaussian_profile) {
+        throw std::runtime_error("GPU algorithm currently only supports analytical beam profiles");
+    }
+    m_beam_profile = gaussian_profile;   
+}
+
+
 void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
     m_can_change_cuda_device = false;
     

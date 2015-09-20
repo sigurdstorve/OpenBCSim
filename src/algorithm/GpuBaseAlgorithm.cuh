@@ -49,6 +49,8 @@ public:
     virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
 
     virtual void set_excitation(const ExcitationSignal& new_excitation);
+    
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile);
 
 protected:
     void create_cuda_stream_wrappers(int num_streams);

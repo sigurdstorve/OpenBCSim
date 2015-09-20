@@ -49,15 +49,7 @@ public:
     virtual void set_parameter(const std::string& key, const std::string& value);
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
-    
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) {
-        auto gaussian_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(beam_profile);
-        if (!gaussian_profile) {
-            throw std::runtime_error("GPU algorithm currently only supports analytical beam profiles");
-        }
-        m_beam_profile = gaussian_profile;   
-    }
-    
+        
 protected:
     void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 
