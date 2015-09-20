@@ -27,13 +27,21 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
+#include <string>
 #include "LibBCSim.hpp"
 
 namespace bcsim {
 
 // Common functionality for CPU- and GPU-algorithms.
 class BaseAlgorithm : public IAlgorithm {
+public:
+    BaseAlgorithm();
+    
+    // Handle common parameters for all algorithm implementations.
+    virtual void set_parameter(const std::string& key, const std::string& value);
 
+protected:
+    int         m_param_verbose;
 };
 
 }   // end namespace

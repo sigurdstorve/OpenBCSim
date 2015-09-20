@@ -107,8 +107,7 @@ __global__ void SplineAlgKernel(float* control_xs,
 namespace bcsim {
 
 GpuSplineAlgorithm2::GpuSplineAlgorithm2()
-    : m_verbose(false),
-      m_num_time_samples(32768),  // TODO: remove this limitation
+    : m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_beam_profile(nullptr),
       m_output_type("env")
@@ -139,7 +138,7 @@ void GpuSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /
         size_t stream_no = beam_no % NUM_CUDA_STREAMS;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
 
-        if (m_verbose) {
+        if (m_param_verbose) {
             std::cout << "beam_no = " << beam_no << ", stream_no = " << stream_no << std::endl;
         }
 

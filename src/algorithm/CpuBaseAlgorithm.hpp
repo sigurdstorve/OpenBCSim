@@ -118,8 +118,6 @@ protected:
     bool m_beam_profile_configured; 
     bool m_scatterers_configured;   
     
-    // Print status information e.g. current line no
-    bool m_verbose;
     // Number of threads to use for simulation.
     int  m_omp_num_threads;
 

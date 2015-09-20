@@ -26,11 +26,25 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <stdexcept>
 #include "BaseAlgorithm.hpp"
 
 
 namespace bcsim {
+BaseAlgorithm::BaseAlgorithm()
+    : m_param_verbose(0)
+{
+}
 
+void BaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
+    if (key == "verbose") {
+        const auto verbose = std::stoi(value);
+        m_param_verbose = verbose;
+    } else {
+        const auto err_msg = std::string("illegal parameter name: '") + key + std::string("'");
+        throw std::runtime_error(err_msg);
+    }
+}
 
 }   // end namespace
 

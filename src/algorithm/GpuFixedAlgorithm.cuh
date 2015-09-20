@@ -88,7 +88,6 @@ protected:
     std::string             m_output_type;
 
     ScanSequence::s_ptr     m_scan_seq;
-    bool                    m_verbose;
     ExcitationSignal        m_excitation;
 
     // At all times equal to the number of scatterers in device memory

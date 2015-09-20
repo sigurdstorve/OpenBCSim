@@ -46,7 +46,7 @@ void CpuFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
         throw std::runtime_error("Cast to FixedScatterers failed");
     }
     
-    if (m_verbose) std::cout << "Number of fixed scatterers: " << m_scatterers->num_scatterers() << std::endl;
+    if (m_param_verbose) std::cout << "Number of fixed scatterers: " << m_scatterers->num_scatterers() << std::endl;
     m_scatterers_configured = true;
 }
 

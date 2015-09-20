@@ -51,7 +51,6 @@ CpuBaseAlgorithm::CpuBaseAlgorithm()
         : m_sound_speed(1540.0f),
           m_scan_sequence_configured(false),
           m_excitation_configured(false),
-          m_verbose(false),
           m_beam_profile_configured(false),
           m_scatterers_configured(false),
           m_omp_num_threads(1),
@@ -74,7 +73,7 @@ void CpuBaseAlgorithm::set_use_specific_num_cores(int num_threads) {
         throw std::runtime_error("Number of cores not supported by computer");
     }
     m_omp_num_threads = num_threads;
-    if (m_verbose) {
+    if (m_param_verbose) {
         std::cout << "Using " << m_omp_num_threads << " OpenMP threads." << std::endl;
     }
     
@@ -99,7 +98,7 @@ void CpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         const float noise_amplitude = std::stof(value);
         set_noise_amplitude(noise_amplitude);
     } else {
-        throw std::runtime_error("illegal parameter name");
+        BaseAlgorithm::set_parameter(key, value);
     }
 }
 
@@ -150,18 +149,19 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLi
     int num_scanlines = m_scan_sequence->get_num_lines();
     rfLines.resize(num_scanlines);
 
-    if (m_verbose) {
+    if (m_param_verbose) {
         std::cout << "Sound speed: " << m_sound_speed << std::endl;
         std::cout << "Number of scan lines: " << num_scanlines << std::endl;
-    }
-    if (m_verbose) std::cout << "Setting " << m_omp_num_threads << " OpenMP threads." << std::endl;
-    
+        std::cout << "Setting " << m_omp_num_threads << " OpenMP threads." << std::endl;
+    }    
     omp_set_num_threads(m_omp_num_threads);
 #if BCSIM_ENABLE_OPENMP
     #pragma omp parallel for
 #endif
     for (int line_no = 0; line_no < num_scanlines; line_no++) {
-        if (m_verbose) std::cout << "Line " << line_no << " thread id:" << omp_get_thread_num() << "...\n";
+        if (m_param_verbose) {
+            std::cout << "Line " << line_no << " thread id:" << omp_get_thread_num() << "...\n";
+        }
         const Scanline& line = m_scan_sequence->get_scanline(line_no);
         rfLines[line_no] = simulate_line(line);
     }
@@ -201,7 +201,7 @@ void CpuBaseAlgorithm::configure_convolvers_if_possible() {
         convolvers.clear();
         std::cout << "Recreating convolvers\n";
         for (int i = 0; i < m_omp_num_threads; i++) {
-            if (m_verbose) std::cout << "Creating FFT-convolver " << i << " of type " << m_convolver_type << std::endl;
+            if (m_param_verbose) std::cout << "Creating FFT-convolver " << i << " of type " << m_convolver_type << std::endl;
  
             auto convolver = IBeamConvolver::Create(m_convolver_type, m_rf_line_num_samples, m_excitation);
             convolvers.push_back(std::move(convolver));
