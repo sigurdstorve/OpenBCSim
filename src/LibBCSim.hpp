@@ -47,22 +47,22 @@ public:
     virtual ~IAlgorithm() { }
             
     // Set misc. parameters. Available keys depends on the algorithm.
-    virtual void set_parameter(const std::string&, const std::string& value)        = 0;
+    virtual void set_parameter(const std::string&, const std::string& value)            = 0;
     
     // Configure the scatterers used when simulating.
-    virtual void set_scatterers(Scatterers::s_ptr new_scatterers)               = 0;
+    virtual void set_scatterers(Scatterers::s_ptr new_scatterers)                       = 0;
 
     // Set scan sequence to use when simulating all RF lines.
-    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)           = 0;
+    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               = 0;
 
     // Set the excitation signal to use when convolving.
-    virtual void set_excitation(const ExcitationSignal& new_excitation)             = 0;
+    virtual void set_excitation(const ExcitationSignal& new_excitation)                 = 0;
 
     // Set the beam profile object to use when simulating.
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                 = 0;
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     = 0;
 
-    /* Simulate all RF lines. Returns vector of RF lines.
-       Requires that everything is properly configured. */
+    // Simulate all RF lines. Returns vector of RF lines.
+    // Requires that everything is properly configured.
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) = 0;
 };
 
