@@ -11,13 +11,13 @@ import numpy as np
 
 # Create and configure tracker
 sim = RfSimulator("fixed")
-sim.set_verbose(True)
+sim.set_parameter("verbose", "1")
 sim.set_print_debug(True)
 
 # Set general simulation parameters
 sim.set_parameter("sound_speed", "1540.0")
 sim.set_parameter("num_cpu_cores", "all")
-sim.set_output_type("rf")
+sim.set_parameter("output_type", "rf")
 
 # Set scatterers
 num_scatterers = 16

@@ -48,13 +48,13 @@ if __name__ == '__main__':
         print "Using CPU"
         sim = RfSimulator("spline")
         sim.set_parameter("num_cpu_cores", "all")
-    sim.set_verbose(False)
+    sim.set_parameter("verbose", "0")
     sim.set_print_debug(False)
     sim.set_parameter("sound_speed", "%f" % c0)
 
     # NOTE: because of current limitation with the GPU spline alg. 2, this call
     # must be placed BEFORE configuring the excitation signal.
-    sim.set_output_type("rf")
+    sim.set_parameter("output_type", "rf")
 
     # Set spline scatterers
     with h5py.File(args.scatterer_file, 'r') as f:
