@@ -80,8 +80,7 @@ __global__ void FixedAlgKernel(float* point_xs,
 
 
 GpuFixedAlgorithm::GpuFixedAlgorithm()
-    : m_num_cuda_streams(2),
-      m_num_time_samples(32768),  // TODO: remove this limitation
+    : m_num_time_samples(32768),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_beam_profile(nullptr)
 {
@@ -91,7 +90,7 @@ void GpuFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*o
     m_can_change_cuda_device = false;
     
     if (m_stream_wrappers.size() == 0) {
-        create_cuda_stream_wrappers(m_num_cuda_streams);
+        create_cuda_stream_wrappers(m_param_num_cuda_streams);
     }
     
     auto num_lines      = m_scan_seq->get_num_lines();
@@ -109,7 +108,7 @@ void GpuFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*o
     dim3 block_size(threads_pr_block, 1, 1);
 
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
-        size_t stream_no = beam_no % m_num_cuda_streams;
+        size_t stream_no = beam_no % m_param_num_cuda_streams;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
 
         if (m_param_verbose) {
@@ -323,10 +322,10 @@ void GpuFixedAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)
     // allocate host and device memory related to RF lines
     size_t time_proj_bytes = sizeof(float)*m_num_time_samples;
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
-    m_device_time_proj.resize(m_num_cuda_streams);
-    m_device_rf_lines.resize(m_num_cuda_streams);
-    m_device_rf_lines_env.resize(m_num_cuda_streams);
-    for (size_t i = 0; i < m_num_cuda_streams; i++) {
+    m_device_time_proj.resize(m_param_num_cuda_streams);
+    m_device_rf_lines.resize(m_param_num_cuda_streams);
+    m_device_rf_lines_env.resize(m_param_num_cuda_streams);
+    for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
         m_device_time_proj[i]    = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
         m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
         m_device_rf_lines_env[i] = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 

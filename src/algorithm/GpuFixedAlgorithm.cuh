@@ -80,9 +80,6 @@ protected:
 
     // number of samples in the time-projection lines [should be a power of two]
     size_t              m_num_time_samples;
-
-    // the number of CUDA streams used when simulating RF lines
-    size_t                              m_num_cuda_streams;
     
     // device memory for fixed scatterers
     DeviceBufferRAII<float>::u_ptr      m_device_point_xs;

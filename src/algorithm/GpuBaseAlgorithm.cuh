@@ -60,6 +60,7 @@ protected:
     // parameters that are comon to all GPU algorithms
     float       m_sound_speed;
     int         m_cuda_device_no;
+    int         m_param_num_cuda_streams;
 };
     
 }   // end namespace

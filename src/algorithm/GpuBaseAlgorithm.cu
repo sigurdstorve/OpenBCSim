@@ -34,7 +34,8 @@ namespace bcsim {
 GpuBaseAlgorithm::GpuBaseAlgorithm()
     : m_sound_speed(1540.0f),
       m_cuda_device_no(0),
-      m_can_change_cuda_device(true)
+      m_can_change_cuda_device(true),
+      m_param_num_cuda_streams(2)
 {
 }
 
@@ -59,6 +60,12 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         print_cuda_device_properties(m_cuda_device_no);
     } else if (key == "sound_speed") {
         m_sound_speed = std::stof(value);
+    } else if (key == "cuda_streams") {
+        const auto num_streams = std::stoi(value);
+        if (num_streams <= 0) {
+            throw std::runtime_error("invalid number of CUDA streams");
+            m_param_num_cuda_streams = num_streams;
+        }
     } else {
         BaseAlgorithm::set_parameter(key, value);
     }
