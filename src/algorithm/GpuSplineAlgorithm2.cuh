@@ -50,11 +50,6 @@ public:
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
     
-    // NOTE: currently requires that set_excitation is called first!
-    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
-
-    virtual void set_excitation(const ExcitationSignal& new_excitation);
-
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) {
         auto gaussian_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(beam_profile);
         if (!gaussian_profile) {

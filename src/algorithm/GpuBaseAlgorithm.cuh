@@ -44,6 +44,11 @@ public:
     virtual void set_parameter(const std::string& key, const std::string& value);
 
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
+    
+    // NOTE: currently requires that set_excitation is called first!
+    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
+
+    virtual void set_excitation(const ExcitationSignal& new_excitation);
 
 protected:
     void create_cuda_stream_wrappers(int num_streams);

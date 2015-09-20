@@ -28,13 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <cuda.h>
-#include <cufft.h>
-#include <complex>
 #include "GpuFixedAlgorithm.cuh"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
-#include "discrete_hilbert_mask.hpp"
 #include "gpu_alg_common.cuh" // for misc. CUDA kernels
 #include "common_utils.hpp" // for compute_num_rf_samples
 
@@ -168,84 +165,6 @@ void GpuFixedAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatter
         host_temp.data()[i] = scatterers->scatterers[i].amplitude;
     }
     cudaErrorCheck( cudaMemcpy(m_device_point_as->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-}
-
-void GpuFixedAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
-    m_can_change_cuda_device = false;
-    
-    m_excitation = new_excitation;
-    size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
-
-    // setup pre-computed convolution kernel and Hilbert transformer.
-    m_device_excitation_fft = DeviceBufferRAII<complex>::u_ptr(new DeviceBufferRAII<complex>(rf_line_bytes));
-    std::cout << "Number of excitation samples: " << m_excitation.samples.size() << std::endl;
-    // convert to complex with zero imaginary part.
-    std::vector<std::complex<float> > temp(m_num_time_samples);
-    for (size_t i = 0; i < m_excitation.samples.size(); i++) {
-        temp[i] = std::complex<float>(m_excitation.samples[i], 0.0f);
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_excitation_fft->data(), temp.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
-    //dump_device_memory((std::complex<float>*)m_device_excitation_fft.data(), m_num_time_samples, "complex_exitation.txt");
-
-    m_fft_plan = CufftPlanRAII::u_ptr(new CufftPlanRAII(m_num_time_samples, CUFFT_C2C, 1));
-
-    // compute FFT of excitation signal and add the Hilbert transform
-    cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), m_device_excitation_fft->data(), m_device_excitation_fft->data(), CUFFT_FORWARD) );
-    auto mask = discrete_hilbert_mask<std::complex<float> >(m_num_time_samples);
-    DeviceBufferRAII<complex> device_hilbert_mask(rf_line_bytes);
-    cudaErrorCheck( cudaMemcpy(device_hilbert_mask.data(), mask.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
-    
-    ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
-    
-    if (m_param_verbose) {
-        std::cout << "Output datatype is " << to_string(m_param_output_type) << std::endl;
-    }
-    if (m_param_output_type == OutputType::ENVELOPE_DATA) {
-        MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
-    }
-    //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
-}
-
-
-void GpuFixedAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
-    m_can_change_cuda_device = false;
-    
-    m_scan_seq = new_scan_sequence;
-
-    // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
-    auto num_rf_samples = compute_num_rf_samples(m_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
-    //std::cout << "num_rf_samples: " << num_rf_samples << std::endl;
-    if (num_rf_samples > m_num_time_samples) {
-        throw std::runtime_error("Too many RF samples required. TODO: remove limitation");
-    }
-
-    size_t num_beams = m_scan_seq->get_num_lines();
-    // avoid reallocating memory if not necessary.
-    if (m_num_beams_allocated < static_cast<int>(num_beams)) {
-        std::cout << "Allocating HOST and DEVICE memory: had previously allocated memory for " << m_num_beams_allocated << " beams.\n";
-    } else {
-        return;
-    }
-
-    // allocate host and device memory related to RF lines
-    size_t time_proj_bytes = sizeof(float)*m_num_time_samples;
-    size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
-    m_device_time_proj.resize(m_param_num_cuda_streams);
-    m_device_rf_lines.resize(m_param_num_cuda_streams);
-    m_device_rf_lines_env.resize(m_param_num_cuda_streams);
-    for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
-        m_device_time_proj[i]    = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
-        m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
-        m_device_rf_lines_env[i] = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
-    }
-
-    // allocate host memory for all RF lines
-    m_host_rf_lines.resize(num_beams);
-    for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<float>::u_ptr( new HostPinnedBufferRAII<float>(time_proj_bytes)) );
-    }
-
-    m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
 void GpuFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
