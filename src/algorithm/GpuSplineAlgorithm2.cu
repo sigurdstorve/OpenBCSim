@@ -113,14 +113,23 @@ GpuSplineAlgorithm2::GpuSplineAlgorithm2()
 {
 }
 
-void GpuSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
-    m_can_change_cuda_device = false;
-    if (m_stream_wrappers.size() == 0) {
-        // TODO: Is it better to do this check in set_parameter(), after the base
-        // functionality has been used to update m_param_num_cuda_streams?
+void GpuSplineAlgorithm2::set_parameter(const std::string& key, const std::string& value) {
+    if (key == "cuda_streams") {
+        const auto old_value = m_param_num_cuda_streams;
         if (m_param_num_cuda_streams > MAX_NUM_CUDA_STREAMS) {
+            // reset to old value if new value is invalid
+            m_param_num_cuda_streams = old_value;
             throw std::runtime_error("number of CUDA streams exceeds MAX_NUM_CUDA_STREAMS");
         }
+    } else {
+        GpuBaseAlgorithm::set_parameter(key, value);
+    }
+}
+
+void GpuSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
+    m_can_change_cuda_device = false;
+    
+    if (m_stream_wrappers.size() == 0) {
         create_cuda_stream_wrappers(m_param_num_cuda_streams);
     }
     
@@ -229,10 +238,10 @@ void GpuSplineAlgorithm2::simulate_lines(std::vector<std::vector<bc_float> >&  /
                                                                                                        m_num_time_samples);
         } else if (m_param_output_type == OutputType::RF_DATA) {
             RealPartKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                   m_device_rf_lines_env[stream_no]->data(),
-                                                                                                    m_num_time_samples);
+                                                                                                     m_device_rf_lines_env[stream_no]->data(),
+                                                                                                     m_num_time_samples);
         } else if (m_param_output_type == OutputType::PROJECTIONS) {
-            throw std::runtime_error("GpuSplineAlgorithm2 does not yet support output type PROJECTIONS");        
+            throw std::runtime_error("Output type PROJECTIONS is not yet supported");        
         } else {
             throw std::logic_error("illegal output type");
         }

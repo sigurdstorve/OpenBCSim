@@ -177,14 +177,14 @@ void GpuFixedAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*o
 
         if (m_param_output_type == OutputType::ENVELOPE_DATA) {
             AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                    m_device_rf_lines_env[stream_no]->data(),
-                                                                                                    m_num_time_samples);
+                                                                                                       m_device_rf_lines_env[stream_no]->data(),
+                                                                                                       m_num_time_samples);
         } else if (m_param_output_type == OutputType::RF_DATA) {
             RealPartKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
                                                                                                      m_device_rf_lines_env[stream_no]->data(),
                                                                                                      m_num_time_samples);
         } else if (m_param_output_type == OutputType::PROJECTIONS) {
-            throw std::runtime_error("GpuFixedAlgorithm does not yet support output type PROJECTIONS");        
+            throw std::runtime_error("Output type PROJECTIONS is not yet supported");        
         } else {
             throw std::logic_error("illegal output type");
         }

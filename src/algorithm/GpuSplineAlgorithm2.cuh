@@ -46,9 +46,7 @@ public:
         // cleanup
     }
         
-    virtual void set_parameter(const std::string& key, const std::string& value) {
-        GpuBaseAlgorithm::set_parameter(key, value);
-    }
+    virtual void set_parameter(const std::string& key, const std::string& value);
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers);
     
