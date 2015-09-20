@@ -61,6 +61,7 @@ protected:
     int         m_param_verbose;
     OutputType  m_param_output_type;
     float       m_param_noise_amplitude;
+    bool        m_param_use_arc_projection;
 };
 
 }   // end namespace

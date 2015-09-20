@@ -60,7 +60,8 @@ __global__ void SplineAlgKernel(float* control_xs,
                                 int    NUM_CS,
                                 int    NUM_SPLINES,
                                 float* res,
-                                size_t eval_basis_offset_elements) {
+                                size_t eval_basis_offset_elements,
+                                bool   use_arc_projection) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -87,10 +88,12 @@ __global__ void SplineAlgKernel(float* control_xs,
     const auto lateral_dist = dot(point, lat_dir);
     const auto elev_dist    = dot(point, ele_dir);
 
-    // Use "arc projection" in the radial direction: use length of vector from
-    // beam's origin to the scatterer with the same sign as the projection onto
-    // the line.
-    radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
+    if (use_arc_projection) {
+        // Use "arc projection" in the radial direction: use length of vector from
+        // beam's origin to the scatterer with the same sign as the projection onto
+        // the line.
+        radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
+    }
 
     // compute weight
     const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
@@ -171,7 +174,8 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                                               m_num_cs,
                                                               m_num_splines,
                                                               m_device_time_proj[stream_no]->data(),
-                                                              eval_basis_offset_elements);
+                                                              eval_basis_offset_elements,
+                                                              m_param_use_arc_projection);
 
 }
 
