@@ -46,17 +46,12 @@ public:
         
     virtual void set_parameter(const std::string& key, const std::string& value);
     
-    // Set scan sequence to use when simulating all RF lines.
     virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence);
 
-    // Set the excitation signal to use when convolving.
     virtual void set_excitation(const ExcitationSignal& new_excitation);
 
-    // Set the beam profile object to use when simulating.
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile);
 
-    // Simulate all RF lines. Returns vector of RF lines.
-    // Requires that everything is properly configured.
     virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines);
     
 protected:
