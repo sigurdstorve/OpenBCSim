@@ -27,7 +27,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 #include <stdexcept>
 #include <complex>
 #include <algorithm>
@@ -151,7 +150,10 @@ class BeamConvolver_TimeProj : public BeamConvolverBase {
 public:
     BeamConvolver_TimeProj(size_t num_proj_samples, const ExcitationSignal& excitation)
         : BeamConvolverBase(num_proj_samples, excitation, [](std::complex<float> v) { return v.real(); })
-    { }
+    {
+        // no convolution is performed, and hence no convolution delay.
+        m_excitation_delay = 0;
+    }
 
 protected:
     virtual void process_first_stage() override {
