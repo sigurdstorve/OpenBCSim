@@ -61,7 +61,7 @@ bc_float get_max_value(const std::vector<std::vector<bc_float> >& image_lines) {
     return *std::max_element(max_values.begin(), max_values.end());
 }
 
-void log_compress_frame(std::vector<std::vector<bc_float> >& image_lines, float dyn_range, float normalize_factor) {
+void log_compress_frame(std::vector<std::vector<bc_float> >& image_lines, float dyn_range, float normalize_factor, float gain_factor) {
 
     auto num_beams   = image_lines.size();
     auto num_samples = image_lines[0].size(); 
@@ -69,7 +69,7 @@ void log_compress_frame(std::vector<std::vector<bc_float> >& image_lines, float 
     for (auto& beam : image_lines) {
         std::transform(beam.begin(), beam.end(), beam.begin(), [=](bc_float pixel) {
             // log-compression
-            pixel = static_cast<bc_float>(20.0*std::log10(pixel/normalize_factor));
+            pixel = static_cast<bc_float>(20.0*std::log10(gain_factor*pixel/normalize_factor));
             pixel = (255.0/dyn_range)*(pixel + dyn_range);
             
             // clamp to [0, 255]
