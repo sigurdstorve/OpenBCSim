@@ -53,10 +53,10 @@ std::vector<std::vector<bc_float> > decimate_frame(const std::vector<std::vector
     return decimated_frame;
 }
 
-bc_float get_max_value(const std::vector<std::vector<bc_float> >& env_frame) {
+bc_float get_max_value(const std::vector<std::vector<bc_float> >& image_lines) {
     std::vector<bc_float> max_values;
-    for (const auto& env_line : env_frame) {
-        max_values.push_back(*std::max_element(env_line.begin(), env_line.end()));
+    for (const auto& image_line : image_lines) {
+        max_values.push_back(*std::max_element(image_line.begin(), image_line.end()));
     }
     return *std::max_element(max_values.begin(), max_values.end());
 }

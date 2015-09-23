@@ -41,7 +41,7 @@ namespace bcsim {
 std::vector<std::vector<bc_float> > DLL_PUBLIC decimate_frame(const std::vector<std::vector<bc_float> >& frame, int rad_decimation);
 
 // Determine the biggest value in all beams in frame [typ. for envelope detected data]
-bc_float DLL_PUBLIC get_max_value(const std::vector<std::vector<bc_float> >& env_frame);
+bc_float DLL_PUBLIC get_max_value(const std::vector<std::vector<bc_float> >& image_lines);
 
 // Log-compress every pixel [assuming that the input is envelope detected]
 // dyn_range:           The dynamic range [dB]
