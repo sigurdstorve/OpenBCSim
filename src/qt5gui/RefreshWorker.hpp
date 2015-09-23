@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QImage>
 #include "cartesianator/Cartesianator.hpp"
 #include "ScanGeometry.hpp"
+#include "BCSimConvenience.hpp"
 
 namespace refresh_worker {
 
@@ -136,13 +137,7 @@ private:
     
 
             if (work_task->m_auto_normalize) {
-                // determine max over all beams
-                std::vector<float> max_values;
-                for (auto& rf_line : rf_lines) {
-                    const float max_val = *std::max_element(rf_line.begin(), rf_line.end());
-                    max_values.push_back(max_val);
-                }
-                work_result->updated_normalization_const = *std::max_element(max_values.begin(), max_values.end());
+                work_result->updated_normalization_const = bcsim::get_max_value(rf_lines);
             } else {
                 work_result->updated_normalization_const = work_task->m_normalize_const;
             }
