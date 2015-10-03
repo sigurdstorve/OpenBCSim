@@ -734,16 +734,19 @@ void MainWindow::onLoadBeamProfileLUT() {
 
 void MainWindow::onSetSimulatorParameter() {
     if (!m_sim) {
-        qDebug() << "No valid simulator. Ignoring.";        
+        qDebug() << "No valid simulator.";
+        return;
     }
     bool ok;
     auto key = QInputDialog::getText(this, tr("Parameter key"), tr("key:"), QLineEdit::Normal, "", &ok);
     if (!ok || key.isEmpty()) {
-        qDebug() << "Invalid key. Ignoring.";
+        qDebug() << "Invalid key.";
+        return;
     }
     auto value = QInputDialog::getText(this, tr("Parameter value"), tr("value:"), QLineEdit::Normal, "", &ok);
     if (!ok || key.isEmpty()) {
-        qDebug() << "Invalid value. Ignoring.";
+        qDebug() << "Invalid value.";
+        return;
     }
     m_sim->set_parameter(key.toUtf8().constData(), value.toUtf8().constData());
 }
