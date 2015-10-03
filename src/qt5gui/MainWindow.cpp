@@ -94,9 +94,10 @@ MainWindow::MainWindow() {
     window->setLayout(v_layout);
     setCentralWidget(window);
 
-
-    m_gl_vis_widget = new GLVisualizationWidget;
-    h_layout->addWidget(m_gl_vis_widget);
+    if (m_settings->value("enable_gl_widget", true).toBool()) {
+        m_gl_vis_widget = new GLVisualizationWidget;
+        h_layout->addWidget(m_gl_vis_widget);
+    }
 
     // One column of all custom wiggets
     auto left_widget_col = new QVBoxLayout;
@@ -453,8 +454,11 @@ void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_
     auto new_scanseq = bcsim::OrientScanSequence(bcsim::CreateScanSequence(new_geometry, new_num_lines, cur_time), rot_angles, probe_origin);
 
     m_sim->set_scan_sequence(new_scanseq);
-    m_gl_vis_widget->setScanSequence(new_scanseq);
-    updateOpenGlVisualization();
+    
+    if (m_settings->value("enable_gl_widget", true).toBool()) {
+        m_gl_vis_widget->setScanSequence(new_scanseq);
+        updateOpenGlVisualization();
+    }
 }
 
 void MainWindow::setExcitation(const QString h5_file) {
@@ -582,7 +586,9 @@ void MainWindow::initializeFixedVisualization(const QString& h5_file) {
         const auto p = bcsim::vector3(data[ind][0], data[ind][1], data[ind][2]);
         scatterer_points[scatterer_no] = p;
     }
-    m_gl_vis_widget->setFixedScatterers(scatterer_points);
+    if (m_settings->value("enable_gl_widget", true).toBool()) {
+        m_gl_vis_widget->setFixedScatterers(scatterer_points);
+    }
 }
 
 
@@ -627,8 +633,10 @@ void MainWindow::initializeSplineVisualization(const QString& h5_file) {
         splines[scatterer_no] = curve;
     }
 
-    // Pass new splines the visualization widget
-    m_gl_vis_widget->setScattererSplines(splines);
+    if (m_settings->value("enable_gl_widget", true).toBool()) {
+        // Pass new splines the visualization widget
+        m_gl_vis_widget->setScattererSplines(splines);
+    }
 }
 
 void MainWindow::onNewExcitation(bcsim::ExcitationSignal new_excitation) {
@@ -702,7 +710,9 @@ void MainWindow::onGetXyExtent() {
 }
 
 void MainWindow::updateOpenGlVisualization() {
-    if (!m_gl_vis_widget) return;
+    if (!m_gl_vis_widget || !m_settings->value("enable_gl_widget", true).toBool()) {
+        return;
+    }
 
     // Update scatterer visualization
     auto new_timestamp = m_sim_time_manager->get_time();
