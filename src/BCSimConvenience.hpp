@@ -41,12 +41,13 @@ namespace bcsim {
 std::vector<std::vector<bc_float> > DLL_PUBLIC decimate_frame(const std::vector<std::vector<bc_float> >& frame, int rad_decimation);
 
 // Determine the biggest value in all beams in frame [typ. for envelope detected data]
-bc_float DLL_PUBLIC get_max_value(const std::vector<std::vector<bc_float> >& env_frame);
+bc_float DLL_PUBLIC get_max_value(const std::vector<std::vector<bc_float> >& image_lines);
 
-// Log-compress every pixel [assuming that the input is envelope detected]
+// Log-compress every pixel and clamp result to [0, 255]
 // dyn_range:           The dynamic range [dB]
 // normalize_factor:    Normalization factor [typ. determined as max over all beams in all frames]
-void DLL_PUBLIC log_compress_frame(std::vector<std::vector<bc_float> >& env_frame, float dyn_range, float normalize_factor);
+// gain_factor:         Image gain
+void DLL_PUBLIC log_compress_frame(std::vector<std::vector<bc_float> >& image_lines, float dyn_range, float normalize_factor, float gain_factor);
 
 // Evaluate a spline scatterer dataset at a specific time in order to generate
 // a new fixed scatterer dataset.

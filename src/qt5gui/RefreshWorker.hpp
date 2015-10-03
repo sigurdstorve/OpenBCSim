@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QImage>
 #include "cartesianator/Cartesianator.hpp"
 #include "ScanGeometry.hpp"
+#include "BCSimConvenience.hpp"
 
 namespace refresh_worker {
 
@@ -136,46 +137,24 @@ private:
     
 
             if (work_task->m_auto_normalize) {
-                // determine max over all beams
-                std::vector<float> max_values;
-                for (auto& rf_line : rf_lines) {
-                    const float max_val = *std::max_element(rf_line.begin(), rf_line.end());
-                    max_values.push_back(max_val);
-                }
-                work_result->updated_normalization_const = *std::max_element(max_values.begin(), max_values.end());
+                work_result->updated_normalization_const = bcsim::get_max_value(rf_lines);
             } else {
                 work_result->updated_normalization_const = work_task->m_normalize_const;
             }
 
-            // TODO: Use convenience functions offered from core library.
-
-            // log-compression
-            const auto dyn_range   = work_task->m_dyn_range;
-            const auto gain_factor = work_task->m_gain;
-            for (auto& rf_line : rf_lines) {
-                // normalize to [0, 1] and scale
-                std::transform(rf_line.begin(), rf_line.end(), rf_line.begin(), [=](bc_float v) {
-                    return gain_factor*(v / work_result->updated_normalization_const);
-                });
-                // log-compress
-                std::transform(rf_line.begin(), rf_line.end(), rf_line.begin(), [=](bc_float v) {
-                    const auto temp = static_cast<float>(20.0*std::log10(v));
-                    return (255.0/dyn_range)*(temp + dyn_range);
-                });
-            }    
-
-            // Copy beamspace data in order to
-            // 1. Get correct memory layout [sample index most rapidly varying,
-            //    beams stored after one another]
-            // 2. Clamp to [0, 255] and convert to unsigned char.
+            // grayscale log-compression
+            bcsim::log_compress_frame(rf_lines, work_task->m_dyn_range,
+                                      work_result->updated_normalization_const,
+                                      work_task->m_gain);
+            
+            // Copy beamspace data in order to get correct memory layout,
+            // i.e. sample index most rapidly varying. Convert to unsigned char.
             std::vector<unsigned char> beamspace_data(num_beams*num_range);
             for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
                 std::transform(std::begin(rf_lines[beam_no]),
-                                std::end(rf_lines[beam_no]),
-                                beamspace_data.data()+num_range*beam_no,
-                                [=](float v) {
-                    if (v < 0.0f) v = 0.0f;
-                    if (v > 255.0f) v = 255.0f;
+                               std::end(rf_lines[beam_no]),
+                               beamspace_data.data()+num_range*beam_no,
+                               [=](float v) {
                     return static_cast<unsigned char>(v);
                 });
             }
