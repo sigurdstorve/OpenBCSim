@@ -10,8 +10,8 @@ description="""
 """
 
 def create_phantom(args):
-    x_min = -10e-3
-    x_max = 10e-3
+    x_min = -34.5e-3
+    x_max = 34.5e-3
     z_min = 20e-3
     z_max = 90e-3
     area = (x_max-x_min)*(z_max-z_min)
@@ -28,6 +28,9 @@ def create_phantom(args):
         ampls[xs**2 + ys**2 + (zs-z0)**2 <= cyst_radius**2] *= args.cyst_scale
     for params in [(40e-3, 10e-3), (60e-3, 5e-3), (80e-3, 2.5e-3)]:
         make_cystic_region(*params)
+    # same cystic amplitude outside of x=[-10mm,10mm]
+    ampls[xs < -10e-3] *= args.cyst_scale
+    ampls[xs >  10e-3] *= args.cyst_scale
     
     with h5py.File(args.h5_file, 'w') as f:
         f["data"] = np.empty((num_scatterers, 4), dtype='float32')
