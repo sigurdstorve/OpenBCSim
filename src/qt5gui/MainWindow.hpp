@@ -132,6 +132,8 @@ private slots:
     
     void onSetSimulatorParameter();
 
+    void onLoadSimulatedData();
+
 private:
     void initializeSplineVisualization(const QString& h5_file);
 

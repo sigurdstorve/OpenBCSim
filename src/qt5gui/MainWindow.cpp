@@ -232,6 +232,10 @@ void MainWindow::createMenus() {
     connect(load_beamprofile_lut_act, SIGNAL(triggered()), this, SLOT(onLoadBeamProfileLUT()));
     fileMenu->addAction(load_beamprofile_lut_act);
 
+    auto load_simdata_act = new QAction(tr("Load simulated data [experimental]"), this);
+    connect(load_simdata_act, SIGNAL(triggered()), this, SLOT(onLoadSimulatedData()));
+    fileMenu->addAction(load_simdata_act);
+
     auto exitAct = new QAction(tr("Exit"), this);
     connect(exitAct, SIGNAL(triggered()), this, SLOT(onExit()));
     fileMenu->addAction(exitAct);
@@ -730,6 +734,45 @@ void MainWindow::onLoadBeamProfileLUT() {
         return;
     }
     bcsim::setBeamProfileFromHdf(m_sim, h5_file.toUtf8().constData());
+}
+
+void MainWindow::onLoadSimulatedData() {
+    if (!m_sim) {
+        qDebug() << "No active simulator. Ignoring";
+        return;
+    }
+    auto h5_file = QFileDialog::getOpenFileName(this, "Load simulated data from HDF5 file", ".", "HDF5 files (*.h5)");
+    if (h5_file == "") {
+        qDebug() << "No file selected. Ignoring.";
+        return;
+    }
+    SimpleHDF::SimpleHDF5Reader hdf_reader(h5_file.toUtf8().constData());
+    auto temp = hdf_reader.readMultiArray<float, 2>("sim_data");
+
+    // data conversion
+    const auto num_samples = temp.shape()[0];
+    const auto num_lines   = temp.shape()[1];
+    std::vector<std::vector<bc_float> > rf_lines(num_lines);
+    for (size_t i = 0; i < num_lines; i++) {
+        rf_lines[i].resize(num_samples);
+        for (size_t n = 0; n < num_samples; n++) {
+            rf_lines[i][n] = temp[n][i];
+        }
+    }
+    qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
+
+
+    // Create refresh work task from current geometry and the beam space data
+    auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
+    refresh_task->set_geometry(m_scan_geometry);
+    refresh_task->set_data(rf_lines);
+    auto grayscale_settings = m_grayscale_widget->get_values();
+    refresh_task->set_normalize_const(grayscale_settings.normalization_const);
+    refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
+    refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+    refresh_task->set_dyn_range(grayscale_settings.dyn_range);
+    refresh_task->set_gain(grayscale_settings.gain); 
+    m_refresh_worker->process_data(refresh_task);
 }
 
 void MainWindow::onSetSimulatorParameter() {
