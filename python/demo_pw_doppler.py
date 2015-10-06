@@ -124,7 +124,6 @@ if __name__ == '__main__':
     print 'Computing Hilbert transforms using N=%d samples' % fft_size
     temp = np.zeros((fft_size,), dtype='float32')
     for beam_no in range(args.num_beams):
-        print '.',
         temp[0:num_samples] = rf_lines[:, beam_no]
         temp_ht = hilbert(temp)
         slowtime_samples.append(temp_ht[sample_idx])
