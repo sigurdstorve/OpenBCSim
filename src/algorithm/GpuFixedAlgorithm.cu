@@ -52,9 +52,13 @@ __global__ void FixedAlgKernel(float* point_xs,
                                float  sigma_elevational,
                                float  sound_speed,
                                float* res,
-                               bool   use_arc_projection) {
+                               bool   use_arc_projection,
+                               int    num_scatterers) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx >= num_scatterers) {
+        return;
+    }
 
     float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
     
@@ -117,7 +121,8 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                              m_beam_profile->getSigmaElevational(),
                                                              m_param_sound_speed,
                                                              m_device_time_proj[stream_no]->data(),
-                                                             m_param_use_arc_projection);
+                                                             m_param_use_arc_projection,
+                                                             m_num_scatterers);
     
 }
 

@@ -52,6 +52,10 @@ __global__ void RenderSplineKernel(const float* control_xs,
                                    int NUM_SPLINES) {
 
     const int idx = blockDim.x*blockIdx.x + threadIdx.x;
+    if (idx >= NUM_SPLINES) {
+        return;
+    }
+
     // to get from one control point to the next, we have
     // to make a jump of size equal to number of splines
     float rendered_x = 0.0f;

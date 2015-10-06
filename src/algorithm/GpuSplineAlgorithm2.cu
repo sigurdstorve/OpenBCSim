@@ -64,6 +64,9 @@ __global__ void SplineAlgKernel(float* control_xs,
                                 bool   use_arc_projection) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx >= NUM_SPLINES) {
+        return;
+    }
 
     // step 1: evaluate spline
     // to get from one control point to the next, we have
