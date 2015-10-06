@@ -157,9 +157,13 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                             cudaMemcpyHostToDevice,
                                             cur_stream));
 
-    dim3 grid_size(m_num_scatterers/m_param_threads_per_block, 1, 1);
+    int num_blocks = round_up_div(m_num_scatterers, m_param_threads_per_block);
+    dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
-    
+
+    // TODO: Is it neccessary to have both m_num_splines AND m_num_scatterers? They
+    // are equal...
+
     // do the time-projections
     SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_control_xs->data(),
                                                               m_device_control_ys->data(),

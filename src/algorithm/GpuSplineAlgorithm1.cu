@@ -186,9 +186,9 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, host_basis_functions.data(), m_num_cs*sizeof(float)) );
     
 
-    // TODO: Handle non-power-of-<num_threads>
     int num_threads = 128;
-    dim3 grid_size(m_num_splines/num_threads, 1, 1);
+    int num_blocks = round_up_div(m_num_splines, num_threads);
+    dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(num_threads, 1, 1);
     
     RenderSplineKernel<<<grid_size, block_size>>>(m_control_xs->data(),

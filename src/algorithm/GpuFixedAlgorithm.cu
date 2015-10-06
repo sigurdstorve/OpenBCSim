@@ -104,7 +104,8 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     auto ele_dir      = make_float3(temp_ele_dir.x, temp_ele_dir.y, temp_ele_dir.z);
     auto origin       = make_float3(temp_origin.x, temp_origin.y, temp_origin.z);
 
-    dim3 grid_size(m_num_scatterers/m_param_threads_per_block, 1, 1);
+    int num_blocks = round_up_div(m_num_scatterers, m_param_threads_per_block);
+    dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
     
     FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),

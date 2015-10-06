@@ -180,3 +180,7 @@ void fill_host_vector_uniform_random(T low, T high, size_t length, T* data) {
         data[i] = dis(gen);
     }
 }
+
+inline int round_up_div(int num, int den) {
+    return static_cast<int>(std::ceil(static_cast<float>(num)/den));
+}
