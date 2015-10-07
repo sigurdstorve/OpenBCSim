@@ -97,6 +97,7 @@ void example(int argc, char** argv) {
     const auto center_freq = 2.5e6f;
     const auto frac_bw     = 0.2f;
     bcsim::ExcitationSignal ex;
+    ex.sampling_frequency = 100e6;
     std::vector<float> dummy_times;
     bcsim::MakeGaussianExcitation(center_freq, frac_bw, ex.sampling_frequency, dummy_times, ex.samples, ex.center_index);
     sim->set_excitation(ex);
