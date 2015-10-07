@@ -41,6 +41,7 @@ sim.set_parameter("verbose", "0")
 with h5py.File(args.h5_file, "r") as f:
     scatterers_data = f["data"].value
 sim.set_fixed_scatterers(scatterers_data)
+print "The number of scatterers is %d" % scatterers_data.shape[0]
 
 # configure simulation parameters
 sim.set_parameter("sound_speed", "1540.0")
