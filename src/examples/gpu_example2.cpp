@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/program_options.hpp>
 #include "LibBCSim.hpp"
 #include "GaussPulse.hpp"
+#include "examples_common.hpp"
 
 /*
  * Example usage of the C++ interface
@@ -115,9 +116,10 @@ void example(int argc, char** argv) {
     const bcsim::vector3 direction(0.0f, 0.0f, 1.0f);
     const bcsim::vector3 lateral_dir(1.0f, 0.0f, 0.0f);
     for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-        const auto timestamp = beam_no / static_cast<float>(beam_no);
+        const auto timestamp = beam_no / static_cast<float>(num_beams);
         bcsim::Scanline scanline(origin, direction, lateral_dir, timestamp);
         scanseq->add_scanline(scanline);
+        //std::cout << "Adding scanseq with timestamp " << timestamp << std::endl;
     }
     sim->set_scan_sequence(scanseq);
 
@@ -126,11 +128,23 @@ void example(int argc, char** argv) {
     spline_scatterers->spline_degree = 3;
     int num_cs = 10;
     const auto num_knots = spline_scatterers->spline_degree + num_cs + 1;
-    spline_scatterers->knot_vector.resize(num_knots);
-    // create a dummy, but valid, knot vector
-    for (size_t i = 0; i < num_knots; i++) {
-        spline_scatterers->knot_vector[i] = i/static_cast<float>(num_knots);
+    
+    // create a clamped knot vector on [0, 1]
+    for (int i = 0; i < spline_scatterers->spline_degree; i++) {
+        spline_scatterers->knot_vector.push_back(0.0f);
     }
+    const int middle_n = num_cs+1-spline_scatterers->spline_degree;
+    for (int i = 0; i < middle_n; i++) {
+        spline_scatterers->knot_vector.push_back(static_cast<float>(i) / (middle_n-1));
+    }
+    for (int i = 0; i < spline_scatterers->spline_degree; i++) {
+        spline_scatterers->knot_vector.push_back(1.0f);
+    }
+    // "end-hack" for making the support closed.
+    spline_scatterers->knot_vector[spline_scatterers->knot_vector.size()-1] += 1.0f;
+
+    if (spline_scatterers->knot_vector.size() != num_knots) throw std::logic_error("Knot vector error");
+
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> x_dist(-0.03f, 0.03f);
@@ -166,7 +180,14 @@ void example(int argc, char** argv) {
         // done?
         auto temp = std::chrono::high_resolution_clock::now();
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(temp-start).count()/1000.0;
-        if (elapsed >= num_seconds) break;
+        if (elapsed >= num_seconds) {
+            std::cout << "sim_res.size() = " << sim_res.size() << std::endl;
+            dump_rf_line("GpuExample2_OUTPUT_first_line.txt", sim_res[0]);
+            dump_rf_line("GpuExample2_OUTPUT_last_line.txt", sim_res[sim_res.size()-1]);
+            break;
+        }
+        // reconfigure scan sequence in preparation for next batch
+        sim->set_scan_sequence(scanseq);
     }
     size_t total_num_beams = num_simulate_lines*num_beams;
     std::cout << "Done. Processed " << total_num_beams << " in " << elapsed << " seconds.\n";

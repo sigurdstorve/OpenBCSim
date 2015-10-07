@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/program_options.hpp>
 #include "LibBCSim.hpp"
 #include "GaussPulse.hpp"
+#include "examples_common.hpp"
 
 /*
  * Example usage of the C++ interface
@@ -156,8 +157,8 @@ void example(int argc, char** argv) {
             sim->set_scatterers(scatterers);
         }
         
+        std::vector<std::vector<bc_float>> sim_res;
         if (enable_simulate_lines) {
-            std::vector<std::vector<bc_float>> sim_res;
             sim->simulate_lines(sim_res);
         }
         num_beams++;
@@ -165,7 +166,10 @@ void example(int argc, char** argv) {
         // done?
         auto temp = std::chrono::high_resolution_clock::now();
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(temp-start).count()/1000.0;
-        if (elapsed >= num_seconds) break;
+        if (elapsed >= num_seconds) {
+            dump_rf_line("GpuExample1_OUTPUT.txt", sim_res[0]);
+            break;
+        }
     }
     std::cout << "Done. Processed " << num_beams << " in " << elapsed << " seconds.\n";
     const auto prf = num_beams / elapsed;
