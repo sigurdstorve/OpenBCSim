@@ -746,33 +746,60 @@ void MainWindow::onLoadSimulatedData() {
         qDebug() << "No file selected. Ignoring.";
         return;
     }
+
     SimpleHDF::SimpleHDF5Reader hdf_reader(h5_file.toUtf8().constData());
-    auto temp = hdf_reader.readMultiArray<float, 2>("sim_data");
-
-    // data conversion
-    const auto num_samples = temp.shape()[0];
-    const auto num_lines   = temp.shape()[1];
-    std::vector<std::vector<bc_float> > rf_lines(num_lines);
-    for (size_t i = 0; i < num_lines; i++) {
-        rf_lines[i].resize(num_samples);
-        for (size_t n = 0; n < num_samples; n++) {
-            rf_lines[i][n] = temp[n][i];
+    
+    auto sim_data_dims = hdf_reader.getDimensions("sim_data");
+    const auto sim_data_rank = sim_data_dims.size();
+    std::vector<std::vector<std::vector<bc_float>>> rf_frames;
+    if (sim_data_rank == 3) {
+        auto temp = hdf_reader.readMultiArray<float, 3>("sim_data");
+        // data conversion
+        const auto num_frames  = temp.shape()[0];
+        const auto num_samples = temp.shape()[1];
+        const auto num_lines   = temp.shape()[2];
+        for (size_t frame_no = 0; frame_no < num_frames; frame_no++) {
+            std::vector<std::vector<bc_float> > rf_lines(num_lines);
+            for (size_t i = 0; i < num_lines; i++) {
+                rf_lines[i].resize(num_samples);
+                for (size_t n = 0; n < num_samples; n++) {
+                    rf_lines[i][n] = temp[frame_no][n][i];
+                }
+            }
+            rf_frames.push_back(rf_lines);
+            qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
         }
+    } else if (sim_data_rank == 2) {
+        auto temp = hdf_reader.readMultiArray<float, 2>("sim_data");
+        // data conversion
+        const auto num_samples = temp.shape()[0];
+        const auto num_lines   = temp.shape()[1];
+        std::vector<std::vector<bc_float> > rf_lines(num_lines);
+        for (size_t i = 0; i < num_lines; i++) {
+            rf_lines[i].resize(num_samples);
+            for (size_t n = 0; n < num_samples; n++) {
+                rf_lines[i][n] = temp[n][i];
+            }
+        }
+        rf_frames.push_back(rf_lines);
+        qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
+    } else {
+        throw std::runtime_error("sim_data must have rank 2 or 3");
     }
-    qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
-
-
-    // Create refresh work task from current geometry and the beam space data
-    auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
-    refresh_task->set_geometry(m_scan_geometry);
-    refresh_task->set_data(rf_lines);
-    auto grayscale_settings = m_grayscale_widget->get_values();
-    refresh_task->set_normalize_const(grayscale_settings.normalization_const);
-    refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
-    refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
-    refresh_task->set_dyn_range(grayscale_settings.dyn_range);
-    refresh_task->set_gain(grayscale_settings.gain); 
-    m_refresh_worker->process_data(refresh_task);
+    
+    for (size_t frame_no = 0; frame_no < rf_frames.size(); frame_no++) {
+        // Create refresh work task from current geometry and the beam space data
+        auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
+        refresh_task->set_geometry(m_scan_geometry);
+        refresh_task->set_data(rf_frames[frame_no]);
+        auto grayscale_settings = m_grayscale_widget->get_values();
+        refresh_task->set_normalize_const(grayscale_settings.normalization_const);
+        refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
+        refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+        refresh_task->set_dyn_range(grayscale_settings.dyn_range);
+        refresh_task->set_gain(grayscale_settings.gain); 
+        m_refresh_worker->process_data(refresh_task);
+    }
 }
 
 void MainWindow::onSetSimulatorParameter() {
