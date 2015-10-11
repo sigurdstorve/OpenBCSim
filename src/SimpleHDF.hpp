@@ -151,6 +151,11 @@ public:
         delete [] dims;
         return res;
     }
+
+    std::vector<int> getDimensions(const std::string& dataset_name) {
+        H5::DataSet dataset = hdf5_file.openDataSet(dataset_name);
+        return getDimensions(dataset);
+    }
        
     ~SimpleHDF5Reader() {
         hdf5_file.close();   
