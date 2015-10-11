@@ -176,6 +176,7 @@ MainWindow::MainWindow() {
         if (m_save_images) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
             const auto img_path = m_settings->value("png_output_folder", "d:/temp").toString();
+            m_num_simulated_frames++;
             const QString filename =  img_path + QString("/frame%1.png").arg(m_num_simulated_frames, 6, 10, QChar('0'));
             qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Writing image to" << filename;
             work_result->image.save(filename);
@@ -524,7 +525,6 @@ void MainWindow::doSimulation() {
             });
             m_sim->simulate_lines(rf_lines);
         }
-        m_num_simulated_frames++;
     
         // Create refresh work task from current geometry and the beam space data
         auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
