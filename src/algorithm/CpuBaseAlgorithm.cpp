@@ -131,7 +131,7 @@ void CpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
 
 void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLines) {
     throw_if_not_configured();
-    int num_scanlines = m_scan_sequence->get_num_lines();
+    const auto num_scanlines = m_scan_sequence->get_num_lines();
     rfLines.resize(num_scanlines);
 
     if (m_param_verbose) {
@@ -147,7 +147,7 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLi
         if (m_param_verbose) {
             std::cout << "Line " << line_no << " thread id:" << omp_get_thread_num() << "...\n";
         }
-        const Scanline& line = m_scan_sequence->get_scanline(line_no);
+        const auto& line = m_scan_sequence->get_scanline(line_no);
         rfLines[line_no] = simulate_line(line);
     }
 }
