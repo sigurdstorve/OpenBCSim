@@ -48,7 +48,7 @@ public:
 
     // Clears the time-projected signal in preparation for creating a new beam.
     // Number of samples is equal to num_proj_samples used at creation.
-    virtual double* get_zeroed_time_proj_signal() = 0;
+    virtual std::complex<float>* get_zeroed_time_proj_signal() = 0;
     
     // Processed the time-projections into (decimated?) IQ data
     virtual std::vector<std::complex<bc_float>> process()     = 0;

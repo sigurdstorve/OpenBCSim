@@ -51,7 +51,7 @@ void CpuFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers_configured = true;
 }
 
-void CpuFixedAlgorithm::projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) {
+void CpuFixedAlgorithm::projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->scatterers.size();
     for (int scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
@@ -87,7 +87,7 @@ void CpuFixedAlgorithm::projection_loop(const Scanline& line, double* time_proj_
 #endif
             continue;
         }
-        time_proj_signal[closest_index] += scaled_ampl;
+        time_proj_signal[closest_index] += std::complex<float>(scaled_ampl, 0.0f);
     }
 }
 

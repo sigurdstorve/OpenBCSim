@@ -55,8 +55,8 @@ public:
         m_temp_buffer.resize(m_fft_length);
     }
 
-    virtual double* get_zeroed_time_proj_signal() {
-        std::fill(m_time_proj_buffer.begin(), m_time_proj_buffer.end(), 0.0);
+    virtual std::complex<float>* get_zeroed_time_proj_signal() {
+        std::fill(m_time_proj_buffer.begin(), m_time_proj_buffer.end(), std::complex<float>(0.0f, 0.0f));
         return m_time_proj_buffer.data();
     }
 
@@ -65,8 +65,8 @@ public:
     virtual std::vector<std::complex<bc_float>> process() {
         // Zero-pad and extend time-prohjection signal to complex domain
         std::vector<std::complex<float> > padded_input(m_fft_length, std::complex<float>(0.0f, 0.0f));
-        std::transform(m_time_proj_buffer.begin(), m_time_proj_buffer.end(), padded_input.begin(), [](double value) {
-            return std::complex<float>(static_cast<float>(value), 0.0f);
+        std::transform(m_time_proj_buffer.begin(), m_time_proj_buffer.end(), padded_input.begin(), [](std::complex<float> value) {
+            return value;
         });
         m_temp_buffer = fft(padded_input);
         if (m_temp_buffer.size() != m_fft_length) throw std::logic_error("should not happen");
@@ -102,12 +102,13 @@ protected:
 
 protected:
     size_t                              m_num_conv_samples;   // length of convolution output  [len(time_proj)+len(excitation)-1 samples]      
-    std::vector<double>                 m_time_proj_buffer;   // where time-projections are stored in projection loop
+    std::vector<std::complex<float>>    m_time_proj_buffer;   // where time-projections are stored in projection loop
     size_t                              m_fft_length;         // closest power-of-two >= length(m_time_proj_buffer)
     std::vector<std::complex<float>>    m_excitation_fft;     // Forward FFT of padded excitation, length is m_fft_length
     size_t                              m_excitation_delay;   // Compensation offset needed since time zero in the middle.
     std::vector<std::complex<float>>    m_temp_buffer;        // buffer for holding intermediate results, length is m_fft_length
 };
+
 IBeamConvolver::ptr IBeamConvolver::Create(size_t num_proj_samples, const ExcitationSignal& excitation) {
     return IBeamConvolver::ptr(new BeamConvolverBase(num_proj_samples, excitation));
 }

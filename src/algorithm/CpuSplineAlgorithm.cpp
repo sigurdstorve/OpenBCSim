@@ -54,7 +54,7 @@ void CpuSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers_configured = true;
 }
 
-void CpuSplineAlgorithm::projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) {
+void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->nodes.size();
     // TODO: Improve. Use that all splines have same number of control points
@@ -110,7 +110,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, double* time_proj
 #endif
             continue;
         }
-        time_proj_signal[closest_index] += scaled_ampl;
+        time_proj_signal[closest_index] += std::complex<float>(scaled_ampl, 0.0f);
     }
 }
 

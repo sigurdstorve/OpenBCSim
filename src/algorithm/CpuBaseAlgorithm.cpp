@@ -156,7 +156,7 @@ std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanli
     const int thread_idx       = omp_get_thread_num();
     
     // this will have length num_time_samples [which is valid before padding starts]
-    double* time_proj_signal = convolvers[thread_idx]->get_zeroed_time_proj_signal();
+    auto time_proj_signal = convolvers[thread_idx]->get_zeroed_time_proj_signal();
 
     // Implementation differs depending on scatterers model.
     projection_loop(line, time_proj_signal, m_rf_line_num_samples);
@@ -170,11 +170,13 @@ std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanli
 #endif
 
     // add Gaussian noise if desirable.
+    /*
     if (m_param_noise_amplitude > 0.0f) {
         std::transform(time_proj_signal, time_proj_signal + m_rf_line_num_samples, time_proj_signal, [&](float v) {
             return v + m_normal_dist(m_random_engine);
         });
     }
+    */
 
     // get the convolver associated with this thread and do FFT-based convolution
     return convolvers[thread_idx]->process();

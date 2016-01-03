@@ -76,7 +76,7 @@ protected:
     std::vector<std::complex<bc_float>> simulate_line(const Scanline& line);
 
     // Main projection loop must be implemented in subclass.
-    virtual void projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) = 0;
+    virtual void projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) = 0;
 
 protected:
     // Geometry of all lines to be simulated in a frame.
