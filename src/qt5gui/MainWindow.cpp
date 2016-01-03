@@ -513,7 +513,7 @@ void MainWindow::doSimulation() {
     
     //qDebug() << "doSimulation(): simulation time is " << m_sim_time_manager->get_time();
 
-    std::vector<std::vector<bc_float> > rf_lines;
+    std::vector<std::vector<std::complex<bc_float>> > rf_lines_complex;
     
     std::vector<float> sim_milliseconds;
     const auto num_rep = m_settings->value("simulate_lines_num_rep", 1).toInt();
@@ -523,7 +523,16 @@ void MainWindow::doSimulation() {
             ScopedCpuTimer timer([&](int millisec) {
                 sim_milliseconds.push_back(millisec);
             });
-            m_sim->simulate_lines(rf_lines);
+            m_sim->simulate_lines(rf_lines_complex);
+        }
+        // TEMPORARY HACK: Take the absolute value (preparation for always IQ out)
+        std::vector<std::vector<bc_float>> rf_lines;
+        for (size_t line_no = 0; line_no < rf_lines_complex.size(); line_no++) {
+            std::vector<bc_float> temp;
+            for (size_t i = 0; i < rf_lines_complex[line_no].size(); i++) {
+                temp.push_back(std::abs(rf_lines_complex[line_no][i]));
+            }
+            rf_lines.push_back(temp);
         }
     
         // Create refresh work task from current geometry and the beam space data

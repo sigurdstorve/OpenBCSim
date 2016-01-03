@@ -63,7 +63,7 @@ public:
         m_fixed_alg->set_beam_profile(beam_profile);
     }
 
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) override;
+    virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
     
 private:
     // Test if all scanlines in a scan sequence have the same timestamp

@@ -43,7 +43,7 @@ public:
     
     virtual void set_parameter(const std::string& key, const std::string& value)        override;
 
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) override;
+    virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
     
     // NOTE: currently requires that set_excitation is called first!
     virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               override;

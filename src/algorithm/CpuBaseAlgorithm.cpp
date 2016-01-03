@@ -129,7 +129,7 @@ void CpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
     m_beam_profile_configured = true;
 }
 
-void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLines) {
+void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float>> > & rfLines) {
     throw_if_not_configured();
     const auto num_scanlines = m_scan_sequence->get_num_lines();
     rfLines.resize(num_scanlines);
@@ -148,7 +148,15 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLi
             std::cout << "Line " << line_no << " thread id:" << omp_get_thread_num() << "...\n";
         }
         const auto& line = m_scan_sequence->get_scanline(line_no);
-        rfLines[line_no] = simulate_line(line);
+        
+        // TEMPORARY HACK for creating "fake" complex 
+        std::vector<bc_float> temp_rf_line = simulate_line(line);
+        std::vector<std::complex<bc_float>> complex_line;
+        for (size_t i = 0; i < temp_rf_line.size(); i++) {
+            complex_line.push_back(std::complex<bc_float>(temp_rf_line[i], 0.0f));
+        }
+
+        rfLines[line_no] = complex_line;
     }
 }
 

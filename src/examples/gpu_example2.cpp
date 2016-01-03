@@ -173,7 +173,7 @@ void example(int argc, char** argv) {
     float elapsed;
     for (;;) {
         std::cout << ".";
-        std::vector<std::vector<bc_float>> sim_res;
+        std::vector<std::vector<std::complex<bc_float>>> sim_res;
         sim->simulate_lines(sim_res);
         num_simulate_lines++;
 

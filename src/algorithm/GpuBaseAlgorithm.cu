@@ -121,7 +121,7 @@ void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
 }
 
 
-void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
+void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float> > >&  /*out*/ rf_lines) {
     m_can_change_cuda_device = false;
     
     if (m_stream_wrappers.size() == 0) {
@@ -206,10 +206,10 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*ou
     // TODO: eliminate unneccessary data copying: it would e.g. be better to
     // only copy what is needed in the above kernel.
     rf_lines.clear();
-    std::vector<bc_float> temp_samples(num_return_samples);
+    std::vector<std::complex<bc_float>> temp_samples(num_return_samples);
     for (size_t line_no = 0; line_no < num_lines; line_no++) {
         for (size_t i = 0; i < num_return_samples; i++) {
-            temp_samples[i] = m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples];
+            temp_samples[i] = std::complex<bc_float>(m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples], 0.0f); // TODO
         }
         rf_lines.push_back(temp_samples);
     }

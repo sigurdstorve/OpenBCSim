@@ -52,7 +52,7 @@ public:
 
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     override;
 
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) override;
+    virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
     
 protected:
     // Use as many cores as possible for simulation.
