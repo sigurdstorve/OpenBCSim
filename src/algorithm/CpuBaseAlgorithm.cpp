@@ -195,11 +195,10 @@ void CpuBaseAlgorithm::configure_convolvers_if_possible() {
         std::cout << "Recreating convolvers\n";
         for (int i = 0; i < m_omp_num_threads; i++) {
             if (m_param_verbose) {
-                std::cout << "Creating FFT-convolver " << i 
-                          << " of type " << to_string(m_param_output_type) << std::endl;
+                std::cout << "Creating FFT-convolver " << i << std::endl;
             }
             
-            auto convolver = CreateBeamConvolver(m_param_output_type, m_rf_line_num_samples, m_excitation);
+            auto convolver = IBeamConvolver::Create(m_rf_line_num_samples, m_excitation);
             convolvers.push_back(std::move(convolver));
         }
     }

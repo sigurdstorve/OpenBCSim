@@ -41,11 +41,8 @@ public:
     // Factory function for creating beam convolvers.
     // num_proj_samples: Number of time-projection samples (also number of output samples)
     // excitation: Excitation signal.
-    // type: The output data type:
-    //      "rf":   Returns RF signal
-    //      "env":  Returns envelope-detected data
-    //      "proj": Returns the time-projected signal itself.
-    static ptr Create(const std::string& type, size_t num_proj_samples, const ExcitationSignal& excitation); 
+    // Will return IQ data (with optional decimation?)
+    static ptr Create(size_t num_proj_samples, const ExcitationSignal& excitation); 
 
     virtual ~IBeamConvolver() { }
 

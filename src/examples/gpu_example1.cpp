@@ -109,9 +109,6 @@ void example(int argc, char** argv) {
     bcsim::MakeGaussianExcitation(center_freq, frac_bw, ex.sampling_frequency, dummy_times, ex.samples, ex.center_index);
     sim->set_excitation(ex);
 
-    // configure output type
-    sim->set_parameter("output_type", "rf");
-
     // define sound speed
     sim->set_parameter("sound_speed", "1540.0");
 

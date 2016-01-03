@@ -343,7 +343,6 @@ void MainWindow::onCreateGpuSimulator() {
 
         // GPU-specific hack.
         m_sim->set_parameter("sound_speed", "1540.0");
-        m_sim->set_parameter("output_type", "env");
         
         // configure excitation
         m_sim->set_excitation(m_current_excitation);
@@ -495,10 +494,6 @@ void MainWindow::initializeSimulator(const std::string& type) {
     //auto beam_profile = m_beamprofile_widget->getValue();
     auto beam_profile = bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(0.5e-3f, 1.0e-3f));
     m_sim->set_beam_profile(beam_profile);
-
-    // Configure simulator to do envelope detection
-    const auto output_type = std::string(m_settings->value("sim_output_type", "env").toString().toUtf8().constData());
-    m_sim->set_parameter("output_type", output_type);
 
     qDebug() << "Created simulator";
     // force-emit from all widgets to ensure a fully configured simulator.

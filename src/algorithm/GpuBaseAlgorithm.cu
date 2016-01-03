@@ -138,10 +138,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
     }
     
     // no delay compenasation is needed when returning the projections only
-    size_t delay_compensation_num_samples = 0;
-    if ((m_param_output_type == OutputType::RF_DATA) || (m_param_output_type == OutputType::ENVELOPE_DATA)) {
-        delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
-    }
+    size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
     const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
     
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
@@ -162,43 +159,32 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
 
         projection_kernel(stream_no, scanline);
 
-        if (m_param_output_type == OutputType::PROJECTIONS) {
-            // copy to host
-            cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_time_proj[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
+        //if (m_param_output_type == OutputType::PROJECTIONS) {
+        // copy to host
+        //cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_time_proj[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
             
-        } else if ((m_param_output_type == OutputType::RF_DATA) || (m_param_output_type == OutputType::ENVELOPE_DATA)) {
 
-            // extend the real-valued time-projection signal to complex numbers with zero imaginary part.
-            RealToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
-                                                                                                          m_device_rf_lines[stream_no]->data(),
-                                                                                                          m_num_time_samples);
-            // in-place forward FFT            
-            auto rf_ptr = m_device_rf_lines[stream_no]->data();
-            cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
-
-            // multiply with FFT of impulse response (can include Hilbert transform also)
-            MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                        m_device_excitation_fft->data(),
+        // extend the real-valued time-projection signal to complex numbers with zero imaginary part.
+        RealToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
+                                                                                                        m_device_rf_lines[stream_no]->data(),
                                                                                                         m_num_time_samples);
+        // in-place forward FFT            
+        auto rf_ptr = m_device_rf_lines[stream_no]->data();
+        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
 
-            // in-place inverse FFT
-            cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
+        // multiply with FFT of impulse response (can include Hilbert transform also)
+        MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
+                                                                                                    m_device_excitation_fft->data(),
+                                                                                                    m_num_time_samples);
+
+        // in-place inverse FFT
+        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
                 
-            if (m_param_output_type == OutputType::ENVELOPE_DATA) {
-                AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                           m_device_rf_lines_env[stream_no]->data(),
-                                                                                                           m_num_time_samples);
-            } else if (m_param_output_type == OutputType::RF_DATA) {
-                RealPartKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                         m_device_rf_lines_env[stream_no]->data(),
-                                                                                                         m_num_time_samples);
-            }
-
-            // copy to host
-            cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_rf_lines_env[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
-        } else {
-            throw std::logic_error("illegal output type");
-        }
+        AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
+                                                                                                    m_device_rf_lines_env[stream_no]->data(),
+                                                                                                    m_num_time_samples);
+        // copy to host
+        cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_rf_lines_env[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
             
     }
     cudaErrorCheck( cudaDeviceSynchronize() );
@@ -241,15 +227,7 @@ void GpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     cudaErrorCheck( cudaMemcpy(device_hilbert_mask.data(), mask.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
     
     ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
-    
-    if (m_param_verbose) {
-        std::cout << "Output datatype is " << to_string(m_param_output_type) << std::endl;
-    }
-    // TODO: Actually, this can be done anyway since when only the real part is used when the output data type
-    // if RF-data and the Hilbert transform only affects the imaginary components..
-    if (m_param_output_type == OutputType::ENVELOPE_DATA) {
-        MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
-    }
+    MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 
