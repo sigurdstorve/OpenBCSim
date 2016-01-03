@@ -298,6 +298,7 @@ BOOST_PYTHON_MODULE(pyrfsim) {
     numpy_boost_python_register_type<float, 1>();
     numpy_boost_python_register_type<float, 2>();
     numpy_boost_python_register_type<float, 3>();
+    numpy_boost_python_register_type<std::complex<float>, 2>();
 
     class_<RfSimulatorWrapper>("RfSimulator", init<std::string>())
         .def("set_print_debug",             &RfSimulatorWrapper::set_print_debug)
