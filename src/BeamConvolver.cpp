@@ -77,7 +77,7 @@ protected:
     // Precompute Hilbert-transformed FFT of excitation signal.
     void precompute_excitation_fft(const ExcitationSignal& excitation) {
         std::vector<std::complex<float>> padded_excitation(m_fft_length, std::complex<float>(0.0f, 0.0f));
-        std::transform(excitation.samples.begin(), excitation.samples.end(), padded_excitation.begin(), [](bc_float v) {
+        std::transform(std::begin(excitation.samples), std::end(excitation.samples), std::begin(padded_excitation), [](bc_float v) {
             return std::complex<float>(static_cast<float>(v), 0.0f);
         });
         m_excitation_fft = fft(padded_excitation);
