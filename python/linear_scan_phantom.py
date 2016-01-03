@@ -33,7 +33,6 @@ if args.use_gpu:
     sim.set_parameter("gpu_device", "%d"%args.device_no)
 else:
     sim = RfSimulator("fixed")
-sim.set_parameter("output_type", "env") # envelope-detected RF data as output
 
 
 sim.set_parameter("verbose", "0")
@@ -77,6 +76,9 @@ for frame_no in range(args.num_frames):
     rf_lines = sim.simulate_lines()
     frame_sim_times.append(time()-start_time)
 
+# get envelope of IQ data
+rf_lines = np.real(abs(rf_lines))    
+    
 if args.save_simdata_file != None:
     with h5py.File(args.save_simdata_file, "w") as f:
         f["sim_data"] = np.array(rf_lines, dtype='float32')

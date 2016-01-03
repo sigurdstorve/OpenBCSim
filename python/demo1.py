@@ -17,7 +17,6 @@ sim.set_print_debug(True)
 # Set general simulation parameters
 sim.set_parameter("sound_speed", "1540.0")
 sim.set_parameter("num_cpu_cores", "all")
-sim.set_parameter("output_type", "rf")
 
 # Set scatterers
 num_scatterers = 16
@@ -65,8 +64,11 @@ sigma_lateral = 1e-3
 sigma_elevational = 1e-3
 sim.set_analytical_beam_profile(sigma_lateral, sigma_elevational)
 
-# Do the simulation
+# Do the simulation : result is IQ data
 rf_lines = sim.simulate_lines()
+
+# extract the envelopes
+rf_lines = np.real(abs(rf_lines))
 
 # Env.detection and log-compression.
 plt.figure(2);
