@@ -62,7 +62,7 @@ public:
 
     // Use contents of the time-projected buffer and create an RF line.
     // Process the time-projections by doing FFT -> Multiply -> IFFT
-    virtual std::vector<bc_float> process() {
+    virtual std::vector<std::complex<bc_float>> process() {
         // Zero-pad and extend time-prohjection signal to complex domain
         std::vector<std::complex<float> > padded_input(m_fft_length, std::complex<float>(0.0f, 0.0f));
         std::transform(m_time_proj_buffer.begin(), m_time_proj_buffer.end(), padded_input.begin(), [](double value) {
@@ -78,13 +78,7 @@ public:
         // extract output, compensate for delay introduced by convolving with excitation
         auto num_proj_samples = m_time_proj_buffer.size();
         auto start = m_temp_buffer.begin() + m_excitation_delay;
-        std::vector<bc_float> res(num_proj_samples);
-        
-        // TEMPORARY HACK: Absolute value output transform
-        std::transform(start, start + num_proj_samples, res.begin(), [&](std::complex<float> v) {
-            return std::abs(v);
-        });
-        return res;
+        return std::vector<std::complex<bc_float>>(start, start + num_proj_samples);
     }
 
 protected:

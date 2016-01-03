@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include <vector>
+#include <complex>
 #include "BCSimConfig.hpp"
 
 namespace bcsim {
@@ -38,10 +39,9 @@ class IBeamConvolver {
 public:
     typedef std::unique_ptr<IBeamConvolver> ptr;
     
-    // Factory function for creating beam convolvers.
+    // Factory function for creating IQ data beam convolvers. TODO: Decimate here?
     // num_proj_samples: Number of time-projection samples (also number of output samples)
     // excitation: Excitation signal.
-    // Will return IQ data (with optional decimation?)
     static ptr Create(size_t num_proj_samples, const ExcitationSignal& excitation); 
 
     virtual ~IBeamConvolver() { }
@@ -50,9 +50,8 @@ public:
     // Number of samples is equal to num_proj_samples used at creation.
     virtual double* get_zeroed_time_proj_signal() = 0;
     
-    // Processed the time-projections into desired output format.
-    // Number of samples is equal to num_proj_samples used at creation.
-    virtual std::vector<bc_float> process()     = 0;
+    // Processed the time-projections into (decimated?) IQ data
+    virtual std::vector<std::complex<bc_float>> process()     = 0;
 };
 
 

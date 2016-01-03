@@ -148,19 +148,11 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
             std::cout << "Line " << line_no << " thread id:" << omp_get_thread_num() << "...\n";
         }
         const auto& line = m_scan_sequence->get_scanline(line_no);
-        
-        // TEMPORARY HACK for creating "fake" complex 
-        std::vector<bc_float> temp_rf_line = simulate_line(line);
-        std::vector<std::complex<bc_float>> complex_line;
-        for (size_t i = 0; i < temp_rf_line.size(); i++) {
-            complex_line.push_back(std::complex<bc_float>(temp_rf_line[i], 0.0f));
-        }
-
-        rfLines[line_no] = complex_line;
+        rfLines[line_no] = simulate_line(line);
     }
 }
 
-std::vector<bc_float> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
+std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
     const int thread_idx       = omp_get_thread_num();
     
     // this will have length num_time_samples [which is valid before padding starts]
@@ -185,8 +177,7 @@ std::vector<bc_float> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
     }
 
     // get the convolver associated with this thread and do FFT-based convolution
-    std::vector<bc_float> rf_line = convolvers[thread_idx]->process();
-    return rf_line;
+    return convolvers[thread_idx]->process();
 }
 
 void CpuBaseAlgorithm::configure_convolvers_if_possible() {

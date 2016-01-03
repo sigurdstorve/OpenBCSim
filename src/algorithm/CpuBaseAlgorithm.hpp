@@ -71,9 +71,9 @@ protected:
     void throw_if_not_configured();
     
     // Simulate a single RF line.
-    // Returns a std::vector of RF signal samples.
-    // Sampling frequency is the same as for the excitation signal.
-    std::vector<bc_float> simulate_line(const Scanline& line);
+    // Returns a std::vector of IQ signal samples.
+    // Sampling frequency is the same as for the excitation signal. TODO: Not so with decimation...
+    std::vector<std::complex<bc_float>> simulate_line(const Scanline& line);
 
     // Main projection loop must be implemented in subclass.
     virtual void projection_loop(const Scanline& line, double* time_proj_signal, size_t num_time_samples) = 0;
