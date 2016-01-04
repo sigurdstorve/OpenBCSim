@@ -47,6 +47,7 @@ protected:
     int         m_param_verbose;
     float       m_param_noise_amplitude;
     bool        m_param_use_arc_projection;
+    int         m_radial_decimation;
 };
 
 }   // end namespace

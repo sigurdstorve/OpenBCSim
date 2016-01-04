@@ -37,7 +37,8 @@ BaseAlgorithm::BaseAlgorithm()
     : m_param_verbose(0),
       m_param_sound_speed(1540.0f),
       m_param_noise_amplitude(0.0f),
-      m_param_use_arc_projection(true)
+      m_param_use_arc_projection(true),
+      m_radial_decimation(1)
 {
 }
 
@@ -62,6 +63,12 @@ void BaseAlgorithm::set_parameter(const std::string& key, const std::string& val
         } else {
             throw std::runtime_error("invalid boolean value");
         }
+    } else if (key == "radial_decimation") {
+        const auto new_radial_decimation = std::stoi(value);
+        if (new_radial_decimation <= 0) {
+            throw std::runtime_error("illegal radial decimation value");
+        }
+        m_radial_decimation = new_radial_decimation;
     } else {
         const auto err_msg = std::string("illegal parameter name: '") + key + std::string("'");
         throw std::runtime_error(err_msg);
