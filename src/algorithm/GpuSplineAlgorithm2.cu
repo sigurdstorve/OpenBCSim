@@ -61,7 +61,8 @@ __global__ void SplineAlgKernel(float* control_xs,
                                 int    NUM_SPLINES,
                                 cuComplex* res,
                                 size_t eval_basis_offset_elements,
-                                bool   use_arc_projection) {
+                                bool   use_arc_projection,
+                                bool   use_phase_delay) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx >= NUM_SPLINES) {
@@ -183,7 +184,8 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                                               m_num_splines,
                                                               m_device_time_proj[stream_no]->data(),
                                                               eval_basis_offset_elements,
-                                                              m_param_use_arc_projection);
+                                                              m_param_use_arc_projection,
+                                                              m_enable_phase_delay);
 
 }
 

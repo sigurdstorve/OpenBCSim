@@ -53,7 +53,8 @@ __global__ void FixedAlgKernel(float* point_xs,
                                float  sound_speed,
                                cuComplex* res,
                                bool   use_arc_projection,
-                               int    num_scatterers) {
+                               int    num_scatterers,
+                               bool   use_phase_delay) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx >= num_scatterers) {
@@ -124,7 +125,8 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                              m_param_sound_speed,
                                                              m_device_time_proj[stream_no]->data(),
                                                              m_param_use_arc_projection,
-                                                             m_num_scatterers);
+                                                             m_num_scatterers,
+                                                             m_enable_phase_delay);
     
 }
 
