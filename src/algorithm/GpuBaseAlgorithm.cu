@@ -169,17 +169,6 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
 
         projection_kernel(stream_no, scanline);
 
-        //if (m_param_output_type == OutputType::PROJECTIONS) {
-        // copy to host
-        //cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_time_proj[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
-            
-
-        // extend the real-valued time-projection signal to complex numbers with zero imaginary part.
-        /*
-        RealToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
-                                                                                                        m_device_rf_lines[stream_no]->data(),
-                                                                                                        m_num_time_samples);
-        */
         ComplexToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
                                                                                                          m_device_rf_lines[stream_no]->data(),
                                                                                                          m_num_time_samples);
