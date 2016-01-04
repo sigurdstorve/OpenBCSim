@@ -108,7 +108,6 @@ __global__ void SplineAlgKernel(float* control_xs,
     const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
     
     if (radial_index >= 0 && radial_index < num_time_samples) {
-        //res[radial_index] += weight;
         //atomicAdd(res+radial_index, weight*rendered_a);
         if (use_phase_delay) {
             // handle sub-sample displacement with a complex phase
