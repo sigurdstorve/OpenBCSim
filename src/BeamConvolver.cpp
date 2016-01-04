@@ -37,13 +37,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-// Common functionality for all the types of convolvers
-class BeamConvolverBase : public IBeamConvolver {
+// Beam-convolver with built-in Hilbert transform.
+class BeamConvolver : public IBeamConvolver {
 public:
     // num_proj_samples: Number of time-projection samples
     // excitation: The RF excitation
-    // out_transform: The mapping from complex to real. Default is to extract the real part.
-    BeamConvolverBase(size_t num_proj_samples, const ExcitationSignal& excitation)
+    BeamConvolver(size_t num_proj_samples, const ExcitationSignal& excitation)
         : m_num_proj_samples(num_proj_samples)
     {
         const auto num_conv_samples = num_proj_samples + excitation.samples.size() - 1;
@@ -101,7 +100,7 @@ protected:
 };
 
 IBeamConvolver::ptr IBeamConvolver::Create(size_t num_proj_samples, const ExcitationSignal& excitation) {
-    return IBeamConvolver::ptr(new BeamConvolverBase(num_proj_samples, excitation));
+    return IBeamConvolver::ptr(new BeamConvolver(num_proj_samples, excitation));
 }
 
 }   // end namespace
