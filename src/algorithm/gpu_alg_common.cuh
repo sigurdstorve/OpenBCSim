@@ -29,11 +29,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <cuda.h>
 
-// used to initialize device float memory.
-__global__ void MemsetFloatKernel(float* res, float value, int num_samples);
-
-// TEMP. Bruk template
-__global__ void MemsetComplexKernel(cuComplex* res, cuComplex value, int num_samples);
+// initialize GPU memory with value
+template <typename T>
+__global__ void MemsetKernel(T* res, T value, int num_samples) {
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx < num_samples) {
+        res[global_idx] = value;
+    }
+}
 
 // used to multiply the FFTs
 __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples);

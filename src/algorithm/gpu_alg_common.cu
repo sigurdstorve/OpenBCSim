@@ -32,20 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "gpu_alg_common.cuh"
 
-__global__ void MemsetFloatKernel(float* res, float value, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        res[global_idx] = value;
-    }
-}
-
-__global__ void MemsetComplexKernel(cuComplex* res, cuComplex value, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        res[global_idx] = value;
-    }
-}
-
 __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples) {
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx < num_samples) {
