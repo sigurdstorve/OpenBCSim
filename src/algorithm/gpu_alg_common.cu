@@ -77,11 +77,3 @@ __global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_sa
         signal[global_idx] = make_float2(c.x*factor, c.y*factor);
     }
 }
-
-__global__ void AbsComplexKernel(cufftComplex* input, float* output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        cufftComplex c     = input[global_idx];
-        output[global_idx] = sqrt(c.x*c.x + c.y*c.y);
-    }
-}

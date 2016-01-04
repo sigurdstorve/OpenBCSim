@@ -47,6 +47,3 @@ __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComple
 
 // scale a signal (to avoid losing precision)
 __global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_samples);
-
-// used to get the absolute value of a complex signal
-__global__ void AbsComplexKernel(cufftComplex* input, float* output, int num_samples);

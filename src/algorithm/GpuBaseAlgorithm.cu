@@ -195,23 +195,22 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
 
         // in-place inverse FFT
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
-                
-        AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                    m_device_rf_lines_env[stream_no]->data(),
-                                                                                                    m_num_time_samples);
-        // copy to host
-        cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_rf_lines_env[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
+        
+        // copy to host. Same memory layout?
+        const auto num_bytes_iq = sizeof(std::complex<float>)*m_num_time_samples;
+        cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), rf_ptr, num_bytes_iq, cudaMemcpyDeviceToHost, cur_stream) ); 
             
     }
     cudaErrorCheck( cudaDeviceSynchronize() );
 
     // TODO: eliminate unneccessary data copying: it would e.g. be better to
     // only copy what is needed in the above kernel.
+    // TODO: Decimate signal.
     rf_lines.clear();
     std::vector<std::complex<bc_float>> temp_samples(num_return_samples);
     for (size_t line_no = 0; line_no < num_lines; line_no++) {
         for (size_t i = 0; i < num_return_samples; i++) {
-            temp_samples[i] = std::complex<bc_float>(m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples], 0.0f); // TODO
+            temp_samples[i] = m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples];
         }
         rf_lines.push_back(temp_samples);
     }
@@ -273,17 +272,16 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
     m_device_time_proj.resize(m_param_num_cuda_streams);
     m_device_rf_lines.resize(m_param_num_cuda_streams);
-    m_device_rf_lines_env.resize(m_param_num_cuda_streams);
     for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
         m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) ); 
         m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
-        m_device_rf_lines_env[i] = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
     }
 
     // allocate host memory for all RF lines
+    const auto host_iq_num_bytes = sizeof(std::complex<float>)*m_num_time_samples;
     m_host_rf_lines.resize(num_beams);
     for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<float>::u_ptr( new HostPinnedBufferRAII<float>(time_proj_bytes)) );
+        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<std::complex<float>>::u_ptr( new HostPinnedBufferRAII<std::complex<float>>(host_iq_num_bytes)) );
     }
 
     m_num_beams_allocated = static_cast<int>(num_beams);
