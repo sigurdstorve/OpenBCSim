@@ -71,11 +71,3 @@ __global__ void AbsComplexKernel(cufftComplex* input, float* output, int num_sam
         output[global_idx] = sqrt(c.x*c.x + c.y*c.y);
     }
 }
-
-__global__ void RealPartKernel(cufftComplex* input, float *output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        cufftComplex c     = input[global_idx];
-        output[global_idx] = c.x;
-    }
-}
