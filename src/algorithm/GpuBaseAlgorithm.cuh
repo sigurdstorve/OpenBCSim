@@ -85,7 +85,7 @@ protected:
     std::vector<DeviceBufferRAII<complex>::u_ptr>       m_device_time_proj;   
     std::vector<HostPinnedBufferRAII<std::complex<float>>::u_ptr>     m_host_rf_lines;
 
-    // precomputed excitation FFT, optionally with Hilbert mask applied.
+    // precomputed excitation FFT with Hilbert mask applied.
     DeviceBufferRAII<complex>::u_ptr                    m_device_excitation_fft;
 
     // the value -1 means not allocated
