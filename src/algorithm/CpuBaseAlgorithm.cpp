@@ -138,6 +138,7 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         std::cout << "Sound speed: " << m_param_sound_speed << std::endl;
         std::cout << "Number of scan lines: " << num_scanlines << std::endl;
         std::cout << "Setting " << m_omp_num_threads << " OpenMP threads." << std::endl;
+        std::cout << "IQ demodulation frequency is " << m_excitation.demod_freq << " Hz." << std::endl;
     }    
     omp_set_num_threads(m_omp_num_threads);
 #if BCSIM_ENABLE_OPENMP
@@ -182,7 +183,7 @@ std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanli
     // complex down-shifting to form a proper IQ signal. TODO: consider precomputing the complex exponential
     auto temp_line = convolvers[thread_idx]->process();
     // TODO: Consider merging decimateion. No need to compute samples that we later discard..
-    const float f_demod = 2.5e6;
+    const auto f_demod = m_excitation.demod_freq;
     const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
     const float TWO_PI = static_cast<float>(2.0*4.0*std::atan(1));
     for (size_t i = 0; i < temp_line.size(); i++) {
@@ -191,9 +192,8 @@ std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanli
     
     // Decimate
     // TODO: Consider reserve to avoid unneeded allocations resulting from push_back()?
-    int radial_decimation = 1;
     std::vector<std::complex<bc_float>> res;
-    for (int i = 0; i < static_cast<int>(temp_line.size()); i += radial_decimation) {
+    for (int i = 0; i < static_cast<int>(temp_line.size()); i += m_radial_decimation) {
         res.push_back(temp_line[i]);
     }
 
