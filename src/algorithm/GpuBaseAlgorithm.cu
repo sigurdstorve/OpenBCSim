@@ -165,7 +165,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         // in-place forward FFT            
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
 
-        // multiply with FFT of impulse response (can include Hilbert transform also)
+        // multiply with FFT of impulse response w/Hilbert transform
         MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
                                                                                                     m_device_excitation_fft->data(),
                                                                                                     m_num_time_samples);
