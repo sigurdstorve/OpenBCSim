@@ -29,6 +29,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cuda.h>
 #include <cufft.h>
+#include <math_functions.h> // for sincosf()
+#include "cuda_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "gpu_alg_common.cuh"
 
@@ -46,5 +48,17 @@ __global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_sa
     if (global_idx < num_samples) {
         cufftComplex c     = signal[global_idx];
         signal[global_idx] = make_float2(c.x*factor, c.y*factor);
+    }
+}
+
+__global__ void DemodulateKernel(cuComplex* signal, float w, int num_samples) {
+    const auto global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx < num_samples) {
+        // exp(-i*w*n) = cos(w*n) - i*sin(w*n)
+        float sin_value, cos_value;
+        sincosf(w*global_idx, &sin_value, &cos_value);
+        const auto c = make_cuComplex(cos_value, -sin_value);
+
+        signal[global_idx] = ComplexMul(signal[global_idx], c);
     }
 }

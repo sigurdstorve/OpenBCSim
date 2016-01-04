@@ -43,3 +43,7 @@ __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComple
 
 // scale a signal (to avoid losing precision)
 __global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_samples);
+
+// inplace IQ demodulation.
+// normalized_angular_freq = 2*pi*f_demod, where f_demod in [0.0, 0.5]
+__global__ void DemodulateKernel(cuComplex* signal, float normalized_angular_freq, int num_samples);
