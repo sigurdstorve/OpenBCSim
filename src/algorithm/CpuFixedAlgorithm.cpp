@@ -77,7 +77,7 @@ void CpuFixedAlgorithm::projection_loop(const Scanline& line, std::complex<float
         
         // Add scaled amplitude to closest index
         int closest_index = (int) std::floor(r*2.0*m_excitation.sampling_frequency/(m_param_sound_speed)+0.5f);
-        
+
         bc_float scaled_ampl = m_beamProfile->sampleProfile(r,l,e)*scatterer.amplitude;
         
         // Avoid out of bound seg.fault
@@ -87,7 +87,19 @@ void CpuFixedAlgorithm::projection_loop(const Scanline& line, std::complex<float
 #endif
             continue;
         }
-        time_proj_signal[closest_index] += std::complex<float>(scaled_ampl, 0.0f);
+
+
+        if (m_enable_phase_delay) {
+            // handle sub-sample displacement with a complex phase
+            const auto true_index = r*2.0*m_excitation.sampling_frequency/(m_param_sound_speed);
+            const float ss_delay = (closest_index - true_index)/m_excitation.sampling_frequency;
+            const float complex_phase = 6.283185307179586*m_excitation.demod_freq*ss_delay;
+
+            // phase-delay
+            time_proj_signal[closest_index] += scaled_ampl*std::exp(std::complex<float>(0.0f, complex_phase));
+        } else {
+            time_proj_signal[closest_index] += std::complex<float>(scaled_ampl, 0.0f);
+        }
     }
 }
 
