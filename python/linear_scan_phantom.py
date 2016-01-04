@@ -14,7 +14,7 @@ description="""
     runs.
 """
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("h5_file", help="Hdf5 file with scatterers")
     parser.add_argument("--x0", help="Left scan width", type=float, default=-1e-2)
@@ -44,6 +44,7 @@ print "The number of scatterers is %d" % scatterers_data.shape[0]
 
 # configure simulation parameters
 sim.set_parameter("sound_speed", "1540.0")
+sim.set_parameter("radial_decimation", "30")
 
 # configure the RF excitation
 fs = 100e6
@@ -52,19 +53,19 @@ fc = 2.5e6
 tc = 1.0/fc
 t_vector = np.arange(-16*tc, 16*tc, ts)
 bw = 0.2
-samples = np.array(gausspulse(t_vector, bw=bw, fc=fc), dtype='float32')
+samples = np.array(gausspulse(t_vector, bw=bw, fc=fc), dtype="float32")
 center_index = int(len(t_vector)/2) 
-sim.set_excitation(samples, center_index, fs)
+sim.set_excitation(samples, center_index, fs, fc)
 
 # define the scan sequence
-origins = np.zeros((args.num_lines, 3), dtype='float32')
+origins = np.zeros((args.num_lines, 3), dtype="float32")
 origins[:,0] = np.linspace(args.x0, args.x1, args.num_lines)
 x_axis = np.array([1.0, 0.0, 0.0])
 z_axis = np.array([0.0, 0.0, 1.0])
-directions = np.array(np.tile(z_axis, (args.num_lines, 1)), dtype='float32')
+directions = np.array(np.tile(z_axis, (args.num_lines, 1)), dtype="float32")
 length = 0.12
-lateral_dirs = np.array(np.tile(x_axis, (args.num_lines, 1)), dtype='float32')
-timestamps = np.zeros((args.num_lines,), dtype='float32')
+lateral_dirs = np.array(np.tile(x_axis, (args.num_lines, 1)), dtype="float32")
+timestamps = np.zeros((args.num_lines,), dtype="float32")
 sim.set_scan_sequence(origins, directions, length, lateral_dirs, timestamps)
 
 # configure the beam profile
@@ -81,25 +82,25 @@ rf_lines = np.real(abs(rf_lines))
     
 if args.save_simdata_file != None:
     with h5py.File(args.save_simdata_file, "w") as f:
-        f["sim_data"] = np.array(rf_lines, dtype='float32')
+        f["sim_data"] = np.array(rf_lines, dtype="float32")
     print "Simulation output written to %s" % args.save_simdata_file
     
-print 'Simulation time: %f +- %f s  (N=%d)' % (np.mean(frame_sim_times), np.std(frame_sim_times), args.num_frames)    
+print "Simulation time: %f +- %f s  (N=%d)" % (np.mean(frame_sim_times), np.std(frame_sim_times), args.num_frames)    
 
 if args.save_pdf or args.visualize:
     import matplotlib as mpl
-    mpl.use('Agg')
+    mpl.use("Agg")
     import matplotlib.pyplot as plt
     num_samples, num_lines = rf_lines.shape
     plt.figure(1)
     plt.plot(rf_lines[:, num_lines/2])
     if args.save_pdf: plt.savefig("frame1-out.pdf")
     plt.figure(2)
-    plt.imshow(rf_lines, aspect='auto')
+    plt.imshow(rf_lines, aspect="auto")
     if args.save_pdf: plt.savefig("frame2-out.pdf")
 if args.visualize:
     plt.show()
 if args.save_pdf:
-    print 'Image written to disk.'
+    print "Image written to disk."
     
     
