@@ -150,17 +150,12 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         }
 
         auto scanline = m_scan_seq->get_scanline(beam_no);
-
         int threads_per_line = 128;
-        // clear the time projection buffer the proper way (probably slightly slower than cudaMemsetAsync...)
-        /*
-        MemsetFloatKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
-                                                                                                    0.0f,
-                                                                                                    m_num_time_samples);
-        */
-        // clear time projections
+        auto rf_ptr = m_device_time_proj[stream_no]->data();
+
+        // clear time projections (safer than cudaMemsetAsync)
         const auto complex_zero = make_cuComplex(0.0f, 0.0f);
-        MemsetKernel<cuComplex><<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
+        MemsetKernel<cuComplex><<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
                                                                                                           complex_zero,
                                                                                                           m_num_time_samples);
 
@@ -168,7 +163,6 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         projection_kernel(stream_no, scanline);
 
         // in-place forward FFT            
-        auto rf_ptr = m_device_time_proj[stream_no]->data();
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
 
         // multiply with FFT of impulse response (can include Hilbert transform also)
