@@ -179,7 +179,25 @@ std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanli
     */
 
     // get the convolver associated with this thread and do FFT-based convolution
-    return convolvers[thread_idx]->process();
+    // complex down-shifting to form a proper IQ signal. TODO: consider precomputing the complex exponential
+    auto temp_line = convolvers[thread_idx]->process();
+    // TODO: Consider merging decimateion. No need to compute samples that we later discard..
+    const float f_demod = 2.5e6;
+    const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
+    const float TWO_PI = static_cast<float>(2.0*4.0*std::atan(1));
+    for (size_t i = 0; i < temp_line.size(); i++) {
+        temp_line[i] *= std::exp(-TWO_PI*std::complex<float>(0.0f, 1.0)*norm_f_demod*static_cast<float>(i));
+    }
+    
+    // Decimate
+    // TODO: Consider reserve to avoid unneeded allocations resulting from push_back()?
+    int radial_decimation = 1;
+    std::vector<std::complex<bc_float>> res;
+    for (int i = 0; i < static_cast<int>(temp_line.size()); i += radial_decimation) {
+        res.push_back(temp_line[i]);
+    }
+
+    return res;
 }
 
 void CpuBaseAlgorithm::configure_convolvers_if_possible() {
