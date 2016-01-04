@@ -231,7 +231,6 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
     auto num_rf_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
-    //std::cout << "num_rf_samples: " << num_rf_samples << std::endl;
     if (num_rf_samples > m_num_time_samples) {
         throw std::runtime_error("Too many RF samples required. TODO: remove limitation");
     }
