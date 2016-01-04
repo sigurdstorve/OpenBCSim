@@ -245,17 +245,18 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     }
 
     // allocate host and device memory related to RF lines
-    size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
+    const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
+    const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
+
     m_device_time_proj.resize(m_param_num_cuda_streams);
     for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
-        m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) ); 
+        m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes)) ); 
     }
 
     // allocate host memory for all RF lines
-    const auto host_iq_num_bytes = sizeof(std::complex<float>)*m_num_time_samples;
     m_host_rf_lines.resize(num_beams);
     for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<std::complex<float>>::u_ptr( new HostPinnedBufferRAII<std::complex<float>>(host_iq_num_bytes)) );
+        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<std::complex<float>>::u_ptr( new HostPinnedBufferRAII<std::complex<float>>(host_iq_line_bytes)) );
     }
 
     m_num_beams_allocated = static_cast<int>(num_beams);
