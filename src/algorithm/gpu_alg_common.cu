@@ -39,11 +39,25 @@ __global__ void MemsetFloatKernel(float* res, float value, int num_samples) {
     }
 }
 
+__global__ void MemsetComplexKernel(cuComplex* res, cuComplex value, int num_samples) {
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx < num_samples) {
+        res[global_idx] = value;
+    }
+}
+
 __global__ void RealToComplexKernel(float* input, cuComplex* output, int num_samples) {
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx < num_samples) {
         output[global_idx].x = input[global_idx];
         output[global_idx].y = 0.0f;
+    }
+}
+
+__global__ void ComplexToComplexKernel(cuComplex* input, cuComplex* output, int num_samples) {
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx < num_samples) {
+        output[global_idx] = input[global_idx];
     }
 }
 

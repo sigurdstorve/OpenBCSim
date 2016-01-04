@@ -59,7 +59,7 @@ __global__ void SplineAlgKernel(float* control_xs,
                                 float  sound_speed,
                                 int    NUM_CS,
                                 int    NUM_SPLINES,
-                                float* res,
+                                cuComplex* res,
                                 size_t eval_basis_offset_elements,
                                 bool   use_arc_projection) {
 
@@ -107,7 +107,8 @@ __global__ void SplineAlgKernel(float* control_xs,
     
     if (radial_index >= 0 && radial_index < num_time_samples) {
         //res[radial_index] += weight;
-        atomicAdd(res+radial_index, weight*rendered_a);
+        //atomicAdd(res+radial_index, weight*rendered_a);
+        atomicAdd(&(res[radial_index].x), weight*rendered_a);
     }
 }
 

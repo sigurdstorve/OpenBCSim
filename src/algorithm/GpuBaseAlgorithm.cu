@@ -153,9 +153,19 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
 
         int threads_per_line = 128;
         // clear the time projection buffer the proper way (probably slightly slower than cudaMemsetAsync...)
+        /*
         MemsetFloatKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
                                                                                                     0.0f,
                                                                                                     m_num_time_samples);
+        */
+        // clear time projections
+        cuComplex complex_zero;
+        complex_zero.x = 0.0f;
+        complex_zero.y = 0.0f;
+        MemsetComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
+                                                                                                      complex_zero,
+                                                                                                      m_num_time_samples);
+
 
         projection_kernel(stream_no, scanline);
 
@@ -165,9 +175,15 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
             
 
         // extend the real-valued time-projection signal to complex numbers with zero imaginary part.
+        /*
         RealToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
                                                                                                         m_device_rf_lines[stream_no]->data(),
                                                                                                         m_num_time_samples);
+        */
+        ComplexToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
+                                                                                                         m_device_rf_lines[stream_no]->data(),
+                                                                                                         m_num_time_samples);
+
         // in-place forward FFT            
         auto rf_ptr = m_device_rf_lines[stream_no]->data();
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
@@ -259,7 +275,7 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     m_device_rf_lines.resize(m_param_num_cuda_streams);
     m_device_rf_lines_env.resize(m_param_num_cuda_streams);
     for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
-        m_device_time_proj[i]    = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
+        m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) ); 
         m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
         m_device_rf_lines_env[i] = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
     }

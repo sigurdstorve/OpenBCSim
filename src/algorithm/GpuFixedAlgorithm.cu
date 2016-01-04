@@ -51,7 +51,7 @@ __global__ void FixedAlgKernel(float* point_xs,
                                float  sigma_lateral,
                                float  sigma_elevational,
                                float  sound_speed,
-                               float* res,
+                               cuComplex* res,
                                bool   use_arc_projection,
                                int    num_scatterers) {
 
@@ -82,7 +82,8 @@ __global__ void FixedAlgKernel(float* point_xs,
     
     if (radial_index >= 0 && radial_index < num_time_samples) {
         //res[radial_index] += weight;
-        atomicAdd(res+radial_index, weight*point_as[global_idx]);
+        //atomicAdd(res+radial_index, weight*point_as[global_idx]);
+        atomicAdd(&(res[radial_index].x), weight*point_as[global_idx]);
     }
 }
 
