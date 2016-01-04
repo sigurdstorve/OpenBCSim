@@ -38,7 +38,8 @@ BaseAlgorithm::BaseAlgorithm()
       m_param_sound_speed(1540.0f),
       m_param_noise_amplitude(0.0f),
       m_param_use_arc_projection(true),
-      m_radial_decimation(1)
+      m_radial_decimation(1),
+      m_enable_phase_delay(false)
 {
 }
 
@@ -69,6 +70,14 @@ void BaseAlgorithm::set_parameter(const std::string& key, const std::string& val
             throw std::runtime_error("illegal radial decimation value");
         }
         m_radial_decimation = new_radial_decimation;
+    } else if (key == "phase_delay") {
+        if (value == "on" || value == "true") {
+            m_enable_phase_delay = true;
+        } else if (value == "off" || value == "false") {
+            m_enable_phase_delay = false;
+        } else { 
+            throw std::runtime_error("invalid boolean value");
+        }
     } else {
         const auto err_msg = std::string("illegal parameter name: '") + key + std::string("'");
         throw std::runtime_error(err_msg);
