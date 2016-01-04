@@ -245,7 +245,6 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     }
 
     // allocate host and device memory related to RF lines
-    size_t time_proj_bytes = sizeof(float)*m_num_time_samples;
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
     m_device_time_proj.resize(m_param_num_cuda_streams);
     for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
