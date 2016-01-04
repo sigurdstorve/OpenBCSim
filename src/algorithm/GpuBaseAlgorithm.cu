@@ -159,9 +159,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
                                                                                                     m_num_time_samples);
         */
         // clear time projections
-        cuComplex complex_zero;
-        complex_zero.x = 0.0f;
-        complex_zero.y = 0.0f;
+        const auto complex_zero = make_cuComplex(0.0f, 0.0f);
         MemsetKernel<cuComplex><<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
                                                                                                           complex_zero,
                                                                                                           m_num_time_samples);
