@@ -35,13 +35,6 @@ __global__ void MemsetFloatKernel(float* res, float value, int num_samples);
 // TEMP. Bruk template
 __global__ void MemsetComplexKernel(cuComplex* res, cuComplex value, int num_samples);
 
-// used to create an array of complex numbers with zero imaginary
-// part from a corresponding array of real values [TEMPORARY SOLUTION]
-__global__ void RealToComplexKernel(float* input, cuComplex* output, int num_samples);
-
-// TEMP
-__global__ void ComplexToComplexKernel(cuComplex* input, cuComplex* output, int num_samples);
-
 // used to multiply the FFTs
 __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples);
 

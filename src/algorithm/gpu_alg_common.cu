@@ -46,21 +46,6 @@ __global__ void MemsetComplexKernel(cuComplex* res, cuComplex value, int num_sam
     }
 }
 
-__global__ void RealToComplexKernel(float* input, cuComplex* output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        output[global_idx].x = input[global_idx];
-        output[global_idx].y = 0.0f;
-    }
-}
-
-__global__ void ComplexToComplexKernel(cuComplex* input, cuComplex* output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        output[global_idx] = input[global_idx];
-    }
-}
-
 __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples) {
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx < num_samples) {
