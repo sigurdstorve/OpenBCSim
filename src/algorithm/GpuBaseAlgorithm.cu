@@ -183,18 +183,16 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         // copy to host. Same memory layout?
         const auto num_bytes_iq = sizeof(std::complex<float>)*m_num_time_samples;
         cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), rf_ptr, num_bytes_iq, cudaMemcpyDeviceToHost, cur_stream) ); 
-            
     }
     cudaErrorCheck( cudaDeviceSynchronize() );
 
     // TODO: eliminate unneccessary data copying: it would e.g. be better to
     // only copy what is needed in the above kernel.
-    // TODO: Decimate signal.
     rf_lines.clear();
-    std::vector<std::complex<bc_float>> temp_samples(num_return_samples);
     for (size_t line_no = 0; line_no < num_lines; line_no++) {
-        for (size_t i = 0; i < num_return_samples; i++) {
-            temp_samples[i] = m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples];
+        std::vector<std::complex<bc_float>> temp_samples; // .reserve
+        for (size_t i = 0; i < num_return_samples; i += m_radial_decimation) {
+            temp_samples.push_back(m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples]);
         }
         rf_lines.push_back(temp_samples);
     }
