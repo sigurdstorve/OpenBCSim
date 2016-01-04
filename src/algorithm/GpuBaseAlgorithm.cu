@@ -172,6 +172,13 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
 
         // in-place inverse FFT
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
+
+        // IQ demodulation (+decimate?)
+        const auto f_demod = m_excitation.demod_freq;
+        const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
+        const float PI = static_cast<float>(4.0*std::atan(1));
+        const auto normalized_angular_freq = 2*PI*norm_f_demod;
+        DemodulateKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr, normalized_angular_freq, m_num_time_samples);
         
         // copy to host. Same memory layout?
         const auto num_bytes_iq = sizeof(std::complex<float>)*m_num_time_samples;
