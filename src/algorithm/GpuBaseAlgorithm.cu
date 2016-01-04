@@ -165,20 +165,14 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         MemsetComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
                                                                                                       complex_zero,
                                                                                                       m_num_time_samples);
-
-
         projection_kernel(stream_no, scanline);
 
-        ComplexToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
-                                                                                                         m_device_rf_lines[stream_no]->data(),
-                                                                                                         m_num_time_samples);
-
         // in-place forward FFT            
-        auto rf_ptr = m_device_rf_lines[stream_no]->data();
+        auto rf_ptr = m_device_time_proj[stream_no]->data();
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
 
         // multiply with FFT of impulse response (can include Hilbert transform also)
-        MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
+        MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
                                                                                                     m_device_excitation_fft->data(),
                                                                                                     m_num_time_samples);
 
@@ -260,10 +254,8 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     size_t time_proj_bytes = sizeof(float)*m_num_time_samples;
     size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
     m_device_time_proj.resize(m_param_num_cuda_streams);
-    m_device_rf_lines.resize(m_param_num_cuda_streams);
     for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
         m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) ); 
-        m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
     }
 
     // allocate host memory for all RF lines

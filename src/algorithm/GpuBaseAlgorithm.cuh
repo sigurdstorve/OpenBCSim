@@ -83,7 +83,6 @@ protected:
     CufftPlanRAII::u_ptr                                m_fft_plan;
 
     std::vector<DeviceBufferRAII<complex>::u_ptr>       m_device_time_proj;   
-    std::vector<DeviceBufferRAII<complex>::u_ptr>       m_device_rf_lines;     
     std::vector<HostPinnedBufferRAII<std::complex<float>>::u_ptr>     m_host_rf_lines;
 
     // precomputed excitation FFT, optionally with Hilbert mask applied.
