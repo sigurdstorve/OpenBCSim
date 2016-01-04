@@ -46,8 +46,8 @@ public:
     BeamConvolverBase(size_t num_proj_samples, const ExcitationSignal& excitation)
         : m_num_proj_samples(num_proj_samples)
     {
-        m_num_conv_samples = num_proj_samples + excitation.samples.size() - 1;
-        m_fft_length = next_power_of_two(m_num_conv_samples);
+        const auto num_conv_samples = num_proj_samples + excitation.samples.size() - 1;
+        m_fft_length = next_power_of_two(num_conv_samples);
         precompute_excitation_fft(excitation);
         m_excitation_delay = static_cast<size_t>(excitation.center_index);
 
@@ -94,7 +94,6 @@ protected:
 
 protected:
     size_t                              m_num_proj_samples;   // number of samples in time-projection signal
-    size_t                              m_num_conv_samples;   // length of convolution output  [len(time_proj)+len(excitation)-1 samples]      
     std::vector<std::complex<float>>    m_time_proj_buffer;   // where time-projections are stored in projection loop
     size_t                              m_fft_length;         // closest power-of-two >= length(m_time_proj_buffer)
     std::vector<std::complex<float>>    m_excitation_fft;     // Forward FFT of padded excitation, length is m_fft_length
