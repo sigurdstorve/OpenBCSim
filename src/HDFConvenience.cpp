@@ -214,6 +214,7 @@ ExcitationSignal loadExcitationFromHdf(const std::string& h5_file) {
     excitation.center_index       = reader.readScalar<int>     ("center_index");
     excitation.sampling_frequency = reader.readScalar<float>   ("sampling_frequency");
     excitation.samples            = reader.readStdVector<float>("samples");
+    throw std::runtime_error("TODO: Must read and set demodulation frequency");
     return excitation;
 }
 

@@ -181,7 +181,7 @@ public:
         m_rf_simulator->set_scan_sequence(seq);
     }
 
-    void set_excitation(numpy_boost<float, 1> samples, int center_index, float fs) {
+    void set_excitation(numpy_boost<float, 1> samples, int center_index, float fs, float demod_freq) {
         auto samplesDims = get_dimensions(samples);
         if (samplesDims.size() != 1) {
             throw std::runtime_error(std::string(__FUNCTION__) + ": samples should be one-dimensional");
@@ -196,6 +196,7 @@ public:
         ex.samples = s;
         ex.center_index = center_index;
         ex.sampling_frequency = fs;
+        ex.demod_freq = demod_freq;
         m_rf_simulator->set_excitation(ex);
         if (m_print_debug) {
             std::cout << to_string(ex) << std::endl;

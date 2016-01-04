@@ -110,7 +110,7 @@ bcsim::ExcitationSignal ExcitationSignalWidget::construct(std::vector<float>& /*
                                  excitation_times,
                                  new_excitation.samples,
                                  new_excitation.center_index);
-
+    new_excitation.demod_freq = center_frequency;
     return new_excitation;
 }
 

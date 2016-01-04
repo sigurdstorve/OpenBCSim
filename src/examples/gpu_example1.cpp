@@ -107,6 +107,7 @@ void example(int argc, char** argv) {
     ex.sampling_frequency = 100e6;
     std::vector<float> dummy_times;
     bcsim::MakeGaussianExcitation(center_freq, frac_bw, ex.sampling_frequency, dummy_times, ex.samples, ex.center_index);
+    ex.demod_freq = center_freq;
     sim->set_excitation(ex);
 
     // define sound speed
