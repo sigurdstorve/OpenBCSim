@@ -51,9 +51,11 @@ __global__ void FixedAlgKernel(float* point_xs,
                                float  sigma_lateral,
                                float  sigma_elevational,
                                float  sound_speed,
-                               float* res,
+                               cuComplex* res,
                                bool   use_arc_projection,
-                               int    num_scatterers) {
+                               int    num_scatterers,
+                               bool   use_phase_delay,
+                               float  demod_freq) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx >= num_scatterers) {
@@ -81,8 +83,23 @@ __global__ void FixedAlgKernel(float* point_xs,
     const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
     
     if (radial_index >= 0 && radial_index < num_time_samples) {
-        //res[radial_index] += weight;
-        atomicAdd(res+radial_index, weight*point_as[global_idx]);
+        //atomicAdd(res+radial_index, weight*point_as[global_idx]);
+        if (use_phase_delay) {
+            // handle sub-sample displacement with a complex phase
+            const auto true_index = fs_hertz*2.0f*radial_dist/sound_speed;
+            const float ss_delay = (radial_index - true_index)/fs_hertz;
+            const float complex_phase = 6.283185307179586*demod_freq*ss_delay;
+
+            // exp(i*theta) = cos(theta) + i*sin(theta)
+            float sin_value, cos_value;
+            sincosf(complex_phase, &sin_value, &cos_value);
+
+            const auto w = weight*point_as[global_idx];
+            atomicAdd(&(res[radial_index].x), w*cos_value);
+            atomicAdd(&(res[radial_index].y), w*sin_value);
+        } else {
+            atomicAdd(&(res[radial_index].x), weight*point_as[global_idx]);
+        }
     }
 }
 
@@ -123,7 +140,9 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                              m_param_sound_speed,
                                                              m_device_time_proj[stream_no]->data(),
                                                              m_param_use_arc_projection,
-                                                             m_num_scatterers);
+                                                             m_num_scatterers,
+                                                             m_enable_phase_delay,
+                                                             m_excitation.demod_freq);
     
 }
 

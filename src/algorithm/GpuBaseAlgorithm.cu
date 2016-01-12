@@ -121,7 +121,7 @@ void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
 }
 
 
-void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) {
+void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float> > >&  /*out*/ rf_lines) {
     m_can_change_cuda_device = false;
     
     if (m_stream_wrappers.size() == 0) {
@@ -138,10 +138,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*ou
     }
     
     // no delay compenasation is needed when returning the projections only
-    size_t delay_compensation_num_samples = 0;
-    if ((m_param_output_type == OutputType::RF_DATA) || (m_param_output_type == OutputType::ENVELOPE_DATA)) {
-        delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
-    }
+    size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
     const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
     
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
@@ -153,63 +150,49 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> >&  /*ou
         }
 
         auto scanline = m_scan_seq->get_scanline(beam_no);
-
         int threads_per_line = 128;
-        // clear the time projection buffer the proper way (probably slightly slower than cudaMemsetAsync...)
-        MemsetFloatKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
-                                                                                                    0.0f,
-                                                                                                    m_num_time_samples);
+        auto rf_ptr = m_device_time_proj[stream_no]->data();
+
+        // clear time projections (safer than cudaMemsetAsync)
+        const auto complex_zero = make_cuComplex(0.0f, 0.0f);
+        MemsetKernel<cuComplex><<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
+                                                                                                          complex_zero,
+                                                                                                          m_num_time_samples);
+
 
         projection_kernel(stream_no, scanline);
 
-        if (m_param_output_type == OutputType::PROJECTIONS) {
-            // copy to host
-            cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_time_proj[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
-            
-        } else if ((m_param_output_type == OutputType::RF_DATA) || (m_param_output_type == OutputType::ENVELOPE_DATA)) {
+        // in-place forward FFT            
+        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
 
-            // extend the real-valued time-projection signal to complex numbers with zero imaginary part.
-            RealToComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_time_proj[stream_no]->data(),
-                                                                                                          m_device_rf_lines[stream_no]->data(),
-                                                                                                          m_num_time_samples);
-            // in-place forward FFT            
-            auto rf_ptr = m_device_rf_lines[stream_no]->data();
-            cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
+        // multiply with FFT of impulse response w/Hilbert transform
+        MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
+                                                                                                    m_device_excitation_fft->data(),
+                                                                                                    m_num_time_samples);
 
-            // multiply with FFT of impulse response (can include Hilbert transform also)
-            MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                        m_device_excitation_fft->data(),
-                                                                                                        m_num_time_samples);
+        // in-place inverse FFT
+        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
 
-            // in-place inverse FFT
-            cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
-                
-            if (m_param_output_type == OutputType::ENVELOPE_DATA) {
-                AbsComplexKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                           m_device_rf_lines_env[stream_no]->data(),
-                                                                                                           m_num_time_samples);
-            } else if (m_param_output_type == OutputType::RF_DATA) {
-                RealPartKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(m_device_rf_lines[stream_no]->data(),
-                                                                                                         m_device_rf_lines_env[stream_no]->data(),
-                                                                                                         m_num_time_samples);
-            }
-
-            // copy to host
-            cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), m_device_rf_lines_env[stream_no]->data(), sizeof(float)*m_num_time_samples, cudaMemcpyDeviceToHost, cur_stream) ); 
-        } else {
-            throw std::logic_error("illegal output type");
-        }
-            
+        // IQ demodulation (+decimate?)
+        const auto f_demod = m_excitation.demod_freq;
+        const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
+        const float PI = static_cast<float>(4.0*std::atan(1));
+        const auto normalized_angular_freq = 2*PI*norm_f_demod;
+        DemodulateKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr, normalized_angular_freq, m_num_time_samples);
+        
+        // copy to host. Same memory layout?
+        const auto num_bytes_iq = sizeof(std::complex<float>)*m_num_time_samples;
+        cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), rf_ptr, num_bytes_iq, cudaMemcpyDeviceToHost, cur_stream) ); 
     }
     cudaErrorCheck( cudaDeviceSynchronize() );
 
     // TODO: eliminate unneccessary data copying: it would e.g. be better to
     // only copy what is needed in the above kernel.
     rf_lines.clear();
-    std::vector<bc_float> temp_samples(num_return_samples);
     for (size_t line_no = 0; line_no < num_lines; line_no++) {
-        for (size_t i = 0; i < num_return_samples; i++) {
-            temp_samples[i] = m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples];
+        std::vector<std::complex<bc_float>> temp_samples; // .reserve
+        for (size_t i = 0; i < num_return_samples; i += m_radial_decimation) {
+            temp_samples.push_back(m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples]);
         }
         rf_lines.push_back(temp_samples);
     }
@@ -241,15 +224,7 @@ void GpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     cudaErrorCheck( cudaMemcpy(device_hilbert_mask.data(), mask.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
     
     ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
-    
-    if (m_param_verbose) {
-        std::cout << "Output datatype is " << to_string(m_param_output_type) << std::endl;
-    }
-    // TODO: Actually, this can be done anyway since when only the real part is used when the output data type
-    // if RF-data and the Hilbert transform only affects the imaginary components..
-    if (m_param_output_type == OutputType::ENVELOPE_DATA) {
-        MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
-    }
+    MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 
@@ -261,7 +236,6 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
     auto num_rf_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
-    //std::cout << "num_rf_samples: " << num_rf_samples << std::endl;
     if (num_rf_samples > m_num_time_samples) {
         throw std::runtime_error("Too many RF samples required. TODO: remove limitation");
     }
@@ -275,21 +249,18 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     }
 
     // allocate host and device memory related to RF lines
-    size_t time_proj_bytes = sizeof(float)*m_num_time_samples;
-    size_t rf_line_bytes   = sizeof(complex)*m_num_time_samples;
+    const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
+    const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
+
     m_device_time_proj.resize(m_param_num_cuda_streams);
-    m_device_rf_lines.resize(m_param_num_cuda_streams);
-    m_device_rf_lines_env.resize(m_param_num_cuda_streams);
     for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
-        m_device_time_proj[i]    = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
-        m_device_rf_lines[i]     = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(rf_line_bytes)) );
-        m_device_rf_lines_env[i] = std::move(DeviceBufferRAII<float>::u_ptr   ( new DeviceBufferRAII<float>(time_proj_bytes)) ); 
+        m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes)) ); 
     }
 
     // allocate host memory for all RF lines
     m_host_rf_lines.resize(num_beams);
     for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<float>::u_ptr( new HostPinnedBufferRAII<float>(time_proj_bytes)) );
+        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<std::complex<float>>::u_ptr( new HostPinnedBufferRAII<std::complex<float>>(host_iq_line_bytes)) );
     }
 
     m_num_beams_allocated = static_cast<int>(num_beams);

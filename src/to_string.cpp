@@ -38,6 +38,7 @@ std::string to_string(const ExcitationSignal& sig) {
     ss << "--ExcitationSignal--" << std::endl;
     ss << "Center index: " << sig.center_index << std::endl;
     ss << "Sampling frequency: " << sig.sampling_frequency << std::endl;
+    ss << "Demodulation frequency: " << sig.demod_freq << std::endl;
     return ss.str();
 }
 

@@ -43,7 +43,7 @@ public:
     
     virtual void set_parameter(const std::string& key, const std::string& value)        override;
 
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) override;
+    virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
     
     // NOTE: currently requires that set_excitation is called first!
     virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               override;
@@ -82,12 +82,10 @@ protected:
     // The cuFFT plan used for all transforms.
     CufftPlanRAII::u_ptr                                m_fft_plan;
 
-    std::vector<DeviceBufferRAII<float>::u_ptr>         m_device_time_proj;    // real-valued
-    std::vector<DeviceBufferRAII<complex>::u_ptr>       m_device_rf_lines;     // complex-valued
-    std::vector<DeviceBufferRAII<float>::u_ptr>         m_device_rf_lines_env; // real-valued (bad name, not just for env-data...)
-    std::vector<HostPinnedBufferRAII<float>::u_ptr>     m_host_rf_lines;       // real-valued
+    std::vector<DeviceBufferRAII<complex>::u_ptr>       m_device_time_proj;   
+    std::vector<HostPinnedBufferRAII<std::complex<float>>::u_ptr>     m_host_rf_lines;
 
-    // precomputed excitation FFT, optionally with Hilbert mask applied.
+    // precomputed excitation FFT with Hilbert mask applied.
     DeviceBufferRAII<complex>::u_ptr                    m_device_excitation_fft;
 
     // the value -1 means not allocated

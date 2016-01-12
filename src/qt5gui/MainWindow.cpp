@@ -343,7 +343,6 @@ void MainWindow::onCreateGpuSimulator() {
 
         // GPU-specific hack.
         m_sim->set_parameter("sound_speed", "1540.0");
-        m_sim->set_parameter("output_type", "env");
         
         // configure excitation
         m_sim->set_excitation(m_current_excitation);
@@ -496,10 +495,6 @@ void MainWindow::initializeSimulator(const std::string& type) {
     auto beam_profile = bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(0.5e-3f, 1.0e-3f));
     m_sim->set_beam_profile(beam_profile);
 
-    // Configure simulator to do envelope detection
-    const auto output_type = std::string(m_settings->value("sim_output_type", "env").toString().toUtf8().constData());
-    m_sim->set_parameter("output_type", output_type);
-
     qDebug() << "Created simulator";
     // force-emit from all widgets to ensure a fully configured simulator.
     m_excitation_signal_widget->force_emit();
@@ -513,7 +508,7 @@ void MainWindow::doSimulation() {
     
     //qDebug() << "doSimulation(): simulation time is " << m_sim_time_manager->get_time();
 
-    std::vector<std::vector<bc_float> > rf_lines;
+    std::vector<std::vector<std::complex<bc_float>> > rf_lines_complex;
     
     std::vector<float> sim_milliseconds;
     const auto num_rep = m_settings->value("simulate_lines_num_rep", 1).toInt();
@@ -523,7 +518,16 @@ void MainWindow::doSimulation() {
             ScopedCpuTimer timer([&](int millisec) {
                 sim_milliseconds.push_back(millisec);
             });
-            m_sim->simulate_lines(rf_lines);
+            m_sim->simulate_lines(rf_lines_complex);
+        }
+        // TEMPORARY HACK: Take the absolute value (preparation for always IQ out)
+        std::vector<std::vector<bc_float>> rf_lines;
+        for (size_t line_no = 0; line_no < rf_lines_complex.size(); line_no++) {
+            std::vector<bc_float> temp;
+            for (size_t i = 0; i < rf_lines_complex[line_no].size(); i++) {
+                temp.push_back(std::abs(rf_lines_complex[line_no][i]));
+            }
+            rf_lines.push_back(temp);
         }
     
         // Create refresh work task from current geometry and the beam space data

@@ -64,7 +64,10 @@ struct ExcitationSignal {
     int center_index;                
     
     // The sampling frequency.
-    float sampling_frequency;        
+    float sampling_frequency;
+
+    // Downmixing frequency to use for IQ data
+    float demod_freq;
 };
 
 // Description of a single point scatterer.

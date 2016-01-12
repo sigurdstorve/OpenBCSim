@@ -29,23 +29,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cuda.h>
 #include <cufft.h>
+#include <math_functions.h> // for sincosf()
+#include "cuda_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "gpu_alg_common.cuh"
-
-__global__ void MemsetFloatKernel(float* res, float value, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        res[global_idx] = value;
-    }
-}
-
-__global__ void RealToComplexKernel(float* input, cuComplex* output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        output[global_idx].x = input[global_idx];
-        output[global_idx].y = 0.0f;
-    }
-}
 
 __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples) {
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
@@ -64,18 +51,14 @@ __global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_sa
     }
 }
 
-__global__ void AbsComplexKernel(cufftComplex* input, float* output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+__global__ void DemodulateKernel(cuComplex* signal, float w, int num_samples) {
+    const auto global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx < num_samples) {
-        cufftComplex c     = input[global_idx];
-        output[global_idx] = sqrt(c.x*c.x + c.y*c.y);
-    }
-}
+        // exp(-i*w*n) = cos(w*n) - i*sin(w*n)
+        float sin_value, cos_value;
+        sincosf(w*global_idx, &sin_value, &cos_value);
+        const auto c = make_cuComplex(cos_value, -sin_value);
 
-__global__ void RealPartKernel(cufftComplex* input, float *output, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        cufftComplex c     = input[global_idx];
-        output[global_idx] = c.x;
+        signal[global_idx] = ComplexMul(signal[global_idx], c);
     }
 }

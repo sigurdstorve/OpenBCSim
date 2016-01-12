@@ -17,30 +17,30 @@ description=\
     phantom file.
     
     The use of CPU or GPU can be controlled by using the
-    flag 'use_gpu'.
+    flag "use_gpu".
 """
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('scatterer_file', help='Scatterer dataset (spline)')
-    parser.add_argument('--line_length', help='Length of Doppler beam', type=float, default=0.1)
-    parser.add_argument('--sample_pos', help='Normalized sample pos in [0,1] along the beam.', type=float, default=0.5)
-    parser.add_argument('--prf', help='Pulse repetition frequency [Hz]', type=int, default=5000)
-    parser.add_argument('--num_beams', help='Number of Doppler beams', type=int, default=5000)
-    parser.add_argument('--fs', help='Sampling frequency [Hz]', type=float, default=100e6)
-    parser.add_argument('--store_audio', help='Store a .wav audio file', action='store_true')
-    parser.add_argument('--fc', help='Pulse center frequency [Hz]', type=float, default=5.0e6)
-    parser.add_argument('--bw', help='Pulse fractional bandwidth', type=float, default=0.2)
-    parser.add_argument('--sigma_lateral', help='Lateral beamwidth', type=float, default=0.5e-3)
-    parser.add_argument('--sigma_elevational', help='Elevational beamwidth', type=float, default=1e-3)
-    parser.add_argument('--use_gpu', help='Perform simulations using the gpu_spline2 algorithm', action='store_true')
-    parser.add_argument('--save_pdf', help='Save pdf figures', action='store_true')
-    parser.add_argument('--visualize', help='Interactive figures', action='store_true')
+    parser.add_argument("scatterer_file", help="Scatterer dataset (spline)")
+    parser.add_argument("--line_length", help="Length of Doppler beam", type=float, default=0.1)
+    parser.add_argument("--sample_pos", help="Normalized sample pos in [0,1] along the beam.", type=float, default=0.5)
+    parser.add_argument("--prf", help="Pulse repetition frequency [Hz]", type=int, default=5000)
+    parser.add_argument("--num_beams", help="Number of Doppler beams", type=int, default=5000)
+    parser.add_argument("--fs", help="Sampling frequency [Hz]", type=float, default=100e6)
+    parser.add_argument("--store_audio", help="Store a .wav audio file", action="store_true")
+    parser.add_argument("--fc", help="Pulse center frequency [Hz] (also demod. freq.)", type=float, default=5.0e6)
+    parser.add_argument("--bw", help="Pulse fractional bandwidth", type=float, default=0.2)
+    parser.add_argument("--sigma_lateral", help="Lateral beamwidth", type=float, default=0.5e-3)
+    parser.add_argument("--sigma_elevational", help="Elevational beamwidth", type=float, default=1e-3)
+    parser.add_argument("--use_gpu", help="Perform simulations using the gpu_spline2 algorithm", action="store_true")
+    parser.add_argument("--save_pdf", help="Save pdf figures", action="store_true")
+    parser.add_argument("--visualize", help="Interactive figures", action="store_true")
     args = parser.parse_args()
     
     c0 = 1540.0
     
-    # Create and configure tracker
+    # Create and configure
     if args.use_gpu:
         print "Using GPU"
         sim = RfSimulator("gpu_spline2")
@@ -51,30 +51,31 @@ if __name__ == '__main__':
     sim.set_parameter("verbose", "0")
     sim.set_print_debug(False)
     sim.set_parameter("sound_speed", "%f" % c0)
+    sim.set_parameter("radial_decimation", "30")
 
-    # NOTE: because of current limitation with the GPU spline alg. 2, this call
-    # must be placed BEFORE configuring the excitation signal.
-    sim.set_parameter("output_type", "rf")
-
+    # Enable phase-delays for smooth curves
+    sim.set_parameter("phase_delay", "on")
+    
     # Set spline scatterers
-    with h5py.File(args.scatterer_file, 'r') as f:
-        nodes         = np.array(f['nodes'].value, dtype='float32')
-        knot_vector   = np.array(f['knot_vector'].value, dtype='float32')
-        spline_degree = int(f['spline_degree'].value)
+    with h5py.File(args.scatterer_file, "r") as f:
+        nodes         = np.array(f["nodes"].value, dtype="float32")
+        knot_vector   = np.array(f["knot_vector"].value, dtype="float32")
+        spline_degree = int(f["spline_degree"].value)
         
     sim.set_spline_scatterers(spline_degree, knot_vector, nodes)
-    print 'Number of scatterers: %d' % nodes.shape[0]
+    print "Number of scatterers: %d" % nodes.shape[0]
     
     # Define excitation signal
     t_vector = np.arange(-16/args.fc, 16/args.fc, 1.0/args.fs)
-    samples = np.array(gausspulse(t_vector, bw=args.bw, fc=args.fc), dtype='float32')
+    samples = np.array(gausspulse(t_vector, bw=args.bw, fc=args.fc), dtype="float32")
     center_index = int(len(t_vector)/2) 
-    sim.set_excitation(samples, center_index, args.fs)
+    demod_freq = args.fc
+    sim.set_excitation(samples, center_index, args.fs, demod_freq)
     if args.save_pdf:
         import matplotlib as mpl
         # HACK needed for saving plots on a Linux server with
         # no display configured.
-        mpl.use('Agg')
+        mpl.use("Agg")
     
     if args.save_pdf or args.visualize:
         import matplotlib.pyplot as plt
@@ -82,61 +83,48 @@ if __name__ == '__main__':
         
         plt.figure()
         plt.plot(t_vector, samples)
-        plt.title('Excitation signal')
+        plt.title("Excitation signal")
     if args.save_pdf:
-        plt.savefig('figure1.pdf')
+        plt.savefig("figure1.pdf")
     if args.visualize:
         plt.show()
         
     # Create big scan sequence
-    origins      = np.empty((args.num_beams, 3), dtype='float32')
-    directions   = np.empty((args.num_beams, 3), dtype='float32')
-    lateral_dirs = np.empty((args.num_beams, 3), dtype='float32')
+    origins      = np.empty((args.num_beams, 3), dtype="float32")
+    directions   = np.empty((args.num_beams, 3), dtype="float32")
+    lateral_dirs = np.empty((args.num_beams, 3), dtype="float32")
     
     for beam_no in range(args.num_beams):
         origins[beam_no, :]      = [0.0, 0.0, 0.0]
         directions[beam_no, :]   = [0.0, 0.0, 1.0]
         lateral_dirs[beam_no, :] = [1.0, 0.0, 0.0]
-    timestamps = np.array(range(args.num_beams), dtype='float32')/args.prf
+    timestamps = np.array(range(args.num_beams), dtype="float32")/args.prf
     sim.set_scan_sequence(origins, directions, args.line_length, lateral_dirs, timestamps)
 
     # Set the beam profile
     sim.set_analytical_beam_profile(args.sigma_lateral, args.sigma_elevational)
 
     # Do the simulation
-    print 'Simulating RF lines...'
+    print "Simulating IQ data"
     start_time = time()
-    rf_lines = sim.simulate_lines()
+    iq_lines = sim.simulate_lines()
     end_time = time()
-    print 'Simulation took %f sec' % (end_time-start_time)
+    print "Simulation took %f sec" % (end_time-start_time)
     
-    # Compute hilbert transforms and get slow-time samples
-    slowtime_samples = []
-    num_samples = rf_lines.shape[0]
-    
+    # get slow-time samples
+    num_samples = iq_lines.shape[0]
     sample_idx = int(args.sample_pos*(num_samples-1))
-    print 'Sample index is %d' % sample_idx
-    
-    # HACK: use power-of-two size FFT, otherwise hilbert() is very slow
-    # (Have to do Hilbert transform here since the simulator currently
-    # only supports returning the envelope, and not the analytic signal.
-    fft_size = int(2**math.ceil(math.log(num_samples, 2)))
-    print 'Computing Hilbert transforms using N=%d samples' % fft_size
-    temp = np.zeros((fft_size,), dtype='float32')
-    for beam_no in range(args.num_beams):
-        temp[0:num_samples] = rf_lines[:, beam_no]
-        temp_ht = hilbert(temp)
-        slowtime_samples.append(temp_ht[sample_idx])
-    slowtime_samples = np.array(slowtime_samples)
-    print 'Done.'
+    print "Sample index is %d" % sample_idx
+
+    slowtime_samples = iq_lines[sample_idx, :]
     
     if args.visualize or args.save_pdf:
         plt.figure()
         plt.plot(timestamps, slowtime_samples.real)
-        plt.title('Slowtime samples')
-        plt.xlabel('Slow time')
+        plt.title("Slowtime samples")
+        plt.xlabel("Slow time")
     if args.save_pdf:
-        plt.savefig('figure2.pdf')
+        plt.savefig("figure2.pdf")
     
     fft_len = 256
     nd = 5
@@ -171,13 +159,13 @@ if __name__ == '__main__':
     
     if args.visualize or args.save_pdf:
         plt.figure()
-        plt.imshow(pixels, cmap=cm.Greys_r, aspect='auto', extent=[timestamps[0], timestamps[-1], min_vel, max_vel])
-        plt.xlabel('Time [s]')
-        plt.ylabel('Velocity [m/s]')
-        plt.axhline(0.0, linestyle='--', c='w', linewidth=2)
+        plt.imshow(pixels, cmap=cm.Greys_r, aspect="auto", extent=[timestamps[0], timestamps[-1], min_vel, max_vel])
+        plt.xlabel("Time [s]")
+        plt.ylabel("Velocity [m/s]")
+        plt.axhline(0.0, linestyle="--", c="w", linewidth=2)
         #plt.colorbar()
     if args.save_pdf:
-        plt.savefig('figure3.pdf')
+        plt.savefig("figure3.pdf")
     
     if args.visualize:
         plt.show()
@@ -192,10 +180,10 @@ if __name__ == '__main__':
         
         new_samples = new_samples / np.max(abs(new_samples))
         new_samples = new_samples*32000
-        new_samples = np.array(new_samples, dtype='int16')
+        new_samples = np.array(new_samples, dtype="int16")
         
-        audio_file = 'pw_audio.wav'
+        audio_file = "pw_audio.wav"
         write(audio_file, fs_wav, new_samples)
-        print 'Audio written to %s' % audio_file
+        print "Audio written to %s" % audio_file
     
  

@@ -181,7 +181,7 @@ public:
         m_rf_simulator->set_scan_sequence(seq);
     }
 
-    void set_excitation(numpy_boost<float, 1> samples, int center_index, float fs) {
+    void set_excitation(numpy_boost<float, 1> samples, int center_index, float fs, float demod_freq) {
         auto samplesDims = get_dimensions(samples);
         if (samplesDims.size() != 1) {
             throw std::runtime_error(std::string(__FUNCTION__) + ": samples should be one-dimensional");
@@ -196,6 +196,7 @@ public:
         ex.samples = s;
         ex.center_index = center_index;
         ex.sampling_frequency = fs;
+        ex.demod_freq = demod_freq;
         m_rf_simulator->set_excitation(ex);
         if (m_print_debug) {
             std::cout << to_string(ex) << std::endl;
@@ -262,7 +263,7 @@ public:
 
     PyObject* simulate_lines() {
         // Simulate
-        std::vector<std::vector<bc_float> > rf_lines;
+        std::vector<std::vector<std::complex<bc_float>> > rf_lines;
         m_rf_simulator->simulate_lines(rf_lines);
         int num_rf_lines = rf_lines.size();
         // all lines have same number of samples
@@ -270,7 +271,7 @@ public:
         
         // Copy over to a NumPy array.
         int array_dims[] = {static_cast<int>(num_samples), static_cast<int>(num_rf_lines)};
-        numpy_boost<float, 2> array(array_dims);
+        numpy_boost<std::complex<float>, 2> array(array_dims);
         
         for (int sample_no = 0; sample_no < num_samples; sample_no++) {
             for (int line_no = 0; line_no < num_rf_lines; line_no++) {
@@ -298,6 +299,7 @@ BOOST_PYTHON_MODULE(pyrfsim) {
     numpy_boost_python_register_type<float, 1>();
     numpy_boost_python_register_type<float, 2>();
     numpy_boost_python_register_type<float, 3>();
+    numpy_boost_python_register_type<std::complex<float>, 2>();
 
     class_<RfSimulatorWrapper>("RfSimulator", init<std::string>())
         .def("set_print_debug",             &RfSimulatorWrapper::set_print_debug)

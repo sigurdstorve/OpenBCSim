@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <memory>
 #include <vector>
+#include <complex>
 #include "export_macros.hpp"
 #include "bcsim_defines.h"
 #include "BCSimConfig.hpp"
@@ -61,9 +62,9 @@ public:
     // Set the beam profile object to use when simulating.
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     = 0;
 
-    // Simulate all RF lines. Returns vector of RF lines.
+    // Simulate all RF lines. Returns vector of IQ samples.
     // Requires that everything is properly configured.
-    virtual void simulate_lines(std::vector<std::vector<bc_float> >&  /*out*/ rf_lines) = 0;
+    virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) = 0;
 };
 
 // Factory function for creating simulator instances.

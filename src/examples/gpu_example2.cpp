@@ -101,10 +101,8 @@ void example(int argc, char** argv) {
     ex.sampling_frequency = 100e6;
     std::vector<float> dummy_times;
     bcsim::MakeGaussianExcitation(center_freq, frac_bw, ex.sampling_frequency, dummy_times, ex.samples, ex.center_index);
+    ex.demod_freq = center_freq;
     sim->set_excitation(ex);
-
-    // configure output type
-    sim->set_parameter("output_type", "rf");
 
     // configure sound speed
     sim->set_parameter("sound_speed", "1540.0");
@@ -173,7 +171,7 @@ void example(int argc, char** argv) {
     float elapsed;
     for (;;) {
         std::cout << ".";
-        std::vector<std::vector<bc_float>> sim_res;
+        std::vector<std::vector<std::complex<bc_float>>> sim_res;
         sim->simulate_lines(sim_res);
         num_simulate_lines++;
 

@@ -129,7 +129,7 @@ void CpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
     m_beam_profile_configured = true;
 }
 
-void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLines) {
+void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float>> > & rfLines) {
     throw_if_not_configured();
     const auto num_scanlines = m_scan_sequence->get_num_lines();
     rfLines.resize(num_scanlines);
@@ -138,6 +138,7 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLi
         std::cout << "Sound speed: " << m_param_sound_speed << std::endl;
         std::cout << "Number of scan lines: " << num_scanlines << std::endl;
         std::cout << "Setting " << m_omp_num_threads << " OpenMP threads." << std::endl;
+        std::cout << "IQ demodulation frequency is " << m_excitation.demod_freq << " Hz." << std::endl;
     }    
     omp_set_num_threads(m_omp_num_threads);
 #if BCSIM_ENABLE_OPENMP
@@ -152,11 +153,11 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<bc_float> > & rfLi
     }
 }
 
-std::vector<bc_float> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
+std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
     const int thread_idx       = omp_get_thread_num();
     
     // this will have length num_time_samples [which is valid before padding starts]
-    double* time_proj_signal = convolvers[thread_idx]->get_zeroed_time_proj_signal();
+    auto time_proj_signal = convolvers[thread_idx]->get_zeroed_time_proj_signal();
 
     // Implementation differs depending on scatterers model.
     projection_loop(line, time_proj_signal, m_rf_line_num_samples);
@@ -170,15 +171,33 @@ std::vector<bc_float> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
 #endif
 
     // add Gaussian noise if desirable.
+    /*
     if (m_param_noise_amplitude > 0.0f) {
         std::transform(time_proj_signal, time_proj_signal + m_rf_line_num_samples, time_proj_signal, [&](float v) {
             return v + m_normal_dist(m_random_engine);
         });
     }
+    */
 
     // get the convolver associated with this thread and do FFT-based convolution
-    std::vector<bc_float> rf_line = convolvers[thread_idx]->process();
-    return rf_line;
+    // complex down-shifting to form a proper IQ signal. TODO: consider precomputing the complex exponential
+    auto temp_line = convolvers[thread_idx]->process();
+    // TODO: Consider merging decimateion. No need to compute samples that we later discard..
+    const auto f_demod = m_excitation.demod_freq;
+    const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
+    const float TWO_PI = static_cast<float>(2.0*4.0*std::atan(1));
+    for (size_t i = 0; i < temp_line.size(); i++) {
+        temp_line[i] *= std::exp(-TWO_PI*std::complex<float>(0.0f, 1.0)*norm_f_demod*static_cast<float>(i));
+    }
+    
+    // Decimate
+    // TODO: Consider reserve to avoid unneeded allocations resulting from push_back()?
+    std::vector<std::complex<bc_float>> res;
+    for (int i = 0; i < static_cast<int>(temp_line.size()); i += m_radial_decimation) {
+        res.push_back(temp_line[i]);
+    }
+
+    return res;
 }
 
 void CpuBaseAlgorithm::configure_convolvers_if_possible() {
@@ -187,11 +206,10 @@ void CpuBaseAlgorithm::configure_convolvers_if_possible() {
         std::cout << "Recreating convolvers\n";
         for (int i = 0; i < m_omp_num_threads; i++) {
             if (m_param_verbose) {
-                std::cout << "Creating FFT-convolver " << i 
-                          << " of type " << to_string(m_param_output_type) << std::endl;
+                std::cout << "Creating FFT-convolver " << i << std::endl;
             }
             
-            auto convolver = CreateBeamConvolver(m_param_output_type, m_rf_line_num_samples, m_excitation);
+            auto convolver = IBeamConvolver::Create(m_rf_line_num_samples, m_excitation);
             convolvers.push_back(std::move(convolver));
         }
     }

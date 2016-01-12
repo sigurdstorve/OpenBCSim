@@ -37,144 +37,70 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-// Common functionality for all the types of convolvers
-class BeamConvolverBase : public IBeamConvolver {
+// Beam-convolver with built-in Hilbert transform.
+class BeamConvolver : public IBeamConvolver {
 public:
     // num_proj_samples: Number of time-projection samples
     // excitation: The RF excitation
-    // out_transform: The mapping from complex to real. Default is to extract the real part.
-    BeamConvolverBase(size_t num_proj_samples, const ExcitationSignal& excitation, std::function<bc_float(std::complex<float>)> out_transform)
-        : m_out_transform(out_transform),
-          m_excitation_has_been_customized(false)
+    BeamConvolver(size_t num_proj_samples, const ExcitationSignal& excitation)
+        : m_num_proj_samples(num_proj_samples)
     {
-        m_num_conv_samples = num_proj_samples + excitation.samples.size() - 1;
-        m_time_proj_buffer.resize(num_proj_samples);
-        m_fft_length = next_power_of_two(m_num_conv_samples);
+        const auto num_conv_samples = num_proj_samples + excitation.samples.size() - 1;
+        m_fft_length = next_power_of_two(num_conv_samples);
         precompute_excitation_fft(excitation);
         m_excitation_delay = static_cast<size_t>(excitation.center_index);
-        // customization happens later since virtual functions cannot be called here... 
 
-        m_temp_buffer.resize(m_fft_length);
+        // Padded with zeros, the first num_proj_samples will be used in algorithm's projection loop.
+        m_time_proj_buffer.resize(m_fft_length);
     }
 
-    virtual double* get_zeroed_time_proj_signal() {
-        std::fill(m_time_proj_buffer.begin(), m_time_proj_buffer.end(), 0.0);
+    virtual std::complex<float>* get_zeroed_time_proj_signal() {
+        std::fill(std::begin(m_time_proj_buffer), std::end(m_time_proj_buffer), std::complex<float>(0.0f, 0.0f));
         return m_time_proj_buffer.data();
     }
 
     // Use contents of the time-projected buffer and create an RF line.
-    virtual std::vector<bc_float> process() {
-        process_first_stage();
+    // Process the time-projections by doing FFT -> Multiply -> IFFT
+    virtual std::vector<std::complex<bc_float>> process() {
+        auto temp_buffer = fft(m_time_proj_buffer);
+        std::transform(std::begin(temp_buffer), std::end(temp_buffer), std::begin(m_excitation_fft), std::begin(temp_buffer), std::multiplies<std::complex<float>>());
+        temp_buffer = ifft(temp_buffer);
+        if (temp_buffer.size() != m_fft_length) throw std::logic_error("should not happen");
 
         // extract output, compensate for delay introduced by convolving with excitation
-        auto num_proj_samples = m_time_proj_buffer.size();
-        auto start = m_temp_buffer.begin() + m_excitation_delay;
-        std::vector<bc_float> res(num_proj_samples);
-        std::transform(start, start + num_proj_samples, res.begin(), [&](std::complex<float> v) {
-            return m_out_transform(v);
-        });
-        return res;
+        auto start = std::begin(temp_buffer) + m_excitation_delay;
+        return std::vector<std::complex<bc_float>>(start, start + m_num_proj_samples);
     }
 
 protected:
-    // Customization step to alter the precomputed FFT of excitation signal, which
-    // is useful for implementing an additional Hilbert transform at no extra cost.
-    virtual void customize_excitation_fft() {
-        // default is to do nothing.
-    }
-
+    // Precompute Hilbert-transformed FFT of excitation signal.
     void precompute_excitation_fft(const ExcitationSignal& excitation) {
         std::vector<std::complex<float>> padded_excitation(m_fft_length, std::complex<float>(0.0f, 0.0f));
-        std::transform(excitation.samples.begin(), excitation.samples.end(), padded_excitation.begin(), [](bc_float v) {
+        std::transform(std::begin(excitation.samples), std::end(excitation.samples), std::begin(padded_excitation), [](bc_float v) {
             return std::complex<float>(static_cast<float>(v), 0.0f);
         });
         m_excitation_fft = fft(padded_excitation);
+
+        // Hilbert transform is implemented by zeroing out negative frequencies in FFT of excitation.
+        const auto hilbert_mask = discrete_hilbert_mask<float>(m_fft_length);
+        std::transform(std::begin(hilbert_mask), std::end(hilbert_mask),
+                       std::begin(m_excitation_fft), std::begin(m_excitation_fft),
+                       [&](float mask_sample, std::complex<float> fft_sample) {
+            return mask_sample*fft_sample;
+        });
     }
 
-    // Process the time-projections by doing FFT -> Multiply -> IFFT. Virtual to enable bypassing it.
-    // Result is stored in m_temp_buffer
-    virtual void process_first_stage() {
-        if (!m_excitation_has_been_customized) {
-            customize_excitation_fft();
-            m_excitation_has_been_customized = true;
-        }
-        std::vector<std::complex<float> > padded_input(m_fft_length, std::complex<float>(0.0f, 0.0f));
-        std::transform(m_time_proj_buffer.begin(), m_time_proj_buffer.end(), padded_input.begin(), [](double value) {
-            return std::complex<float>(static_cast<float>(value), 0.0f);
-        });
-        m_temp_buffer = fft(padded_input);
-        if (m_temp_buffer.size() != m_fft_length) throw std::logic_error("should not happen");
-        if (m_excitation_fft.size() != m_fft_length) throw std::logic_error("should not happen");
-        std::transform(m_temp_buffer.begin(), m_temp_buffer.end(), m_excitation_fft.begin(), m_temp_buffer.begin(), std::multiplies<std::complex<float>>());
-        m_temp_buffer = ifft(m_temp_buffer);
-        if (m_temp_buffer.size() != m_fft_length) throw std::logic_error("should not happen");
-    }
 
 protected:
-    size_t                              m_num_conv_samples;   // length of convolution output  [len(time_proj)+len(excitation)-1 samples]      
-    std::vector<double>                 m_time_proj_buffer;   // where time-projections are stored in projection loop
+    size_t                              m_num_proj_samples;   // number of samples in time-projection signal
+    std::vector<std::complex<float>>    m_time_proj_buffer;   // where time-projections are stored in projection loop
     size_t                              m_fft_length;         // closest power-of-two >= length(m_time_proj_buffer)
     std::vector<std::complex<float>>    m_excitation_fft;     // Forward FFT of padded excitation, length is m_fft_length
-    bool                                m_excitation_has_been_customized;
     size_t                              m_excitation_delay;   // Compensation offset needed since time zero in the middle.
-    std::vector<std::complex<float>>    m_temp_buffer;        // buffer for holding intermediate results, length is m_fft_length
-    std::function<bc_float(std::complex<float>)> m_out_transform;
 };
 
-// Beam convolver which returns RF samples
-class BeamConvolver_RF : public BeamConvolverBase {
-public:
-    BeamConvolver_RF(size_t num_proj_samples, const ExcitationSignal& excitation)
-        : BeamConvolverBase(num_proj_samples, excitation, [](std::complex<float> v) { return v.real(); })
-    { }
-};
-
-// Beam convolver which return envelope-detected data.
-class BeamConvolver_Env : public BeamConvolverBase {
-public:
-    BeamConvolver_Env(size_t num_proj_samples, const ExcitationSignal& excitation)
-    : BeamConvolverBase(num_proj_samples, excitation, [](std::complex<float> v) { return std::abs(v); })
-    { }
-
-protected:
-    virtual void customize_excitation_fft() override {
-        auto h = discrete_hilbert_mask<float>(m_fft_length);
-        std::transform(h.begin(), h.end(), m_excitation_fft.begin(), m_excitation_fft.begin(), [](float mask, std::complex<float> v) {
-            return v*mask;
-        });
-    }
-};
-
-// Beam convolver which returns the time-projections
-class BeamConvolver_TimeProj : public BeamConvolverBase {
-public:
-    BeamConvolver_TimeProj(size_t num_proj_samples, const ExcitationSignal& excitation)
-        : BeamConvolverBase(num_proj_samples, excitation, [](std::complex<float> v) { return v.real(); })
-    {
-        // no convolution is performed, and hence no convolution delay.
-        m_excitation_delay = 0;
-    }
-
-protected:
-    virtual void process_first_stage() override {
-        std::transform(m_time_proj_buffer.begin(), m_time_proj_buffer.end(), m_temp_buffer.begin(), [](float v) {
-            return std::complex<float>(v, 0.0f);
-        });
-    }
-};
-
-IBeamConvolver::ptr IBeamConvolver::Create(const std::string& type, size_t num_proj_samples, const ExcitationSignal& excitation) {
-    IBeamConvolver* temp = nullptr;
-    if (type == "rf") {
-        temp = new BeamConvolver_RF(num_proj_samples, excitation);
-    } else if (type == "env") {
-        temp = new BeamConvolver_Env(num_proj_samples, excitation);
-    } else if (type == "proj") {
-        temp = new BeamConvolver_TimeProj(num_proj_samples, excitation);
-    } else {
-        throw std::runtime_error("Unknown beam convolver type: " + type);
-    }
-    return IBeamConvolver::ptr(temp);
+IBeamConvolver::ptr IBeamConvolver::Create(size_t num_proj_samples, const ExcitationSignal& excitation) {
+    return IBeamConvolver::ptr(new BeamConvolver(num_proj_samples, excitation));
 }
 
 }   // end namespace
