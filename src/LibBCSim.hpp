@@ -66,7 +66,7 @@ public:
     // Requires that everything is properly configured.
     virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) = 0;
 
-    // Get debug data by identifier. Returns empty vector on invalid key.
+    // Get debug data by identifier. Throws std::runtime_error on invalid key.
     virtual std::vector<double> get_debug_data(const std::string& identifier) const = 0;
 };
 
