@@ -285,6 +285,15 @@ public:
         return array_object;
     }
 
+    boost::python::list get_debug_data(const std::string& identifier) {
+        const auto temp = m_rf_simulator->get_debug_data(identifier);
+        boost::python::list res;
+        for (const auto value : temp) {
+            res.append(value);
+        }
+        return res;
+    }
+
 protected:
     IAlgorithm::s_ptr       m_rf_simulator;
     bool                    m_print_debug;
@@ -311,5 +320,6 @@ BOOST_PYTHON_MODULE(pyrfsim) {
         .def("set_analytical_beam_profile", &RfSimulatorWrapper::set_analytical_beam_profile)
         .def("set_lut_beam_profile",        &RfSimulatorWrapper::set_lut_beam_profile)
         .def("simulate_lines",              &RfSimulatorWrapper::simulate_lines)
+        .def("get_debug_data",              &RfSimulatorWrapper::get_debug_data)
     ;
 }
