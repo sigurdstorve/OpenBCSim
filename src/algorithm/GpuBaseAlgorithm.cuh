@@ -99,6 +99,7 @@ protected:
     int                                                 m_param_cuda_device_no;
     int                                                 m_param_num_cuda_streams;
     int                                                 m_param_threads_per_block;
+    bool                                                m_store_kernel_details;
 };
     
 }   // end namespace

@@ -42,7 +42,8 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_num_time_samples(32768),  // TODO: remove this limitation
       m_beam_profile(nullptr),
       m_num_beams_allocated(-1),
-      m_param_threads_per_block(128)
+      m_param_threads_per_block(128),
+      m_store_kernel_details(false)
 {
 }
 
@@ -79,6 +80,14 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         m_param_threads_per_block = threads_per_block;
     } else if (key == "noise_amplitude") {
         throw std::runtime_error("noise is not yet implemented in GPU algorithms");
+    } else if (key == "store_kernel_details") {
+        if ((value == "on") || (value == "true")) {
+            m_store_kernel_details = true;
+        } else if ((value == "off") || (value == "false")) {
+            m_store_kernel_details = false;
+        } else {
+            throw std::runtime_error("invalid value");
+        }
     } else {
         BaseAlgorithm::set_parameter(key, value);
     }
