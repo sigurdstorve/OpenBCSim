@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <string>
 #include <vector>
+#include <map>
 #include "LibBCSim.hpp"
 #include "BeamConvolver.hpp"
 
@@ -52,6 +53,9 @@ protected:
     bool        m_param_use_arc_projection;
     int         m_radial_decimation;
     bool        m_enable_phase_delay;
+
+    // storage of debug data
+    std::map<std::string, std::vector<double>>  m_debug_data;
 };
 
 }   // end namespace

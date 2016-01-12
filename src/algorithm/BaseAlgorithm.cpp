@@ -85,8 +85,7 @@ void BaseAlgorithm::set_parameter(const std::string& key, const std::string& val
 }
 
 std::vector<double> BaseAlgorithm::get_debug_data(const std::string& identifier) const {
-    std::vector<double> res;
-    return res;
+    return m_debug_data[identifier];
 }
 
 
