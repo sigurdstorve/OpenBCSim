@@ -136,6 +136,10 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
     if (m_stream_wrappers.size() == 0) {
         create_cuda_stream_wrappers(m_param_num_cuda_streams);
     }
+
+    if (m_store_kernel_details) {
+        m_debug_data.clear();
+    }
     
     auto num_lines = m_scan_seq->get_num_lines();
     if (num_lines < 1) {
@@ -154,6 +158,13 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         size_t stream_no = beam_no % m_param_num_cuda_streams;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
 
+        std::unique_ptr<EventTimerRAII> event_timer;
+        if (m_store_kernel_details) {
+            event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(cur_stream));
+            m_debug_data["stream_numbers"].push_back(static_cast<double>(stream_no));
+            event_timer->restart();
+        }
+
         if (m_param_verbose) {
             std::cout << "beam_no = " << beam_no << ", stream_no = " << stream_no << std::endl;
         }
@@ -164,23 +175,50 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
 
         // clear time projections (safer than cudaMemsetAsync)
         const auto complex_zero = make_cuComplex(0.0f, 0.0f);
+        if (m_store_kernel_details) {
+            event_timer->restart();
+        }
         MemsetKernel<cuComplex><<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
                                                                                                           complex_zero,
                                                                                                           m_num_time_samples);
-
+        if (m_store_kernel_details) {
+            const auto elapsed_ms = static_cast<double>(event_timer->stop());
+            m_debug_data["kernel_memset_ms"].push_back(elapsed_ms);
+            event_timer->restart();
+        }
 
         projection_kernel(stream_no, scanline);
+        if (m_store_kernel_details) {
+            const auto elapsed_ms = static_cast<double>(event_timer->stop());
+            m_debug_data["kernel_projection_ms"].push_back(elapsed_ms);
+            event_timer->restart();
+        }
 
-        // in-place forward FFT            
+        // in-place forward FFT
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
-
+        if (m_store_kernel_details) {
+            const auto elapsed_ms = static_cast<double>(event_timer->stop());
+            m_debug_data["kernel_forward_fft_ms"].push_back(elapsed_ms);
+            event_timer->restart();
+        }
+        
         // multiply with FFT of impulse response w/Hilbert transform
         MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
                                                                                                     m_device_excitation_fft->data(),
                                                                                                     m_num_time_samples);
+        if (m_store_kernel_details) {
+            const auto elapsed_ms = static_cast<double>(event_timer->stop());
+            m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
+            event_timer->restart();
+        }
 
         // in-place inverse FFT
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
+        if (m_store_kernel_details) {
+            const auto elapsed_ms = static_cast<double>(event_timer->stop());
+            m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
+            event_timer->restart();
+        }
 
         // IQ demodulation (+decimate?)
         const auto f_demod = m_excitation.demod_freq;
@@ -188,10 +226,19 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         const float PI = static_cast<float>(4.0*std::atan(1));
         const auto normalized_angular_freq = 2*PI*norm_f_demod;
         DemodulateKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr, normalized_angular_freq, m_num_time_samples);
-        
+        if (m_store_kernel_details) {
+            const auto elapsed_ms = static_cast<double>(event_timer->stop());
+            m_debug_data["kernel_demodulate_ms"].push_back(elapsed_ms);
+            event_timer->restart();
+        }
+
         // copy to host. Same memory layout?
         const auto num_bytes_iq = sizeof(std::complex<float>)*m_num_time_samples;
         cudaErrorCheck( cudaMemcpyAsync(m_host_rf_lines[beam_no]->data(), rf_ptr, num_bytes_iq, cudaMemcpyDeviceToHost, cur_stream) ); 
+        if (m_store_kernel_details) {
+            const auto elapsed_ms = static_cast<double>(event_timer->stop());
+            m_debug_data["kernel_memcpy_ms"].push_back(elapsed_ms);
+        }
     }
     cudaErrorCheck( cudaDeviceSynchronize() );
 
