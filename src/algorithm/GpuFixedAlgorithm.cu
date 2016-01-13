@@ -108,7 +108,7 @@ GpuFixedAlgorithm::GpuFixedAlgorithm()
 {
 }
 
-void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanline) {
+void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
 
     // TODO: Move out conversion code            
@@ -121,7 +121,6 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     auto ele_dir      = make_float3(temp_ele_dir.x, temp_ele_dir.y, temp_ele_dir.z);
     auto origin       = make_float3(temp_origin.x, temp_origin.y, temp_origin.z);
 
-    int num_blocks = round_up_div(m_num_scatterers, m_param_threads_per_block);
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
     

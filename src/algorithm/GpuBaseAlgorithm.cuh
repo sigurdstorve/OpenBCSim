@@ -60,7 +60,7 @@ protected:
     void print_cuda_device_properties(int device_no) const;
     
     // must be implemented in subclass
-    virtual void projection_kernel(int stream_no, const Scanline& scanline) = 0;
+    virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) = 0;
     
 protected:
     typedef cufftComplex complex;

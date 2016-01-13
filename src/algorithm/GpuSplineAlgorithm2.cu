@@ -148,7 +148,7 @@ void GpuSplineAlgorithm2::set_parameter(const std::string& key, const std::strin
     }
 }
 
-void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanline) {
+void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
     
     // TODO: Move out conversion code            
@@ -174,7 +174,6 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                             cudaMemcpyHostToDevice,
                                             cur_stream));
 
-    int num_blocks = round_up_div(m_num_scatterers, m_param_threads_per_block);
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
 
