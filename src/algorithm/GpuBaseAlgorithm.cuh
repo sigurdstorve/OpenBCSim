@@ -57,7 +57,7 @@ protected:
     
     int get_num_cuda_devices() const;
     
-    void save_cuda_device_properties(int device_no);
+    void save_cuda_device_properties();
     
     // must be implemented in subclass
     virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) = 0;

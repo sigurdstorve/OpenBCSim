@@ -46,7 +46,7 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_store_kernel_details(false)
 {
     // ensure that CUDA device properties is stored
-    save_cuda_device_properties(m_param_cuda_device_no);
+    save_cuda_device_properties();
 }
 
 int GpuBaseAlgorithm::get_num_cuda_devices() const {
@@ -67,7 +67,7 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         }
         m_param_cuda_device_no = device_no;
         cudaErrorCheck(cudaSetDevice(m_param_cuda_device_no));
-        save_cuda_device_properties(m_param_cuda_device_no);
+        save_cuda_device_properties();
     } else if (key == "cuda_streams") {
         const auto num_streams = std::stoi(value);
         if (num_streams <= 0) {
@@ -103,16 +103,16 @@ void GpuBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
     m_can_change_cuda_device = false;
 }
 
-void GpuBaseAlgorithm::save_cuda_device_properties(int device_no) {
+void GpuBaseAlgorithm::save_cuda_device_properties() {
     const auto num_devices = get_num_cuda_devices();
-    if (device_no < 0 || device_no >= num_devices) {
+    if (m_param_cuda_device_no < 0 || m_param_cuda_device_no >= num_devices) {
         throw std::runtime_error("illegal CUDA device number");
     }
-    cudaErrorCheck( cudaGetDeviceProperties(&m_cur_device_prop, device_no) );
+    cudaErrorCheck( cudaGetDeviceProperties(&m_cur_device_prop, m_param_cuda_device_no) );
 
     if (m_param_verbose) {
         const auto& p = m_cur_device_prop;
-        std::cout << "=== CUDA Device " << device_no << ": " << p.name              << std::endl;
+        std::cout << "=== CUDA Device " << m_param_cuda_device_no << ": " << p.name << std::endl;
         std::cout << "totalGlobMem: "               << p.totalGlobalMem             << std::endl;
         std::cout << "clockRate: "                  << p.clockRate                  << std::endl;
         std::cout << "Compute capability: "         << p.major << "." << p.minor << std::endl;
