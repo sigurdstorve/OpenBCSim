@@ -57,10 +57,10 @@ protected:
     
     int get_num_cuda_devices() const;
     
-    void print_cuda_device_properties(int device_no) const;
+    void save_cuda_device_properties();
     
     // must be implemented in subclass
-    virtual void projection_kernel(int stream_no, const Scanline& scanline) = 0;
+    virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) = 0;
     
 protected:
     typedef cufftComplex complex;
@@ -100,6 +100,9 @@ protected:
     int                                                 m_param_num_cuda_streams;
     int                                                 m_param_threads_per_block;
     bool                                                m_store_kernel_details;
+
+    // Always reflects the current device in use.
+    cudaDeviceProp                                      m_cur_device_prop;
 };
     
 }   // end namespace

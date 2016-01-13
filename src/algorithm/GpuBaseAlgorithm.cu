@@ -45,6 +45,8 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_param_threads_per_block(128),
       m_store_kernel_details(false)
 {
+    // ensure that CUDA device properties is stored
+    save_cuda_device_properties();
 }
 
 int GpuBaseAlgorithm::get_num_cuda_devices() const {
@@ -65,7 +67,7 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         }
         m_param_cuda_device_no = device_no;
         cudaErrorCheck(cudaSetDevice(m_param_cuda_device_no));
-        print_cuda_device_properties(m_param_cuda_device_no);
+        save_cuda_device_properties();
     } else if (key == "cuda_streams") {
         const auto num_streams = std::stoi(value);
         if (num_streams <= 0) {
@@ -101,24 +103,32 @@ void GpuBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
     m_can_change_cuda_device = false;
 }
 
-void GpuBaseAlgorithm::print_cuda_device_properties(int device_no) const {
+void GpuBaseAlgorithm::save_cuda_device_properties() {
     const auto num_devices = get_num_cuda_devices();
-    if (device_no < 0 || device_no >= num_devices) {
+    if (m_param_cuda_device_no < 0 || m_param_cuda_device_no >= num_devices) {
         throw std::runtime_error("illegal CUDA device number");
     }
-    cudaDeviceProp prop;
-    cudaErrorCheck( cudaGetDeviceProperties(&prop, device_no) );
-    std::cout << "\n\n=== Device " << device_no << ": " << prop.name               << std::endl;
-    std::cout << "totalGlobMem: "               << prop.totalGlobalMem             << std::endl;
-    std::cout << "clockRate: "                  << prop.clockRate                  << std::endl;
-    std::cout << "Compute capability: "         << prop.major << "." << prop.minor << std::endl;
-    std::cout << "asyncEngineCount: "           << prop.asyncEngineCount           << std::endl;
-    std::cout << "multiProcessorCount: "        << prop.multiProcessorCount        << std::endl;
-    std::cout << "kernelExecTimeoutEnabled: "   << prop.kernelExecTimeoutEnabled   << std::endl;
-    std::cout << "computeMode: "                << prop.computeMode                << std::endl;
-    std::cout << "concurrentKernels: "          << prop.concurrentKernels          << std::endl;
-    std::cout << "ECCEnabled: "                 << prop.ECCEnabled                 << std::endl;
-    std::cout << "memoryBusWidth: "             << prop.memoryBusWidth             << std::endl;
+    cudaErrorCheck( cudaGetDeviceProperties(&m_cur_device_prop, m_param_cuda_device_no) );
+
+    if (m_param_verbose) {
+        const auto& p = m_cur_device_prop;
+        std::cout << "=== CUDA Device " << m_param_cuda_device_no << ": " << p.name << std::endl;
+        std::cout << "Compute capability: "         << p.major << "." << p.minor << std::endl;
+        std::cout << "ECCEnabled: "                 << p.ECCEnabled                 << std::endl;
+        std::cout << "asyncEngineCount: "           << p.asyncEngineCount           << std::endl;
+        std::cout << "canMapHostMemory: "           << p.canMapHostMemory           << std::endl; 
+        std::cout << "clockRate: "                  << p.clockRate                  << std::endl;
+        std::cout << "computeMode: "                << p.computeMode                << std::endl;
+        std::cout << "concurrentKernels: "          << p.concurrentKernels          << std::endl;
+        std::cout << "integrated: "                 << p.integrated                 << std::endl;
+        std::cout << "kernelExecTimeoutEnabled: "   << p.kernelExecTimeoutEnabled   << std::endl;
+        std::cout << "l2CacheSize: "                << p.l2CacheSize                << std::endl;
+        std::cout << "maxGridSize: [" << p.maxGridSize[0] << "," << p.maxGridSize[1] << "," << p.maxGridSize[2] << "]\n";
+        std::cout << "maxThreadsPerBlock: "         << p.maxThreadsPerBlock         << std::endl;
+        std::cout << "memoryBusWidth: "             << p.memoryBusWidth             << std::endl;
+        std::cout << "multiProcessorCount: "        << p.multiProcessorCount        << std::endl;
+        std::cout << "totalGlobMem: "               << p.totalGlobalMem             << std::endl;
+    }
 }
 
 void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
@@ -150,6 +160,13 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         throw std::runtime_error("No beam profile is set");
     }
     
+    // compute the number of blocks needed to project all scatterers and check that
+    // it is not more than what is supported by the device.
+    int num_blocks = round_up_div(m_num_scatterers, m_param_threads_per_block);
+    if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
+        throw std::runtime_error("required number of x-blocks is larger than device supports");
+    }
+
     // no delay compenasation is needed when returning the projections only
     size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
     const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
@@ -187,7 +204,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
             event_timer->restart();
         }
 
-        projection_kernel(stream_no, scanline);
+        projection_kernel(stream_no, scanline, num_blocks);
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
             m_debug_data["kernel_projection_ms"].push_back(elapsed_ms);
