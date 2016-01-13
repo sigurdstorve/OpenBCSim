@@ -45,6 +45,8 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_param_threads_per_block(128),
       m_store_kernel_details(false)
 {
+    // ensure that CUDA device properties is stored
+    save_cuda_device_properties(m_param_cuda_device_no);
 }
 
 int GpuBaseAlgorithm::get_num_cuda_devices() const {
