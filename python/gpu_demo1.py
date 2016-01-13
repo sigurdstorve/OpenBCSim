@@ -20,12 +20,15 @@ if __name__ == '__main__':
     parser.add_argument("--visualize", help="Visualize the middle RF line", action="store_true")
     parser.add_argument("--save_pdf", help="Save .pdf image", action="store_true")
     parser.add_argument("--device_no", help="GPU device no to use", type=int, default=0)
+    parser.add_argument("--store_kernel_debug", help="Store kernel timing info", action="store_true")
     args = parser.parse_args()
 
 sim = RfSimulator("gpu_fixed")
 sim.set_parameter("gpu_device", "%d"%args.device_no)
 sim.set_parameter("radial_decimation", "30")
 sim.set_parameter("verbose", "0")
+if args.store_kernel_debug:
+    sim.set_parameter("store_kernel_details", "on")
 
 # configure scatterers (in a 3D cube)
 x0 = -0.04; x1 = 0.04
@@ -93,5 +96,15 @@ if args.visualize:
     plt.show()
 if args.save_pdf:
     print "Image written to disk."
-    
-    
+
+if args.store_kernel_debug:
+    keys = ["kernel_memset_ms", "kernel_projection_ms", "kernel_forward_fft_ms",\
+            "kernel_multiply_fft_ms", "kernel_inverse_fft_ms", "kernel_demodulate_ms",\
+            "kernel_memcpy_ms"]
+    for key in keys:
+        value_list = sim.get_debug_data(key)
+        N = len(value_list)
+        mean_val = np.mean(value_list)
+        std_val = np.std(value_list)
+        print "%s: N=%d,  mean +- std = %f +- %f [ms]" % (key, N, mean_val, std_val)
+        
