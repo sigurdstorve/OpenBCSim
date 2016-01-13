@@ -163,7 +163,9 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
     // compute the number of blocks needed to project all scatterers and check that
     // it is not more than what is supported by the device.
     int num_blocks = round_up_div(m_num_scatterers, m_param_threads_per_block);
-    // TODO: check
+    if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
+        throw std::runtime_error("required number of x-blocks is larger than device supports");
+    }
 
     // no delay compenasation is needed when returning the projections only
     size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
