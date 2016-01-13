@@ -65,7 +65,7 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         }
         m_param_cuda_device_no = device_no;
         cudaErrorCheck(cudaSetDevice(m_param_cuda_device_no));
-        print_cuda_device_properties(m_param_cuda_device_no);
+        save_cuda_device_properties(m_param_cuda_device_no);
     } else if (key == "cuda_streams") {
         const auto num_streams = std::stoi(value);
         if (num_streams <= 0) {
@@ -101,24 +101,27 @@ void GpuBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
     m_can_change_cuda_device = false;
 }
 
-void GpuBaseAlgorithm::print_cuda_device_properties(int device_no) const {
+void GpuBaseAlgorithm::save_cuda_device_properties(int device_no) {
     const auto num_devices = get_num_cuda_devices();
     if (device_no < 0 || device_no >= num_devices) {
         throw std::runtime_error("illegal CUDA device number");
     }
-    cudaDeviceProp prop;
-    cudaErrorCheck( cudaGetDeviceProperties(&prop, device_no) );
-    std::cout << "\n\n=== Device " << device_no << ": " << prop.name               << std::endl;
-    std::cout << "totalGlobMem: "               << prop.totalGlobalMem             << std::endl;
-    std::cout << "clockRate: "                  << prop.clockRate                  << std::endl;
-    std::cout << "Compute capability: "         << prop.major << "." << prop.minor << std::endl;
-    std::cout << "asyncEngineCount: "           << prop.asyncEngineCount           << std::endl;
-    std::cout << "multiProcessorCount: "        << prop.multiProcessorCount        << std::endl;
-    std::cout << "kernelExecTimeoutEnabled: "   << prop.kernelExecTimeoutEnabled   << std::endl;
-    std::cout << "computeMode: "                << prop.computeMode                << std::endl;
-    std::cout << "concurrentKernels: "          << prop.concurrentKernels          << std::endl;
-    std::cout << "ECCEnabled: "                 << prop.ECCEnabled                 << std::endl;
-    std::cout << "memoryBusWidth: "             << prop.memoryBusWidth             << std::endl;
+    cudaErrorCheck( cudaGetDeviceProperties(&m_cur_device_prop, device_no) );
+
+    if (m_param_verbose) {
+        const auto& p = m_cur_device_prop;
+        std::cout << "=== CUDA Device " << device_no << ": " << p.name              << std::endl;
+        std::cout << "totalGlobMem: "               << p.totalGlobalMem             << std::endl;
+        std::cout << "clockRate: "                  << p.clockRate                  << std::endl;
+        std::cout << "Compute capability: "         << p.major << "." << p.minor << std::endl;
+        std::cout << "asyncEngineCount: "           << p.asyncEngineCount           << std::endl;
+        std::cout << "multiProcessorCount: "        << p.multiProcessorCount        << std::endl;
+        std::cout << "kernelExecTimeoutEnabled: "   << p.kernelExecTimeoutEnabled   << std::endl;
+        std::cout << "computeMode: "                << p.computeMode                << std::endl;
+        std::cout << "concurrentKernels: "          << p.concurrentKernels          << std::endl;
+        std::cout << "ECCEnabled: "                 << p.ECCEnabled                 << std::endl;
+        std::cout << "memoryBusWidth: "             << p.memoryBusWidth             << std::endl;
+    }
 }
 
 void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
