@@ -65,6 +65,9 @@ public:
     // Simulate all RF lines. Returns vector of IQ samples.
     // Requires that everything is properly configured.
     virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) = 0;
+
+    // Get debug data by identifier. Throws std::runtime_error on invalid key.
+    virtual std::vector<double> get_debug_data(const std::string& identifier) const = 0;
 };
 
 // Factory function for creating simulator instances.
