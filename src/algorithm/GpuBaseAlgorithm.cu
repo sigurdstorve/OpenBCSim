@@ -113,16 +113,21 @@ void GpuBaseAlgorithm::save_cuda_device_properties() {
     if (m_param_verbose) {
         const auto& p = m_cur_device_prop;
         std::cout << "=== CUDA Device " << m_param_cuda_device_no << ": " << p.name << std::endl;
-        std::cout << "totalGlobMem: "               << p.totalGlobalMem             << std::endl;
-        std::cout << "clockRate: "                  << p.clockRate                  << std::endl;
         std::cout << "Compute capability: "         << p.major << "." << p.minor << std::endl;
+        std::cout << "ECCEnabled: "                 << p.ECCEnabled                 << std::endl;
         std::cout << "asyncEngineCount: "           << p.asyncEngineCount           << std::endl;
-        std::cout << "multiProcessorCount: "        << p.multiProcessorCount        << std::endl;
-        std::cout << "kernelExecTimeoutEnabled: "   << p.kernelExecTimeoutEnabled   << std::endl;
+        std::cout << "canMapHostMemory: "           << p.canMapHostMemory           << std::endl; 
+        std::cout << "clockRate: "                  << p.clockRate                  << std::endl;
         std::cout << "computeMode: "                << p.computeMode                << std::endl;
         std::cout << "concurrentKernels: "          << p.concurrentKernels          << std::endl;
-        std::cout << "ECCEnabled: "                 << p.ECCEnabled                 << std::endl;
+        std::cout << "integrated: "                 << p.integrated                 << std::endl;
+        std::cout << "kernelExecTimeoutEnabled: "   << p.kernelExecTimeoutEnabled   << std::endl;
+        std::cout << "l2CacheSize: "                << p.l2CacheSize                << std::endl;
+        std::cout << "maxGridSize: [" << p.maxGridSize[0] << "," << p.maxGridSize[1] << "," << p.maxGridSize[2] << "]\n";
+        std::cout << "maxThreadsPerBlock: "         << p.maxThreadsPerBlock         << std::endl;
         std::cout << "memoryBusWidth: "             << p.memoryBusWidth             << std::endl;
+        std::cout << "multiProcessorCount: "        << p.multiProcessorCount        << std::endl;
+        std::cout << "totalGlobMem: "               << p.totalGlobalMem             << std::endl;
     }
 }
 
