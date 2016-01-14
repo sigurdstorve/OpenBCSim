@@ -39,7 +39,7 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
     : m_param_cuda_device_no(0),
       m_can_change_cuda_device(true),
       m_param_num_cuda_streams(2),
-      m_num_time_samples(4096),  // TODO: remove this limitation
+      m_num_time_samples(8192),  // TODO: remove this limitation
       m_beam_profile(nullptr),
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
@@ -310,6 +310,7 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
     auto num_rf_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
     if (num_rf_samples > m_num_time_samples) {
+        std::cout << "num_rf_samples = " << num_rf_samples << std::endl;
         throw std::runtime_error("Too many RF samples required. TODO: remove limitation");
     }
 

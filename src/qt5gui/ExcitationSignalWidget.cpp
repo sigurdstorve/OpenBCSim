@@ -60,7 +60,7 @@ ExcitationSignalWidget::ExcitationSignalWidget(QWidget* parent)
     m_sampling_freq_sb = new QDoubleSpinBox;
     m_sampling_freq_sb->setRange(1, 1000);
     m_sampling_freq_sb->setSingleStep(10);
-    m_sampling_freq_sb->setValue(100);
+    m_sampling_freq_sb->setValue(50);
     m_sampling_freq_sb->setSuffix("MHz");
     connect(m_sampling_freq_sb, SIGNAL(valueChanged(double)), this, SLOT(onSomethingChanged()));
 
