@@ -39,7 +39,7 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
     : m_param_cuda_device_no(0),
       m_can_change_cuda_device(true),
       m_param_num_cuda_streams(2),
-      m_num_time_samples(32768),  // TODO: remove this limitation
+      m_num_time_samples(4096),  // TODO: remove this limitation
       m_beam_profile(nullptr),
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
