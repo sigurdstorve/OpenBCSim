@@ -346,6 +346,7 @@ void MainWindow::onCreateGpuSimulator() {
         
         // configure excitation
         m_sim->set_excitation(m_current_excitation);
+        m_sim->set_parameter("radial_decimation", std::to_string(m_settings->value("radial_decimation", 15).toInt()));
         
         // configure scanseq and excitation
         int num_lines;
@@ -489,6 +490,9 @@ void MainWindow::initializeSimulator(const std::string& type) {
     const int num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
     m_sim->set_parameter("num_cpu_cores", std::to_string(num_cores));
     m_sim->set_parameter("sound_speed", "1540.0");
+
+    const int radial_decimation = m_settings->value("radial_decimation", 15).toInt();
+    m_sim->set_parameter("radial_decimation", std::to_string(radial_decimation));
 
     // For now hardcoded to use analytic Gaussian beam profile
     //auto beam_profile = m_beamprofile_widget->getValue();
