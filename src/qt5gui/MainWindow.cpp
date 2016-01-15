@@ -520,10 +520,14 @@ void MainWindow::doSimulation() {
             });
             m_sim->simulate_lines(rf_lines_complex);
         }
-        // TEMPORARY HACK: Take the absolute value (preparation for always IQ out)
+
+        // Transform complex IQ samples to real-valued envelope.
+        if (rf_lines_complex.size() == 0) throw std::runtime_error("No lines returned");
+        const auto num_iq_samples = rf_lines_complex[0].size();;
         std::vector<std::vector<bc_float>> rf_lines;
         for (size_t line_no = 0; line_no < rf_lines_complex.size(); line_no++) {
             std::vector<bc_float> temp;
+            temp.reserve(num_iq_samples);
             for (size_t i = 0; i < rf_lines_complex[line_no].size(); i++) {
                 temp.push_back(std::abs(rf_lines_complex[line_no][i]));
             }
