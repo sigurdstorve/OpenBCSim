@@ -189,6 +189,9 @@ inline int round_up_div(int num, int den) {
 // 3D texture with tri-linear interpolation.
 class DeviceBeamProfileRAII {
 public:
+    typedef std::unique_ptr<DeviceBeamProfileRAII> u_ptr;
+    typedef std::shared_ptr<DeviceBeamProfileRAII> s_ptr;
+
     typedef struct TableExtent3D {
         TableExtent3D() : lateral(0), elevational(0), radial(0) { }
         TableExtent3D(size_t num_samples_lat, size_t num_samples_ele, size_t num_samples_rad)
