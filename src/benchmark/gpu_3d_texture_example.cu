@@ -31,7 +31,25 @@ __global__ void tex_kernel(cudaTextureObject_t texture_obj,
     }
 }
 
-int main() {
+std::vector<float> get_gaussian_samples(float x_min, float x_max, float y_min, float y_max, float r_min, float r_max,
+                                        size_t num_samples_x, size_t num_samples_y, size_t num_samples_z) {
+    const auto num_total = num_samples_x*num_samples_y*num_samples_z;
+    std::vector<float> samples;
+    samples.reserve(num_total);
+    for (size_t zi = 0; zi < num_samples_z; zi++) {
+        for (size_t yi = 0; yi < num_samples_y; yi++) {
+            for (size_t xi = 0; xi < num_samples_x; xi++) {
+                const auto x = x_min + xi*(x_max-x_min)/(num_samples_x-1);
+                const auto y = y_min + yi*(y_max-y_min)/(num_samples_y-1);
+                const auto r = r_min + zi*(r_max-r_min)/(num_samples_z-1);
+                samples.push_back( std::exp(-(x*x + y*y)/(r*r)) );
+            }
+        }
+    }
+    return samples;
+}
+
+void test1() {
     std::cout << "Demo: use CUDA 3D textures for linear interpolation" << std::endl;
     const size_t num_samples_x = 32;   // aka. width
     const size_t num_samples_y = 32;   // aka. height
@@ -41,29 +59,13 @@ int main() {
     const auto x_max = 2e-2;
     const auto y_min = -2e-2;
     const auto y_max = 2e-2;
-    const auto z_min = 0.0;
-    const auto z_max = 8e-2;
 
     // radius
     const auto r_min = 5e-3;        // at z_min
     const auto r_max = 13e-3;       // at z_max
 
-    // create data to be interpolated - Gaussian cylinder
-    std::vector<float> host_input_buffer;
-    const auto num_total = num_samples_x*num_samples_y*num_samples_z;
-    host_input_buffer.reserve(num_total);
-    for (size_t zi = 0; zi < num_samples_z; zi++) {
-        for (size_t yi = 0; yi < num_samples_y; yi++) {
-            for (size_t xi = 0; xi < num_samples_x; xi++) {
-                const auto x = x_min + xi*(x_max-x_min)/(num_samples_x-1);
-                const auto y = y_min + yi*(y_max-y_min)/(num_samples_y-1);
-                //const auto z = z_min + zi*(z_max-z_min)/(num_samples_z-1);
-                const auto r = r_min + zi*(r_max-r_min)/(num_samples_z-1);
-                //size_t index = num_samples_y*num_samples_z*xi + num_samples_x*yi + zi; // ????
-                host_input_buffer.push_back( std::exp(-(x*x + y*y)/(r*r)) );
-            }
-        }
-    }
+    std::vector<float> host_input_buffer = get_gaussian_samples(x_min, x_max, y_min, y_max, r_min, r_max,
+                                                                num_samples_x, num_samples_y, num_samples_z);
     
     // allocate CUDA 3D array in device memory
     // channelDesc describes the format of the value returned when fetching the texture
@@ -143,6 +145,14 @@ int main() {
     out.open("d:/temp/tex3d_out.raw", std::ios::binary | std::ios::out);
     out.write(reinterpret_cast<const char*>(bytes.data()), num_output_samples);
     out.close();
+}
 
+void test2() {
+
+}
+
+
+int main() {
+    test1();
     return 0;
 }
