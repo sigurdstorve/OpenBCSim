@@ -39,7 +39,9 @@ BaseAlgorithm::BaseAlgorithm()
       m_param_noise_amplitude(0.0f),
       m_param_use_arc_projection(true),
       m_radial_decimation(1),
-      m_enable_phase_delay(false)
+      m_enable_phase_delay(false),
+      m_beam_profile(nullptr),
+      m_beam_profile_configured(false)
 {
 }
 
@@ -89,6 +91,11 @@ std::vector<double> BaseAlgorithm::get_debug_data(const std::string& identifier)
         throw std::runtime_error("invalid debug data key: " + identifier);
     }
     return m_debug_data.at(identifier);
+}
+
+void BaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
+    m_beam_profile = beam_profile;
+    m_beam_profile_configured = true;
 }
 
 

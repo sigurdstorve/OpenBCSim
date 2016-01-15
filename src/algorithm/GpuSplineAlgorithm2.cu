@@ -180,6 +180,12 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     // TODO: Is it neccessary to have both m_num_splines AND m_num_scatterers? They
     // are equal...
 
+    // HACK: Casting to Gaussian beam profile
+    const auto gaussian_beam_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(m_beam_profile);
+    if (!gaussian_beam_profile) {
+        throw std::runtime_error("failed to cast beam profile to a Gaussian beam profile");
+    }
+
     // do the time-projections
     SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_control_xs->data(),
                                                               m_device_control_ys->data(),
@@ -191,8 +197,8 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                                               origin,
                                                               m_excitation.sampling_frequency,
                                                               m_num_time_samples,
-                                                              m_beam_profile->getSigmaLateral(),
-                                                              m_beam_profile->getSigmaElevational(),
+                                                              gaussian_beam_profile->getSigmaLateral(),
+                                                              gaussian_beam_profile->getSigmaElevational(),
                                                               m_param_sound_speed,
                                                               m_num_cs,
                                                               m_num_splines,

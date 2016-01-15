@@ -101,7 +101,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         const bc_float sampling_time_step = 1.0/m_excitation.sampling_frequency;
         int closest_index = (int) std::floor(r*2.0/(m_param_sound_speed*sampling_time_step)+0.5f);
         
-        bc_float scaled_ampl = m_beamProfile->sampleProfile(r,l,e)*scatterer.amplitude;
+        bc_float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*scatterer.amplitude;
         
         // Avoid out of bound seg.fault
         if (closest_index < 0 || closest_index >= num_time_samples) {

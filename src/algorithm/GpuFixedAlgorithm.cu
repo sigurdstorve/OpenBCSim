@@ -124,6 +124,12 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
     
+    // HACK: Casting to Gaussian beam profile
+    const auto gaussian_beam_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(m_beam_profile);
+    if (!gaussian_beam_profile) {
+        throw std::runtime_error("failed to cast beam profile to a Gaussian beam profile");
+    }
+
     FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                              m_device_point_ys->data(),
                                                              m_device_point_zs->data(),
@@ -134,8 +140,8 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                              origin,
                                                              m_excitation.sampling_frequency,
                                                              m_num_time_samples,
-                                                             m_beam_profile->getSigmaLateral(),
-                                                             m_beam_profile->getSigmaElevational(),
+                                                             gaussian_beam_profile->getSigmaLateral(),
+                                                             gaussian_beam_profile->getSigmaElevational(),
                                                              m_param_sound_speed,
                                                              m_device_time_proj[stream_no]->data(),
                                                              m_param_use_arc_projection,

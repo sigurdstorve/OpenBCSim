@@ -50,7 +50,6 @@ namespace bcsim {
 CpuBaseAlgorithm::CpuBaseAlgorithm()
         : m_scan_sequence_configured(false),
           m_excitation_configured(false),
-          m_beam_profile_configured(false),
           m_scatterers_configured(false),
           m_omp_num_threads(1) {
     
@@ -123,11 +122,6 @@ void CpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     m_excitation_configured = true;
     configure_convolvers_if_possible();
 }   
-
-void CpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
-    m_beamProfile = beam_profile;
-    m_beam_profile_configured = true;
-}
 
 void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float>> > & rfLines) {
     throw_if_not_configured();

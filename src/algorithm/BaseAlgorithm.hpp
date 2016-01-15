@@ -45,6 +45,8 @@ public:
     virtual void set_parameter(const std::string& key, const std::string& value) override;
 
     virtual std::vector<double> get_debug_data(const std::string& identifier) const override;
+
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) override;
     
 protected:
     float       m_param_sound_speed;
@@ -53,6 +55,10 @@ protected:
     bool        m_param_use_arc_projection;
     int         m_radial_decimation;
     bool        m_enable_phase_delay;
+
+    // The beam profile (analytical expression or LUT)
+    IBeamProfile::s_ptr                         m_beam_profile;
+    bool                                        m_beam_profile_configured; 
 
     // storage of debug data
     std::map<std::string, std::vector<double>>  m_debug_data;

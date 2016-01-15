@@ -40,7 +40,6 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_can_change_cuda_device(true),
       m_param_num_cuda_streams(2),
       m_num_time_samples(8192),  // TODO: remove this limitation
-      m_beam_profile(nullptr),
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
       m_store_kernel_details(false)
@@ -132,11 +131,7 @@ void GpuBaseAlgorithm::save_cuda_device_properties() {
 }
 
 void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
-    auto gaussian_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(beam_profile);
-    if (!gaussian_profile) {
-        throw std::runtime_error("GPU algorithm currently only supports analytical beam profiles");
-    }
-    m_beam_profile = gaussian_profile;   
+    m_beam_profile = beam_profile;
 }
 
 

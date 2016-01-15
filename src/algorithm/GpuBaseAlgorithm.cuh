@@ -70,9 +70,6 @@ protected:
     ScanSequence::s_ptr                                 m_scan_seq;
     ExcitationSignal                                    m_excitation;
 
-    // TODO: Figure out how to support LUT beam profiles also.
-    std::shared_ptr<bcsim::GaussianBeamProfile>         m_beam_profile;
-
     // always times equal to the number of scatterers in device memory
     size_t                                              m_num_scatterers;
 
