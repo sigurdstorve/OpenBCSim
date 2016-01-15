@@ -49,6 +49,21 @@ std::vector<float> get_gaussian_samples(float x_min, float x_max, float y_min, f
     return samples;
 }
 
+template <typename T>
+void write_raw_image(size_t num_samples, const std::string& raw_file, const std::vector<T>& host_output_buffer) {
+    // map to [0, 255] and store as uchar8
+    const auto num_output_samples = num_samples*num_samples;
+    std::vector<unsigned char> bytes(num_output_samples);
+    for (size_t i = 0; i < num_output_samples; i++) {
+        bytes[i] = static_cast<unsigned char>(host_output_buffer[i]*255);
+    }
+
+    std::ofstream out;
+    out.open(raw_file, std::ios::binary | std::ios::out);
+    out.write(reinterpret_cast<const char*>(bytes.data()), num_output_samples);
+    out.close();
+}
+
 void test1() {
     std::cout << "Demo: use CUDA 3D textures for linear interpolation" << std::endl;
     const size_t num_samples_x = 32;   // aka. width
@@ -135,24 +150,53 @@ void test1() {
     cudaErrorCheck( cudaDestroyTextureObject(tex_obj) );
     cudaErrorCheck( cudaFreeArray(cu_array_3d) );
 
-    // map to [0, 255] and store as uchar8
-    std::vector<unsigned char> bytes(num_output_samples);
-    for (size_t i = 0; i < num_output_samples; i++) {
-        bytes[i] = static_cast<unsigned char>(host_output_buffer[i]*255);
-    }
-
-    std::ofstream out;
-    out.open("d:/temp/tex3d_out.raw", std::ios::binary | std::ios::out);
-    out.write(reinterpret_cast<const char*>(bytes.data()), num_output_samples);
-    out.close();
+    write_raw_image(samples, "d:/temp/tex3d_out.raw", host_output_buffer);
 }
 
 void test2() {
+    std::cout << "Demo: use CUDA 3D textures for linear interpolation v2" << std::endl;
+    const size_t num_samples_x = 32;   // aka. width
+    const size_t num_samples_y = 32;   // aka. height
+    const size_t num_samples_z = 1024;  // aka. depth
 
+    const auto x_min = -2e-2;
+    const auto x_max = 2e-2;
+    const auto y_min = -2e-2;
+    const auto y_max = 2e-2;
+
+    // radius
+    const auto r_min = 5e-3;        // at z_min
+    const auto r_max = 13e-3;       // at z_max
+
+    std::vector<float> host_input_buffer = get_gaussian_samples(x_min, x_max, y_min, y_max, r_min, r_max,
+                                                                num_samples_x, num_samples_y, num_samples_z);
+
+    DeviceBeamProfileRAII beam_profile(DeviceBeamProfileRAII::TableExtent3D(num_samples_x, num_samples_y, num_samples_z), host_input_buffer);
+
+    int samples = 2048;
+    const auto num_output_samples = samples*samples;
+
+    // device buffer to hold output data
+    const size_t num_output_bytes = sizeof(float)*num_output_samples;
+    DeviceBufferRAII<float> device_output_buffer(num_output_bytes);
+
+    // launch kernel - just one thread
+    const auto z_normalized = 0.5f;
+    dim3 block(1, 1, 1);
+    dim3 grid(1, 1, 1);
+    const auto pad = 0.25f;
+    tex_kernel<<<grid, block>>>(beam_profile.get(), 0.0f-pad, 1.0f+pad, 0.0f-pad, 1.0f+pad, z_normalized, samples, device_output_buffer.data());
+    cudaErrorCheck( cudaDeviceSynchronize() );
+
+    // copy result to host buffer
+    std::vector<float> host_output_buffer(num_output_samples);
+    cudaErrorCheck( cudaMemcpy(host_output_buffer.data(), device_output_buffer.data(), num_output_bytes, cudaMemcpyDeviceToHost) );
+
+    write_raw_image(samples, "d:/temp/tex3d_out.raw", host_output_buffer);
 }
 
 
 int main() {
-    test1();
+    test2();
     return 0;
 }
