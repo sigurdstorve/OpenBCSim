@@ -729,7 +729,9 @@ void MainWindow::updateOpenGlVisualization() {
     if (!m_gl_vis_widget || !m_settings->value("enable_gl_widget", true).toBool()) {
         return;
     }
-
+    ScopedCpuTimer timer([](int milliseconds) {
+        qDebug() << "updateOpenGlVisualization used " << milliseconds << " milliseconds";
+    });
     // Update scatterer visualization
     auto new_timestamp = m_sim_time_manager->get_time();
     m_gl_vis_widget->updateTimestamp(new_timestamp);
