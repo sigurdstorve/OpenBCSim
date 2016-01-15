@@ -103,6 +103,79 @@ __global__ void FixedAlgKernel(float* point_xs,
     }
 }
 
+__global__ void FixedAlgKernel_LUT(float* point_xs,
+                                   float* point_ys,
+                                   float* point_zs,
+                                   float* point_as,
+                                   float3 rad_dir,
+                                   float3 lat_dir,
+                                   float3 ele_dir,
+                                   float3 origin,
+                                   float  fs_hertz,
+                                   int    num_time_samples,
+                                   float  sound_speed,
+                                   cuComplex* res,
+                                   bool   use_arc_projection,
+                                   int    num_scatterers,
+                                   bool   use_phase_delay,
+                                   float  demod_freq,
+                                   cudaTextureObject_t lut_tex) {
+
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx >= num_scatterers) {
+        return;
+    }
+
+    float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
+    
+    // compute dot products
+    auto radial_dist  = dot(point, rad_dir);
+    const auto lateral_dist = dot(point, lat_dir);
+    const auto elev_dist    = dot(point, ele_dir);
+
+    if (use_arc_projection) {
+        // Use "arc projection" in the radial direction: use length of vector from
+        // beam's origin to the scatterer with the same sign as the projection onto
+        // the line.
+        radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
+    }
+
+    // TODO: Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
+    const auto lut_r_min = 0.0f; // HACK: this should be sent as parameters
+    const auto lut_r_max = 0.12f;
+    const auto lut_l_min = -2e-2f;
+    const auto lut_l_max = 2e-2f;
+    const auto lut_e_min = -2e-2f;
+    const auto lut_e_max = 2e-2;
+    
+    const auto r_normalized = (radial_dist-lut_r_min)/(lut_r_max-lut_r_min);
+    const auto l_normalized = (lateral_dist-lut_l_min)/(lut_l_max-lut_l_min);
+    const auto e_normalized = (elev_dist-lut_e_min)/(lut_e_max-lut_e_min);
+    const auto weight = tex3D<float>(lut_tex, l_normalized, e_normalized, r_normalized);
+
+    const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
+    
+    if (radial_index >= 0 && radial_index < num_time_samples) {
+        //atomicAdd(res+radial_index, weight*point_as[global_idx]);
+        if (use_phase_delay) {
+            // handle sub-sample displacement with a complex phase
+            const auto true_index = fs_hertz*2.0f*radial_dist/sound_speed;
+            const float ss_delay = (radial_index - true_index)/fs_hertz;
+            const float complex_phase = 6.283185307179586*demod_freq*ss_delay;
+
+            // exp(i*theta) = cos(theta) + i*sin(theta)
+            float sin_value, cos_value;
+            sincosf(complex_phase, &sin_value, &cos_value);
+
+            const auto w = weight*point_as[global_idx];
+            atomicAdd(&(res[radial_index].x), w*cos_value);
+            atomicAdd(&(res[radial_index].y), w*sin_value);
+        } else {
+            atomicAdd(&(res[radial_index].x), weight*point_as[global_idx]);
+        }
+    }
+}
+
 
 GpuFixedAlgorithm::GpuFixedAlgorithm()
 {
