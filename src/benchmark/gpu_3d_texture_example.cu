@@ -108,7 +108,7 @@ int main() {
 
     // create texture object
     cudaTextureObject_t tex_obj = 0;
-    cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, NULL);
+    cudaErrorCheck( cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, NULL) );
 
 
     int samples = 2048; // sampling res in kernel
