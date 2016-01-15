@@ -132,6 +132,13 @@ void GpuBaseAlgorithm::save_cuda_device_properties() {
 
 void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
     m_beam_profile = beam_profile;
+
+    // If lookup-table: cache a CUDA version of it
+    const auto lut_beam_profile = std::dynamic_pointer_cast<bcsim::LUTBeamProfile>(beam_profile);
+    if (lut_beam_profile) {
+        std::cout << "Creating CUDA lookup-table\n";
+        throw std::runtime_error("TODO: copy data");
+    }
 }
 
 

@@ -100,6 +100,9 @@ protected:
 
     // Always reflects the current device in use.
     cudaDeviceProp                                      m_cur_device_prop;
+
+    // The 3D texture used as lookup-table beam profile.
+    DeviceBeamProfileRAII::u_ptr                        m_device_beam_profile;
 };
     
 }   // end namespace
