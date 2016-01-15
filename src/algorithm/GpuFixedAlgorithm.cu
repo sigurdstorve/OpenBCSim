@@ -197,31 +197,51 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
     
-    // HACK: Casting to Gaussian beam profile
+    // Use casting of lookup_table to determine which kernel to call
     const auto gaussian_beam_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(m_beam_profile);
-    if (!gaussian_beam_profile) {
-        throw std::runtime_error("failed to cast beam profile to a Gaussian beam profile");
-    }
+    const auto lut_beam_profile      = std::dynamic_pointer_cast<bcsim::LUTBeamProfile>(m_beam_profile);
 
-    FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
-                                                             m_device_point_ys->data(),
-                                                             m_device_point_zs->data(),
-                                                             m_device_point_as->data(),
-                                                             rad_dir,
-                                                             lat_dir,
-                                                             ele_dir,
-                                                             origin,
-                                                             m_excitation.sampling_frequency,
-                                                             m_num_time_samples,
-                                                             gaussian_beam_profile->getSigmaLateral(),
-                                                             gaussian_beam_profile->getSigmaElevational(),
-                                                             m_param_sound_speed,
-                                                             m_device_time_proj[stream_no]->data(),
-                                                             m_param_use_arc_projection,
-                                                             m_num_scatterers,
-                                                             m_enable_phase_delay,
-                                                             m_excitation.demod_freq);
-    
+    if (gaussian_beam_profile) {
+        std::cout << "Using FixedAlgKernel\n";
+        FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
+                                                                 m_device_point_ys->data(),
+                                                                 m_device_point_zs->data(),
+                                                                 m_device_point_as->data(),
+                                                                 rad_dir,
+                                                                 lat_dir,
+                                                                 ele_dir,
+                                                                 origin,
+                                                                 m_excitation.sampling_frequency,
+                                                                 m_num_time_samples,
+                                                                 gaussian_beam_profile->getSigmaLateral(),
+                                                                 gaussian_beam_profile->getSigmaElevational(),
+                                                                 m_param_sound_speed,
+                                                                 m_device_time_proj[stream_no]->data(),
+                                                                 m_param_use_arc_projection,
+                                                                 m_num_scatterers,
+                                                                 m_enable_phase_delay,
+                                                                 m_excitation.demod_freq);
+    } else if (lut_beam_profile) {
+        std::cout << "Using FixedAlgKernel_LUT\n";
+        FixedAlgKernel_LUT<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
+                                                                     m_device_point_ys->data(),
+                                                                     m_device_point_zs->data(),
+                                                                     m_device_point_as->data(),
+                                                                     rad_dir,
+                                                                     lat_dir,
+                                                                     ele_dir,
+                                                                     origin,
+                                                                     m_excitation.sampling_frequency,
+                                                                     m_num_time_samples,
+                                                                     m_param_sound_speed,
+                                                                     m_device_time_proj[stream_no]->data(),
+                                                                     m_param_use_arc_projection,
+                                                                     m_num_scatterers,
+                                                                     m_enable_phase_delay,
+                                                                     m_excitation.demod_freq,
+                                                                     m_device_beam_profile->get()
+                                                                     );
+    }
 }
 
 
