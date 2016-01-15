@@ -98,6 +98,30 @@ public:
     // Set sample based on discrete indices.
     void setDiscreteSample(int ir, int il, int ie, bc_float new_sample);
 
+    Interval getRangeRange() const {
+        return m_range_range;
+    }
+
+    Interval getLateralRange() const {
+        return m_lateral_range;
+    }
+
+    Interval getElevationalRange() const {
+        return m_elevational_range;
+    }
+
+    int getNumSamplesRadial() const {
+        return m_num_samples_rad;
+    }
+
+    int getNumSamplesLateral() const {
+        return m_num_samples_lat;
+    }
+
+    int getNumSamplesElevational() const {
+        return m_num_samples_ele;
+    }
+
 protected:
     // row-major indexing
     // dim0: radial, dim1: lateral, dim2: elevational
