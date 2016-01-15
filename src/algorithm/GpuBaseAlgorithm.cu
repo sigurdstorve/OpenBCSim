@@ -137,7 +137,36 @@ void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
     const auto lut_beam_profile = std::dynamic_pointer_cast<bcsim::LUTBeamProfile>(beam_profile);
     if (lut_beam_profile) {
         std::cout << "Creating CUDA lookup-table\n";
-        throw std::runtime_error("TODO: copy data");
+
+        int num_samples_rad = lut_beam_profile->getNumSamplesRadial();
+        int num_samples_lat = lut_beam_profile->getNumSamplesLateral();
+        int num_samples_ele = lut_beam_profile->getNumSamplesElevational();
+        std::cout << "=== set_beam_profile() ===" << std::endl;
+        std::cout << "num_samples_rad: " << num_samples_rad << std::endl;
+        std::cout << "num_samples_lat: " << num_samples_lat << std::endl;
+        std::cout << "num_samples_ele: " << num_samples_ele << std::endl;
+        
+        const auto r_range = lut_beam_profile->getRangeRange();
+        const auto l_range = lut_beam_profile->getLateralRange();
+        const auto e_range = lut_beam_profile->getElevationalRange();
+
+        // map to linear memory with correct 3D layout
+        const auto total = num_samples_rad*num_samples_lat*num_samples_ele;
+        std::vector<float> temp_samples;
+        temp_samples.reserve(total);
+        for (int zi = 0; zi < num_samples_rad; zi++) {
+            for (int yi = 0; yi < num_samples_lat; yi++) {
+                for (int xi = 0; xi < num_samples_ele; xi++) {
+                    const auto x = l_range.first + xi*(l_range.last-l_range.first)/(num_samples_lat-1);
+                    const auto y = e_range.first + yi*(e_range.last-e_range.first)/(num_samples_ele-1);
+                    const auto z = r_range.first + zi*(r_range.last-r_range.first)/(num_samples_rad-1);
+                    temp_samples.push_back(lut_beam_profile->sampleProfile(z, x, y));
+                }
+            }
+        }
+        m_device_beam_profile = DeviceBeamProfileRAII::u_ptr(new DeviceBeamProfileRAII(DeviceBeamProfileRAII::TableExtent3D(num_samples_lat, num_samples_ele, num_samples_rad),
+                                                                                       temp_samples));
+        std::cout << "Created a new DeviceBeamProfileRAII.\n";
     }
 }
 
