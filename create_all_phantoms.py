@@ -223,6 +223,18 @@ def create_2d_cyst_phantom():
     args.density = 500.0
     args.cyst_scale = 0.3
     create_phantom(args)
+
+def create_simple_phantom():
+    """
+    A few scatterers along the positive z-axis.
+    """
+    from simple import create_phantom
+    args = Args()
+    args.h5_file = os.path.join(out_dir, "simple.h5")
+    args.num_scatterers=12
+    args.z0 = 0.005
+    args.z1 = 0.12
+    create_phantom(args)
     
 if __name__ == '__main__':
     verify_correct_path()
@@ -235,6 +247,7 @@ if __name__ == '__main__':
     create_random_spline_noise_phantom()
     create_harmonic_box_phantom()
     create_2d_cyst_phantom()
+    create_simple_phantom()
     print 'NOTE: This is the last script and may take a while to finish...'
-    create_artery_phantom()
+    #create_artery_phantom()
     
