@@ -202,7 +202,6 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     const auto lut_beam_profile      = std::dynamic_pointer_cast<bcsim::LUTBeamProfile>(m_beam_profile);
 
     if (gaussian_beam_profile) {
-        std::cout << "Using FixedAlgKernel\n";
         FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                                  m_device_point_ys->data(),
                                                                  m_device_point_zs->data(),
@@ -222,7 +221,6 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                                  m_enable_phase_delay,
                                                                  m_excitation.demod_freq);
     } else if (lut_beam_profile) {
-        std::cout << "Using FixedAlgKernel_LUT\n";
         FixedAlgKernel_LUT<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                                      m_device_point_ys->data(),
                                                                      m_device_point_zs->data(),
