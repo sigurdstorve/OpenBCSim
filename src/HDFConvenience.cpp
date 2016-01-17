@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <stdexcept>
 #include <boost/multi_array.hpp>
+#include <algorithm>
 #include "bcsim_defines.h"
 #include "HDFConvenience.hpp"
 #include "ScanSequence.hpp"
@@ -255,7 +256,11 @@ IBeamProfile::s_ptr loadBeamProfileFromHdf(const std::string& h5_file) {
     
     auto lut_profile = new LUTBeamProfile(num_rad_samples, num_lat_samples, num_ele_samples,
                                           Interval(r_min, r_max), Interval(l_min, l_max), Interval(e_min, e_max));
-			
+
+
+    // Normalize so that maximum is one
+    const auto max_val = *std::max_element(lut_samples.origin(), lut_samples.origin()+lut_samples.num_elements());
+
     // Copy data. TODO: require matching hdf5 layout so that copying can be eliminated
     // dim0: radial index
     // dim1: lateral index
@@ -263,7 +268,7 @@ IBeamProfile::s_ptr loadBeamProfileFromHdf(const std::string& h5_file) {
     for (size_t rad_idx = 0; rad_idx < num_rad_samples; rad_idx++) {
         for (size_t lat_idx = 0; lat_idx < num_lat_samples; lat_idx++) {
             for (int ele_idx = 0; ele_idx < num_ele_samples; ele_idx++) {
-                lut_profile->setDiscreteSample(rad_idx, lat_idx, ele_idx, lut_samples[rad_idx][lat_idx][ele_idx]);       
+                lut_profile->setDiscreteSample(rad_idx, lat_idx, ele_idx, lut_samples[rad_idx][lat_idx][ele_idx]/max_val);       
             }
         }
     }
