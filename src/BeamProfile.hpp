@@ -94,10 +94,7 @@ public:
                    Interval range_range, Interval lateral_range, Interval elevational_range);
     
     virtual bc_float sampleProfile(bc_float r, bc_float l, bc_float e);
-    
-    // Set sample based on physical beam coordinates. TODO: Unused?
-    void setSample(bc_float r, bc_float l, bc_float e, bc_float new_sample);
-    
+        
     // Set sample based on discrete indices. TODO: Unused?
     void setDiscreteSample(int ir, int il, int ie, bc_float new_sample);
 

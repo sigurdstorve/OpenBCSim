@@ -130,12 +130,6 @@ bc_float LUTBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
     return (1.0f-de)*c0 + de*c1;
 }
 
-void LUTBeamProfile::setSample(bc_float r, bc_float l, bc_float e, bc_float new_sample) {
-    const auto index = getIndexFromPosition(r, l, e);
-    if (index < 0) return;
-    m_samples[index] = new_sample;
-}
-
 void LUTBeamProfile::setDiscreteSample(int ir, int il, int ie, bc_float new_sample) {
     if (ir < 0 || ir >= m_num_samples_rad) return;
     if (il < 0 || il >= m_num_samples_lat) return;
