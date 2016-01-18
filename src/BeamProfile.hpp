@@ -95,7 +95,7 @@ public:
     
     virtual bc_float sampleProfile(bc_float r, bc_float l, bc_float e);
         
-    // Set sample based on discrete indices. TODO: Unused?
+    // Set sample based on discrete indices.
     void setDiscreteSample(int ir, int il, int ie, bc_float new_sample);
 
 protected:
