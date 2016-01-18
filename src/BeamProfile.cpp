@@ -60,7 +60,12 @@ LUTBeamProfile::LUTBeamProfile(int num_samples_rad, int num_samples_lat, int num
                                Interval range_range, Interval lateral_range, Interval elevational_range) :
     m_num_samples_rad(num_samples_rad), m_num_samples_lat(num_samples_lat), m_num_samples_ele(num_samples_ele),
     m_range_range(range_range), m_lateral_range(lateral_range), m_elevational_range(elevational_range) {
-        
+
+    // sanity check
+    if (num_samples_rad <= 1) throw std::runtime_error("Too few radial samples");
+    if (num_samples_lat <= 1) throw std::runtime_error("Too few lateral samples");
+    if (num_samples_ele <= 1) throw std::runtime_error("Too few elevational samples");
+
     // Allocate memory
     long num_samples = m_num_samples_rad*m_num_samples_lat*m_num_samples_ele;
     m_samples.resize(num_samples);
