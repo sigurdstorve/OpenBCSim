@@ -71,9 +71,9 @@ LUTBeamProfile::LUTBeamProfile(int num_samples_rad, int num_samples_lat, int num
     m_samples.resize(num_samples);
         
     // Compute sample deltas in all dimensions
-    m_dr = (m_range_range.last - m_range_range.first) / m_num_samples_rad;
-    m_dl = (m_lateral_range.last - m_lateral_range.first) / m_num_samples_lat;
-    m_de = (m_elevational_range.last - m_elevational_range.first) / m_num_samples_ele;
+    m_dr = (m_range_range.last - m_range_range.first) / (m_num_samples_rad-1);
+    m_dl = (m_lateral_range.last - m_lateral_range.first) / (m_num_samples_lat-1);
+    m_de = (m_elevational_range.last - m_elevational_range.first) / (m_num_samples_ele-1);
         
 }
 
