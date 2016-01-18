@@ -60,51 +60,74 @@ LUTBeamProfile::LUTBeamProfile(int num_samples_rad, int num_samples_lat, int num
                                Interval range_range, Interval lateral_range, Interval elevational_range) :
     m_num_samples_rad(num_samples_rad), m_num_samples_lat(num_samples_lat), m_num_samples_ele(num_samples_ele),
     m_range_range(range_range), m_lateral_range(lateral_range), m_elevational_range(elevational_range) {
-        
+
+    // sanity check
+    if (num_samples_rad <= 1) throw std::runtime_error("Too few radial samples");
+    if (num_samples_lat <= 1) throw std::runtime_error("Too few lateral samples");
+    if (num_samples_ele <= 1) throw std::runtime_error("Too few elevational samples");
+
     // Allocate memory
     long num_samples = m_num_samples_rad*m_num_samples_lat*m_num_samples_ele;
     m_samples.resize(num_samples);
         
     // Compute sample deltas in all dimensions
-    m_dr = (m_range_range.last - m_range_range.first) / m_num_samples_rad;
-    m_dl = (m_lateral_range.last - m_lateral_range.first) / m_num_samples_lat;
-    m_de = (m_elevational_range.last - m_elevational_range.first) / m_num_samples_ele;
+    m_dr = (m_range_range.last - m_range_range.first) / (m_num_samples_rad-1);
+    m_dl = (m_lateral_range.last - m_lateral_range.first) / (m_num_samples_lat-1);
+    m_de = (m_elevational_range.last - m_elevational_range.first) / (m_num_samples_ele-1);
         
 }
 
 bc_float LUTBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
-    // Compute array indices from physical beam coordinates.
-    long ir = static_cast<long>((r-m_range_range.first) / m_dr);
-    long il = static_cast<long>((l-m_lateral_range.first) / m_dl);
-    long ie = static_cast<long>((e-m_elevational_range.first) / m_de); 
-    if (ir < 0 || ir >= m_num_samples_rad) {
-        return 0.0;
-    }
-    if (il < 0 || il >= m_num_samples_lat) {
-        return 0.0;
-    }
-    if (ie < 0 || ie >= m_num_samples_ele) {
-        return 0.0;
-    }
-    return m_samples[getIndex(ir, il, ie)];
-}
+    // map to indices
+    const auto temp_r = (r-m_range_range.first) / m_dr;
+    const auto temp_l = (l-m_lateral_range.first) / m_dl;
+    const auto temp_e = (e-m_elevational_range.first) / m_de; 
 
-void LUTBeamProfile::setSample(bc_float r, bc_float l, bc_float e, bc_float new_sample) {
-    // Compute array indices from physical beam coordinates.
-    // TODO: Don't duplicate code. Factor out into getIndex(float, float, float))?
-    long ir = static_cast<long>((r-m_range_range.first) / m_dr);
-    long il = static_cast<long>((l-m_lateral_range.first) / m_dl);
-    long ie = static_cast<long>((e-m_elevational_range.first) / m_de); 
-    if (ir < 0 || ir >= m_num_samples_rad) {
-        return;
+    // dim0: radial, dim1: lateral, dim2: elevational
+
+    const auto r0 = static_cast<int>(temp_r); const auto r1 = static_cast<int>(temp_r+1);
+    const auto l0 = static_cast<int>(temp_l); const auto l1 = static_cast<int>(temp_l+1);
+    const auto e0 = static_cast<int>(temp_e); const auto e1 = static_cast<int>(temp_e+1);
+    
+    // fractional parts
+    const auto dr = static_cast<bc_float>(temp_r - r0);
+    const auto dl = static_cast<bc_float>(temp_l - l0);
+    const auto de = static_cast<bc_float>(temp_e - e0);
+
+    // return zeros outside
+    if ((r0 < 0) || (r0 >= m_num_samples_rad) || (r1 < 0) || (r1 >= m_num_samples_rad)) {
+        return 0.0;
     }
-    if (il < 0 || il >= m_num_samples_lat) {
-        return;
+    if ((l0 < 0) || (l0 >= m_num_samples_lat) || (l1 < 0) || (l1 >= m_num_samples_lat)) {
+        return 0.0;
     }
-    if (ie < 0 || ie >= m_num_samples_ele) {
-        return;
+    if ((e0 < 0) || (e0 >= m_num_samples_ele) || (e1 < 0) || (e1 >= m_num_samples_ele)) {
+        return 0.0;
     }
-    m_samples[getIndex(ir, il, ie)] = new_sample;
+    
+    // samples in a cube around current point
+    bc_float c000,c001,c010,c011,c100,c101,c110,c111;
+    c000 = m_samples[getIndex(r0, l0, e0)];
+    c001 = m_samples[getIndex(r0, l0, e1)];
+    c010 = m_samples[getIndex(r0, l1, e0)];
+    c011 = m_samples[getIndex(r0, l1, e1)];
+    c100 = m_samples[getIndex(r1, l0, e0)];
+    c101 = m_samples[getIndex(r1, l0, e1)];
+    c110 = m_samples[getIndex(r1, l1, e0)];
+    c111 = m_samples[getIndex(r1, l1, e1)];
+
+    // radial interpolation
+    const auto c00 = (1.0f-dr)*c000 + dr*c100;
+    const auto c10 = (1.0f-dr)*c010 + dr*c110;
+    const auto c01 = (1.0f-dr)*c001 + dr*c101;
+    const auto c11 = (1.0f-dr)*c011 + dr*c111;
+
+    // lateral interpolation
+    const auto c0 = (1.0f-dl)*c00 + dl*c10;
+    const auto c1 = (1.0f-dl)*c01 + dl*c11;
+
+    // finally, elevational interpolation
+    return (1.0f-de)*c0 + de*c1;
 }
 
 void LUTBeamProfile::setDiscreteSample(int ir, int il, int ie, bc_float new_sample) {
