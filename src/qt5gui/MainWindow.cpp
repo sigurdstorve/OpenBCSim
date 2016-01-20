@@ -663,7 +663,7 @@ void MainWindow::onNewExcitation(bcsim::ExcitationSignal new_excitation) {
 
 void MainWindow::onNewBeamProfile(bcsim::IBeamProfile::s_ptr new_beamprofile) {
     if (std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(new_beamprofile)) {
-        m_sim->set_beam_profile(new_beamprofile);
+        m_sim->set_analytical_profile(new_beamprofile);
     } else if (std::dynamic_pointer_cast<bcsim::LUTBeamProfile>(new_beamprofile)) {
         m_sim->set_lookup_profile(new_beamprofile);
     } else {
