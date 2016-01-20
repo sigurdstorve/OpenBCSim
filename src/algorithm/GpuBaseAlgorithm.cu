@@ -34,33 +34,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common_utils.hpp" // for compute_num_rf_samples
 #include "discrete_hilbert_mask.hpp"
 #include "cuda_debug_utils.h"
+#include "device_launch_parameters.h"
 
-__global__ void SliceLookupTable(int num_samples_lat,
-                                 int num_samples_ele,
+// Slice a 3D lookup table through plane defined by two unit vectors.
+// X- and y-components of grid determines the number of samples.
+// NOTE: Number of threads in each block should be one.
+__global__ void SliceLookupTable(float3 origin,
+                                 float3 dir0,
+                                 float3 dir1,
                                  float* output,
-                                 cudaTextureObject_t lut_tex,
-                                 float rad_normalized) {
-    //const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+                                 cudaTextureObject_t lut_tex) {
     const int global_idx = blockIdx.x*gridDim.x + blockIdx.y;
+    
+    // FORMULA: offset = dim0*num_samples1 + dim1
+    const int idx0 = blockIdx.x;  // idx0 = 0..gridDim.x
+    const int idx1 = blockIdx.y;  // idx1 = 1..gridDim.y
 
-    /*
-    const auto lat_min = -0.1f;
-    const auto lat_max =  1.1f;
-    const auto ele_min = -0.1f;
-    const auto ele_max =  1.1f;
-    */
+    // Map to normalized distance in [0.0, 1.0]
+    const auto normalized_dist0 = static_cast<float>(idx0)/(gridDim.x-1);
+    const auto normalized_dist1 = static_cast<float>(idx1)/(gridDim.y-1);
 
-    // FORMULA: offset = lat_idx*num_samples_ele + ele_idx
-    //int ele_idx = global_idx % num_samples_ele;
-    //int lat_idx = (global_idx-ele_idx)/num_samples_ele;
-    const int lat_idx = blockIdx.x;
-    const int ele_idx = blockIdx.y;
-
-    // Sample in [0, 1] in lateral-elevational plane
-    const auto lat_normalized = static_cast<float>(lat_idx)/(num_samples_lat-1);
-    const auto ele_normalized = static_cast<float>(ele_idx)/(num_samples_ele-1);
-    output[global_idx] = tex3D<float>(lut_tex, lat_normalized, ele_normalized, rad_normalized);
-    //output[global_idx] = lat_normalized*ele_normalized + 1.0f;
+    const auto tex_pos = origin + dir0*normalized_dist0 + dir1*normalized_dist1;
+    output[global_idx] = tex3D<float>(lut_tex, tex_pos.x, tex_pos.y, tex_pos.z);
 }
 
 namespace bcsim {
@@ -199,27 +194,38 @@ void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
         std::cout << "Created a new DeviceBeamProfileRAII.\n";
     
     
-        // dump samples to disk
-        int num_lat_samples = 1024;
-        int num_ele_samples = 1024;
-        int total_num_samples = num_lat_samples*num_ele_samples;
-        int num_bytes = sizeof(float)*total_num_samples;
-        DeviceBufferRAII<float> device_slice(static_cast<size_t>(num_bytes));
-    
-        const auto write_raw = [&](float rad_normalized, std::string raw_file) {
-            dim3 grid_size(num_lat_samples, num_ele_samples, 1);
+        // Slice the 3D texture and write as RAW file to disk.    
+        const auto write_raw = [&](float3 origin, float3 dir0, float3 dir1, std::string raw_file) {
+            const int num_samples = 1024;
+            const int total_num_samples = num_samples*num_samples;
+            const int num_bytes = sizeof(float)*total_num_samples;
+            DeviceBufferRAII<float> device_slice(static_cast<size_t>(num_bytes));
+            
+            dim3 grid_size(num_samples, num_samples, 1);
             dim3 block_size(1, 1, 1);
-            SliceLookupTable<<<grid_size, block_size>>>(num_lat_samples,
-                                                        num_ele_samples,
+            SliceLookupTable<<<grid_size, block_size>>>(origin, dir0, dir1,
                                                         device_slice.data(),
-                                                        m_device_beam_profile->get(),
-                                                        rad_normalized);
+                                                        m_device_beam_profile->get());
             cudaErrorCheck( cudaDeviceSynchronize() );
             dump_device_buffer_as_raw_file(device_slice, raw_file);
-            std::cout << "Wrote raw file " << raw_file << std::endl;
-            
         };
-        write_raw(0.0f, "d:/temp/raw_lookup_table/lut_middle.raw");
+
+        const std::string raw_path("d:/temp/raw_lookup_table/");
+        // slice in the middle lateral-elevational plane (radial dist is 0.5)
+        write_raw(make_float3(0.0f, 0.0f, 0.5f),
+                  make_float3(1.0f, 0.0f, 0.0f),
+                  make_float3(0.0f, 1.0f, 0.0f),
+                  raw_path + "lut_slice_lat_ele.raw");
+        // slice the middle lateral-radial plane (elevational dist is 0.5)
+        write_raw(make_float3(0.0f, 0.5f, 0.0f),
+                  make_float3(1.0f, 0.0f, 0.0f),
+                  make_float3(0.0f, 0.0f, 1.0f),
+                  raw_path + "lut_slice_lat_rad.raw");
+        // slice the middle elevational-radial plane (lateral dist is 0.5)
+        write_raw(make_float3(0.5f, 0.0f, 0.0f),
+                  make_float3(0.0f, 1.0f, 0.0f),
+                  make_float3(0.0f, 0.0f, 1.0f),
+                  raw_path + "lut_slice_ele_rad.raw");
     }
 }
 
