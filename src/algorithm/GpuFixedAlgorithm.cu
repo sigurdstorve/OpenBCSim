@@ -37,6 +37,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
+// Gaussian analytical beam profile.
+__device__ float ComputeWeightAnalytical(float sigma_lateral,
+                                         float sigma_elevational,
+                                         float radial_dist,
+                                         float lateral_dist,
+                                         float elev_dist) {
+    const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
+    const float two_sigma_elevational_squared = 2.0f*sigma_elevational*sigma_elevational; 
+    return expf(-(lateral_dist*lateral_dist/two_sigma_lateral_squared + elev_dist*elev_dist/two_sigma_elevational_squared));
+}
 
 __global__ void FixedAlgKernel(float* point_xs,
                                float* point_ys,
@@ -76,9 +86,7 @@ __global__ void FixedAlgKernel(float* point_xs,
         radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
     }
 
-    const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
-    const float two_sigma_elevational_squared = 2.0f*sigma_elevational*sigma_elevational; 
-    const float weight = expf(-(lateral_dist*lateral_dist/two_sigma_lateral_squared + elev_dist*elev_dist/two_sigma_elevational_squared));
+    const float weight = ComputeWeightAnalytical(sigma_lateral, sigma_elevational, radial_dist, lateral_dist, elev_dist);
 
     const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
     
