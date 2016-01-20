@@ -244,12 +244,15 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                                  m_enable_phase_delay,
                                                                  m_excitation.demod_freq);
     } else if (lut_beam_profile) {
-        const auto lut_r_min = 0.0f; // HACK: using dummy values
-        const auto lut_r_max = 0.12f;
-        const auto lut_l_min = -2e-2f;
-        const auto lut_l_max = 2e-2f;
-        const auto lut_e_min = -2e-2f;
-        const auto lut_e_max = 2e-2;
+        const auto r_range = lut_beam_profile->getRangeRange();
+        const auto l_range = lut_beam_profile->getLateralRange();
+        const auto e_range = lut_beam_profile->getElevationalRange();
+        const auto lut_r_min = r_range.first;
+        const auto lut_r_max = r_range.last;
+        const auto lut_l_min = l_range.first;
+        const auto lut_l_max = l_range.last;
+        const auto lut_e_min = e_range.first;
+        const auto lut_e_max = e_range.last;
 
         FixedAlgKernel_LUT<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                                      m_device_point_ys->data(),
