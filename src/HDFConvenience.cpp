@@ -122,7 +122,7 @@ void setExcitationFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
 
 void setBeamProfileFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
     auto lut_beamprofile = loadBeamProfileFromHdf(h5_file);
-    sim->set_beam_profile(lut_beamprofile);
+    sim->set_lookup_profile(lut_beamprofile);
 }
 
 Scatterers::s_ptr loadFixedScatterersFromHdf(const std::string& h5_file) {

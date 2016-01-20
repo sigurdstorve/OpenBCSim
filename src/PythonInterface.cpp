@@ -207,7 +207,7 @@ public:
     void set_analytical_beam_profile(float sigmaLateral, float sigmaElevational) {
         // TODO: Plug memleak
         auto beam_profile = IBeamProfile::s_ptr(new GaussianBeamProfile(sigmaLateral, sigmaElevational));
-        m_rf_simulator->set_beam_profile(beam_profile);
+        m_rf_simulator->set_analytical_profile(beam_profile);
         if (m_print_debug) {
             std::cout << "Lateral sigma is now " << sigmaLateral << " [m]" << std::endl;
             std::cout << "Elevational sigma is now " << sigmaElevational << " [m]" << std::endl;
@@ -258,7 +258,7 @@ public:
                 }
             }
         }
-        m_rf_simulator->set_beam_profile(IBeamProfile::s_ptr(lut));
+        m_rf_simulator->set_lookup_profile(IBeamProfile::s_ptr(lut));
     }
 
     PyObject* simulate_lines() {

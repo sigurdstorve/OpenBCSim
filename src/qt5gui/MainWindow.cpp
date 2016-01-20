@@ -356,7 +356,7 @@ void MainWindow::onCreateGpuSimulator() {
         // configure Gaussian beam profile
         const auto sigma_lateral     = m_beamprofile_widget->get_lateral_sigma();
         const auto sigma_elevational = m_beamprofile_widget->get_elevational_sigma();
-        m_sim->set_beam_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(sigma_lateral, sigma_elevational)));
+        m_sim->set_analytical_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(sigma_lateral, sigma_elevational)));
 
         updateOpenGlVisualization();
     }
@@ -497,7 +497,7 @@ void MainWindow::initializeSimulator(const std::string& type) {
     // For now hardcoded to use analytic Gaussian beam profile
     //auto beam_profile = m_beamprofile_widget->getValue();
     auto beam_profile = bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(0.5e-3f, 1.0e-3f));
-    m_sim->set_beam_profile(beam_profile);
+    m_sim->set_analytical_profile(beam_profile);
 
     qDebug() << "Created simulator";
     // force-emit from all widgets to ensure a fully configured simulator.
@@ -662,7 +662,14 @@ void MainWindow::onNewExcitation(bcsim::ExcitationSignal new_excitation) {
 }
 
 void MainWindow::onNewBeamProfile(bcsim::IBeamProfile::s_ptr new_beamprofile) {
-    m_sim->set_beam_profile(new_beamprofile);
+    if (std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(new_beamprofile)) {
+        m_sim->set_beam_profile(new_beamprofile);
+    } else if (std::dynamic_pointer_cast<bcsim::LUTBeamProfile>(new_beamprofile)) {
+        m_sim->set_lookup_profile(new_beamprofile);
+    } else {
+        throw std::runtime_error("onNewBeamProfile(): all casts failed");
+    }
+
     qDebug() << "Configured beam profile";
 }
 

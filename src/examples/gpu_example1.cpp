@@ -97,7 +97,7 @@ void example(int argc, char** argv) {
     sim->set_parameter("verbose", "0");
     
     // use an analytical Gaussian beam profile
-    sim->set_beam_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(1e-3, 3e-3)));
+    sim->set_analytical_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(1e-3, 3e-3)));
 
     // configure the excitation signal
     const auto fs          = 100e6f;
