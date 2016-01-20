@@ -72,7 +72,7 @@ __global__ void FixedAlgKernel(float* point_xs,
         return;
     }
 
-    float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
+    const float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
     
     // compute dot products
     auto radial_dist  = dot(point, rad_dir);
