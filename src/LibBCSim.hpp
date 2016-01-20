@@ -60,7 +60,13 @@ public:
     virtual void set_excitation(const ExcitationSignal& new_excitation)                 = 0;
 
     // Set the beam profile object to use when simulating.
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     = 0;
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     = 0; // TODO: remove
+
+    // Configure an analytical Gaussian beam profile.
+    virtual void set_analytical_profile(float sigma_lateral, float sigma_elevational)   = 0;
+
+    // Configure a lookup table based beam profile.
+    virtual void set_lookup_profile()                                                   = 0; // TODO: final interface
 
     // Simulate all RF lines. Returns vector of IQ samples.
     // Requires that everything is properly configured.

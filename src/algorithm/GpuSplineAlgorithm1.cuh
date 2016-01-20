@@ -68,6 +68,14 @@ public:
     std::vector<double> get_debug_data(const std::string& identifier) const override {
         return m_fixed_alg->get_debug_data(identifier);
     }
+
+    virtual void set_analytical_profile(float lateral_sigma, float elevational_sigma) override {
+        m_fixed_alg->set_analytical_profile(lateral_sigma, elevational_sigma);
+    }
+
+    virtual void set_lookup_profile() override {
+        m_fixed_alg->set_lookup_profile();
+    }
     
 private:
     // Test if all scanlines in a scan sequence have the same timestamp

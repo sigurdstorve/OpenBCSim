@@ -216,5 +216,13 @@ void CpuBaseAlgorithm::throw_if_not_configured() {
     if (!m_scatterers_configured)       throw std::runtime_error("Scatterers not configured.");
 }
 
+void CpuBaseAlgorithm::set_analytical_profile(float lateral_sigma, float elevational_sigma) {
+    // TODO
+}
+
+void CpuBaseAlgorithm::set_lookup_profile() {
+    // TODO
+}
+
 }   // namespace
 

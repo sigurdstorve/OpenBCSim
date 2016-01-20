@@ -430,5 +430,13 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
+void GpuBaseAlgorithm::set_analytical_profile(float lateral_sigma, float elevational_sigma) {
+    // TODO: Implement
+}
+
+void GpuBaseAlgorithm::set_lookup_profile() {
+    // TODO: Implement
+}
+
 }   // end namespace
 
