@@ -100,10 +100,7 @@ __global__ void SplineAlgKernel(float* control_xs,
         radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
     }
 
-    // compute weight
-    const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
-    const float two_sigma_elevational_squared = 2.0f*sigma_elevational*sigma_elevational; 
-    const float weight = expf(-(lateral_dist*lateral_dist/two_sigma_lateral_squared + elev_dist*elev_dist/two_sigma_elevational_squared));
+    const float weight = ComputeWeightAnalytical(sigma_lateral, sigma_elevational, radial_dist, lateral_dist, elev_dist);
 
     const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
     
