@@ -21,8 +21,8 @@ if __name__ == "__main__":
     parser.add_argument("--num_samples_rad", type=int, default=128)
     parser.add_argument("--num_samples_lat", type=int, default=32)
     parser.add_argument("--num_samples_ele", type=int, default=32)
-    parser.add_argument("--r_min", help="Radius at start depth", type=float, default=5e-3)
-    parser.add_argument("--r_max", help="Radius at end depth", type=float, default=13e-3)
+    parser.add_argument("--r_min", help="Radius at start depth", type=float, default=1e-3)
+    parser.add_argument("--r_max", help="Radius at end depth", type=float, default=8e-3)
     args = parser.parse_args()
     
     data_dims = (args.num_samples_rad, args.num_samples_lat, args.num_samples_ele)
