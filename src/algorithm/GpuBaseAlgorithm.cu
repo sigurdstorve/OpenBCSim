@@ -430,11 +430,13 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
-void GpuBaseAlgorithm::set_analytical_profile(float lateral_sigma, float elevational_sigma) {
+void GpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
+    std::cout << "Setting analytical beam profile for GPU algorithm" << std::endl;
     // TODO: Implement
 }
 
-void GpuBaseAlgorithm::set_lookup_profile() {
+void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
+    std::cout << "Setting LUT profile for GPU algorithm" << std::endl;
     // TODO: Implement
 }
 

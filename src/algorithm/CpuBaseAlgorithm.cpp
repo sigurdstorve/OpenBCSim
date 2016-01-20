@@ -216,11 +216,15 @@ void CpuBaseAlgorithm::throw_if_not_configured() {
     if (!m_scatterers_configured)       throw std::runtime_error("Scatterers not configured.");
 }
 
-void CpuBaseAlgorithm::set_analytical_profile(float lateral_sigma, float elevational_sigma) {
+void CpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
+    std::cout << "Setting analytical beam profile for CPU algorithm" << std::endl;
+    m_cur_beam_profile_type = BeamProfile::ANALYTICAL;
     // TODO
 }
 
-void CpuBaseAlgorithm::set_lookup_profile() {
+void CpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
+    std::cout << "Setting LUT beam profile for CPU algorithm" << std::endl;
+    m_cur_beam_profile_type = BeamProfile::LOOKUP;
     // TODO
 }
 

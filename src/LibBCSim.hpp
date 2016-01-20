@@ -63,10 +63,10 @@ public:
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     = 0; // TODO: remove
 
     // Configure an analytical Gaussian beam profile.
-    virtual void set_analytical_profile(float sigma_lateral, float sigma_elevational)   = 0;
+    virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile)               = 0; // TODO: final arguments: float sigma_lateral, float sigma_elevational
 
     // Configure a lookup table based beam profile.
-    virtual void set_lookup_profile()                                                   = 0; // TODO: final interface
+    virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile)                   = 0; // TODO: final arguements: ?
 
     // Simulate all RF lines. Returns vector of IQ samples.
     // Requires that everything is properly configured.

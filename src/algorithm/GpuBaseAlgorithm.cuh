@@ -52,9 +52,9 @@ public:
     
     virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     override; // TODO: remove
 
-    virtual void set_analytical_profile(float lateral_sigma, float elevational_sigma) override;
+    virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile) override;
 
-    virtual void set_lookup_profile() override;
+    virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override;
 
 protected:
     void create_cuda_stream_wrappers(int num_streams);

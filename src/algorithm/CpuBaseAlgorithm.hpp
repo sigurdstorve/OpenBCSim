@@ -52,9 +52,9 @@ public:
 
     virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
 
-    virtual void set_analytical_profile(float lateral_sigma, float elevational_sigma) override;
+    virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile) override;
 
-    virtual void set_lookup_profile() override;
+    virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override;
 
 protected:
     // Use as many cores as possible for simulation.
