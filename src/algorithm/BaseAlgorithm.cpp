@@ -40,7 +40,6 @@ BaseAlgorithm::BaseAlgorithm()
       m_param_use_arc_projection(true),
       m_radial_decimation(1),
       m_enable_phase_delay(false),
-      m_beam_profile(nullptr),
       m_beam_profile_configured(false)
 {
 }
@@ -94,7 +93,14 @@ std::vector<double> BaseAlgorithm::get_debug_data(const std::string& identifier)
 }
 
 void BaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
-    m_beam_profile = beam_profile;
+    // TEMPORARY: redirect
+    if (std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile)) {
+        set_analytical_profile(beam_profile);
+    } else if (std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile)) {
+        set_lookup_profile(beam_profile);
+    } else {
+        throw std::runtime_error("BaseAlgorithm::set_beam_profile(): All casts failed");
+    }
     m_beam_profile_configured = true;
 }
 

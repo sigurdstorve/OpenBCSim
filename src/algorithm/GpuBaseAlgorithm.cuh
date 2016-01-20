@@ -50,8 +50,6 @@ public:
 
     virtual void set_excitation(const ExcitationSignal& new_excitation)                 override;
     
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     override; // TODO: remove
-
     virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile) override;
 
     virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override;
@@ -107,6 +105,18 @@ protected:
 
     // The 3D texture used as lookup-table beam profile.
     DeviceBeamProfileRAII::u_ptr                        m_device_beam_profile;
+
+    // TEMPORARY: Cached analytical profile data
+    float   m_analytical_sigma_lat;
+    float   m_analytical_sigma_ele;
+
+    // TEMPORARY: Cached lookup profile data 
+    float   m_lut_r_min;
+    float   m_lut_r_max;
+    float   m_lut_l_min;
+    float   m_lut_l_max;
+    float   m_lut_e_min;
+    float   m_lut_e_max;
 };
     
 }   // end namespace

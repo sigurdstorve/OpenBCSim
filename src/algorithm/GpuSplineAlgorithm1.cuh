@@ -59,7 +59,7 @@ public:
         m_fixed_alg->set_excitation(new_excitation);
     }
 
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) override {
+    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) override { // TODO: remove
         m_fixed_alg->set_beam_profile(beam_profile);
     }
 

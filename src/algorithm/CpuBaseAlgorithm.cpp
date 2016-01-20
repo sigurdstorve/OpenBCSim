@@ -218,14 +218,22 @@ void CpuBaseAlgorithm::throw_if_not_configured() {
 
 void CpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
     std::cout << "Setting analytical beam profile for CPU algorithm" << std::endl;
+
+    const auto temp = std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile);
+    if (!temp) throw std::runtime_error("CpuBaseAlgorithm: failed to cast beam profile");
     m_cur_beam_profile_type = BeamProfile::ANALYTICAL;
-    // TODO
+
+    m_beam_profile = beam_profile;
 }
 
 void CpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     std::cout << "Setting LUT beam profile for CPU algorithm" << std::endl;
+
+    const auto temp = std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile);
+    if (!temp) throw std::runtime_error("CpuBaseAlgorithm: failed to cast beam profile");
     m_cur_beam_profile_type = BeamProfile::LOOKUP;
-    // TODO
+
+    m_beam_profile = beam_profile;
 }
 
 }   // namespace

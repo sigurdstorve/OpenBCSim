@@ -104,6 +104,9 @@ protected:
     // signal prior to convolution.
     std::default_random_engine      m_random_engine;
     std::normal_distribution<float> m_normal_dist;
+
+    // Current active beam profile.
+    IBeamProfile::s_ptr             m_beam_profile;         // TEMPORARY
 };
 
 }   // end namespace

@@ -192,11 +192,9 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
     
-    // Use casting of lookup_table to determine which kernel to call
-    const auto gaussian_beam_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(m_beam_profile);
-    const auto lut_beam_profile      = std::dynamic_pointer_cast<bcsim::LUTBeamProfile>(m_beam_profile);
-
-    if (gaussian_beam_profile) {
+    // Beam profile type determines which kernel to call
+    switch(m_cur_beam_profile_type) {
+    case BeamProfile::ANALYTICAL:
         FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                                  m_device_point_ys->data(),
                                                                  m_device_point_zs->data(),
@@ -207,25 +205,17 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                                  origin,
                                                                  m_excitation.sampling_frequency,
                                                                  m_num_time_samples,
-                                                                 gaussian_beam_profile->getSigmaLateral(),
-                                                                 gaussian_beam_profile->getSigmaElevational(),
+                                                                 m_analytical_sigma_lat,
+                                                                 m_analytical_sigma_ele,
                                                                  m_param_sound_speed,
                                                                  m_device_time_proj[stream_no]->data(),
                                                                  m_param_use_arc_projection,
                                                                  m_num_scatterers,
                                                                  m_enable_phase_delay,
                                                                  m_excitation.demod_freq);
-    } else if (lut_beam_profile) {
-        const auto r_range = lut_beam_profile->getRangeRange();
-        const auto l_range = lut_beam_profile->getLateralRange();
-        const auto e_range = lut_beam_profile->getElevationalRange();
-        const auto lut_r_min = r_range.first;
-        const auto lut_r_max = r_range.last;
-        const auto lut_l_min = l_range.first;
-        const auto lut_l_max = l_range.last;
-        const auto lut_e_min = e_range.first;
-        const auto lut_e_max = e_range.last;
 
+        break;
+    case BeamProfile::LOOKUP:
         FixedAlgKernel_LUT<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                                      m_device_point_ys->data(),
                                                                      m_device_point_zs->data(),
@@ -243,14 +233,17 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                                      m_enable_phase_delay,
                                                                      m_excitation.demod_freq,
                                                                      m_device_beam_profile->get(),
-                                                                     lut_r_min,
-                                                                     lut_r_max,
-                                                                     lut_l_min,
-                                                                     lut_l_max,
-                                                                     lut_e_min,
-                                                                     lut_e_max
+                                                                     m_lut_r_min,
+                                                                     m_lut_r_max,
+                                                                     m_lut_l_min,
+                                                                     m_lut_l_max,
+                                                                     m_lut_e_min,
+                                                                     m_lut_e_max
                                                                      );
-    }
+        break;
+    default:
+        throw std::logic_error("unknown beam profile type");
+    };
 }
 
 
