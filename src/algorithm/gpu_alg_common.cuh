@@ -38,6 +38,34 @@ __global__ void MemsetKernel(T* res, T value, int num_samples) {
     }
 }
 
+// Compute projection weight from Gaussian analytical beam profile.
+__device__ __inline__ float ComputeWeightAnalytical(float sigma_lateral,
+                                                    float sigma_elevational,
+                                                    float radial_dist,
+                                                    float lateral_dist,
+                                                    float elev_dist) {
+    const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
+    const float two_sigma_elevational_squared = 2.0f*sigma_elevational*sigma_elevational; 
+    return expf(-(lateral_dist*lateral_dist/two_sigma_lateral_squared + elev_dist*elev_dist/two_sigma_elevational_squared));
+}
+
+// Compute projection weight from a 3D texture based beam profile.
+__device__ __inline__ float ComputeWeightLUT(cudaTextureObject_t lut_tex,
+                                             float radial_dist,
+                                             float lateral_dist, 
+                                             float elev_dist,
+                                             float lut_r_min,
+                                             float lut_r_max,
+                                             float lut_l_min,
+                                             float lut_l_max,
+                                             float lut_e_min,
+                                             float lut_e_max) {
+    const auto r_normalized = (radial_dist-lut_r_min)/(lut_r_max-lut_r_min);
+    const auto l_normalized = (lateral_dist-lut_l_min)/(lut_l_max-lut_l_min);
+    const auto e_normalized = (elev_dist-lut_e_min)/(lut_e_max-lut_e_min);
+    return tex3D<float>(lut_tex, l_normalized, e_normalized, r_normalized);
+}
+
 // used to multiply the FFTs
 __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples);
 
