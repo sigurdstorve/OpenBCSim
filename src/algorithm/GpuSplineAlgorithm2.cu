@@ -289,7 +289,31 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                                                   m_excitation.demod_freq);
         break;
     case BeamProfileType::LOOKUP:
-        throw std::runtime_error("GpuSplineAlgorithm2 currently only supports analytical beam profile");
+        SplineAlgKernel_LUT<<<grid_size, block_size, 0, cur_stream>>>(m_device_control_xs->data(),
+                                                                      m_device_control_ys->data(),
+                                                                      m_device_control_zs->data(),
+                                                                      m_device_control_as->data(),
+                                                                      rad_dir,
+                                                                      lat_dir,
+                                                                      ele_dir,
+                                                                      origin,
+                                                                      m_excitation.sampling_frequency,
+                                                                      m_num_time_samples,
+                                                                      m_param_sound_speed,
+                                                                      m_num_cs,
+                                                                      m_num_splines,
+                                                                      m_device_time_proj[stream_no]->data(),
+                                                                      eval_basis_offset_elements,
+                                                                      m_param_use_arc_projection,
+                                                                      m_enable_phase_delay,
+                                                                      m_excitation.demod_freq,
+                                                                      m_device_beam_profile->get(),
+                                                                      m_lut_r_min,
+                                                                      m_lut_r_max,
+                                                                      m_lut_l_min,
+                                                                      m_lut_l_max,
+                                                                      m_lut_e_min,
+                                                                      m_lut_e_max);
         break;
     default:
         throw std::logic_error("GpuSplineAlgorithm2: unknown beam profile type");
