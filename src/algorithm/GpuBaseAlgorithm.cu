@@ -374,7 +374,7 @@ void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     int num_samples_rad = lut_beam_profile->getNumSamplesRadial();
     int num_samples_lat = lut_beam_profile->getNumSamplesLateral();
     int num_samples_ele = lut_beam_profile->getNumSamplesElevational();
-    std::cout << "=== set_beam_profile() ===" << std::endl;
+    std::cout << "=== set_lookup_profile() ===" << std::endl;
     std::cout << "num_samples_rad: " << num_samples_rad << std::endl;
     std::cout << "num_samples_lat: " << num_samples_lat << std::endl;
     std::cout << "num_samples_ele: " << num_samples_ele << std::endl;

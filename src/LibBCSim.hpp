@@ -59,9 +59,6 @@ public:
     // Set the excitation signal to use when convolving.
     virtual void set_excitation(const ExcitationSignal& new_excitation)                 = 0;
 
-    // Set the beam profile object to use when simulating.
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     = 0; // TODO: remove
-
     // Configure an analytical Gaussian beam profile.
     virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile)               = 0; // TODO: final arguments: float sigma_lateral, float sigma_elevational
 

@@ -51,8 +51,6 @@ public:
 
     virtual std::vector<double> get_debug_data(const std::string& identifier) const override;
 
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) override; // TODO: remove
-
 protected:
     float       m_param_sound_speed;
     int         m_param_verbose;

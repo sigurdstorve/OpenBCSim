@@ -92,17 +92,5 @@ std::vector<double> BaseAlgorithm::get_debug_data(const std::string& identifier)
     return m_debug_data.at(identifier);
 }
 
-void BaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
-    // TEMPORARY: redirect
-    if (std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile)) {
-        set_analytical_profile(beam_profile);
-    } else if (std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile)) {
-        set_lookup_profile(beam_profile);
-    } else {
-        throw std::runtime_error("BaseAlgorithm::set_beam_profile(): All casts failed");
-    }
-}
-
-
 }   // end namespace
 
