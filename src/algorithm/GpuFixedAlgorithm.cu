@@ -127,7 +127,13 @@ __global__ void FixedAlgKernel_LUT(float* point_xs,
                                    int    num_scatterers,
                                    bool   use_phase_delay,
                                    float  demod_freq,
-                                   cudaTextureObject_t lut_tex) {
+                                   cudaTextureObject_t lut_tex,
+                                   float lut_r_min,
+                                   float lut_r_max,
+                                   float lut_l_min,
+                                   float lut_l_max,
+                                   float lut_e_min,
+                                   float lut_e_max) {
 
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx >= num_scatterers) {
@@ -148,13 +154,7 @@ __global__ void FixedAlgKernel_LUT(float* point_xs,
         radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
     }
 
-    // TODO: Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
-    const auto lut_r_min = 0.0f; // HACK: this should be sent as parameters
-    const auto lut_r_max = 0.12f;
-    const auto lut_l_min = -2e-2f;
-    const auto lut_l_max = 2e-2f;
-    const auto lut_e_min = -2e-2f;
-    const auto lut_e_max = 2e-2;
+    // Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
     
     const auto r_normalized = (radial_dist-lut_r_min)/(lut_r_max-lut_r_min);
     const auto l_normalized = (lateral_dist-lut_l_min)/(lut_l_max-lut_l_min);
@@ -229,6 +229,13 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                                  m_enable_phase_delay,
                                                                  m_excitation.demod_freq);
     } else if (lut_beam_profile) {
+        const auto lut_r_min = 0.0f; // HACK: using dummy values
+        const auto lut_r_max = 0.12f;
+        const auto lut_l_min = -2e-2f;
+        const auto lut_l_max = 2e-2f;
+        const auto lut_e_min = -2e-2f;
+        const auto lut_e_max = 2e-2;
+
         FixedAlgKernel_LUT<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                                      m_device_point_ys->data(),
                                                                      m_device_point_zs->data(),
@@ -245,7 +252,13 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                                      m_num_scatterers,
                                                                      m_enable_phase_delay,
                                                                      m_excitation.demod_freq,
-                                                                     m_device_beam_profile->get()
+                                                                     m_device_beam_profile->get(),
+                                                                     lut_r_min,
+                                                                     lut_r_max,
+                                                                     lut_l_min,
+                                                                     lut_l_max,
+                                                                     lut_e_min,
+                                                                     lut_e_max
                                                                      );
     }
 }
