@@ -39,7 +39,8 @@ BaseAlgorithm::BaseAlgorithm()
       m_param_noise_amplitude(0.0f),
       m_param_use_arc_projection(true),
       m_radial_decimation(1),
-      m_enable_phase_delay(false)
+      m_enable_phase_delay(false),
+      m_cur_beam_profile_type(BeamProfileType::NOT_CONFIGURED)
 {
 }
 
@@ -90,7 +91,6 @@ std::vector<double> BaseAlgorithm::get_debug_data(const std::string& identifier)
     }
     return m_debug_data.at(identifier);
 }
-
 
 }   // end namespace
 

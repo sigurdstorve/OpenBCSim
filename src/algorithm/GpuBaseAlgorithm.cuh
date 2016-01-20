@@ -50,9 +50,14 @@ public:
 
     virtual void set_excitation(const ExcitationSignal& new_excitation)                 override;
     
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     override;
+    virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile) override;
+
+    virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override;
 
 protected:
+    // Debug functionality: slice the 3D texture and write as RAW file to disk.    
+    void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path);
+
     void create_cuda_stream_wrappers(int num_streams);
     
     int get_num_cuda_devices() const;
@@ -69,9 +74,6 @@ protected:
 
     ScanSequence::s_ptr                                 m_scan_seq;
     ExcitationSignal                                    m_excitation;
-
-    // TODO: Figure out how to support LUT beam profiles also.
-    std::shared_ptr<bcsim::GaussianBeamProfile>         m_beam_profile;
 
     // always times equal to the number of scatterers in device memory
     size_t                                              m_num_scatterers;
@@ -103,6 +105,21 @@ protected:
 
     // Always reflects the current device in use.
     cudaDeviceProp                                      m_cur_device_prop;
+
+    // The 3D texture used as lookup-table beam profile.
+    DeviceBeamProfileRAII::u_ptr                        m_device_beam_profile;
+
+    // TEMPORARY: Cached analytical profile data
+    float   m_analytical_sigma_lat;
+    float   m_analytical_sigma_ele;
+
+    // TEMPORARY: Cached lookup profile data 
+    float   m_lut_r_min;
+    float   m_lut_r_max;
+    float   m_lut_l_min;
+    float   m_lut_l_max;
+    float   m_lut_e_min;
+    float   m_lut_e_max;
 };
     
 }   // end namespace

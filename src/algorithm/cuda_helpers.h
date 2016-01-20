@@ -6,6 +6,7 @@
 #include <memory>
 #include <random>
 #include <driver_types.h>
+#include <driver_functions.h>
 #include <cuda_runtime_api.h>
 #include <vector_functions.h>   // for make_float3() etc.
 
@@ -184,3 +185,73 @@ void fill_host_vector_uniform_random(T low, T high, size_t length, T* data) {
 inline int round_up_div(int num, int den) {
     return static_cast<int>(std::ceil(static_cast<float>(num)/den));
 }
+
+// 3D texture with tri-linear interpolation.
+class DeviceBeamProfileRAII {
+public:
+    typedef std::unique_ptr<DeviceBeamProfileRAII> u_ptr;
+    typedef std::shared_ptr<DeviceBeamProfileRAII> s_ptr;
+
+    typedef struct TableExtent3D {
+        TableExtent3D() : lateral(0), elevational(0), radial(0) { }
+        TableExtent3D(size_t num_samples_lat, size_t num_samples_ele, size_t num_samples_rad)
+            : lateral(num_samples_lat), elevational(num_samples_ele), radial(num_samples_rad) { }
+        size_t lateral;
+        size_t elevational;
+        size_t radial;
+    } TableExtent3D;
+
+    DeviceBeamProfileRAII(const TableExtent3D& table_extent, std::vector<float>& host_input_buffer)
+        : texture_object(0)
+    {
+        auto channel_desc = cudaCreateChannelDesc(32, 0, 0, 0, cudaChannelFormatKindFloat);
+        cudaExtent extent = make_cudaExtent(table_extent.lateral, table_extent.elevational, table_extent.radial);
+        cudaErrorCheck( cudaMalloc3DArray(&cu_array_3d, &channel_desc, extent, 0) );
+        std::cout << "DeviceBeamProfileRAII: Allocated 3D array\n";
+        
+        // copy input data from host to CUDA 3D array
+        cudaMemcpy3DParms par_3d = {0};
+        par_3d.srcPtr = make_cudaPitchedPtr(host_input_buffer.data(), table_extent.lateral*sizeof(float), table_extent.lateral, table_extent.elevational); 
+        par_3d.dstArray = cu_array_3d;
+        par_3d.extent = extent;
+        par_3d.kind = cudaMemcpyHostToDevice;
+        cudaErrorCheck( cudaMemcpy3D(&par_3d) );
+        std::cout << "DeviceBeamProfileRAII: Copied memory to device\n";
+
+        // specify texture
+        cudaResourceDesc res_desc;
+        memset(&res_desc, 0, sizeof(res_desc));
+        res_desc.resType = cudaResourceTypeArray;
+        res_desc.res.array.array = cu_array_3d;
+
+        // specify texture object parameters
+        cudaTextureDesc tex_desc;
+        memset(&tex_desc, 0, sizeof(tex_desc));
+        tex_desc.normalizedCoords = 1;
+        tex_desc.filterMode = cudaFilterModeLinear;
+
+        // use border to pad with zeros outsize
+        tex_desc.addressMode[0] = cudaAddressModeBorder;
+        tex_desc.addressMode[1] = cudaAddressModeBorder;
+        tex_desc.addressMode[2] = cudaAddressModeBorder;
+        tex_desc.readMode = cudaReadModeElementType;
+
+        cudaErrorCheck( cudaCreateTextureObject(&texture_object, &res_desc, &tex_desc, NULL) );
+        std::cout << "DeviceBeamProfileRAII: Created texture object.\n";
+    }
+
+    cudaTextureObject_t get() {
+        return texture_object;
+    }
+
+    ~DeviceBeamProfileRAII() {
+        cudaErrorCheck( cudaDestroyTextureObject(texture_object) );
+        std::cout << "DeviceBeamProfileRAII: Destroyed texture object\n";
+        cudaErrorCheck( cudaFreeArray(cu_array_3d) );
+        std::cout << "DeviceBeamProfileRAII: Freed 3D array\n";
+    }
+
+private:
+    cudaTextureObject_t     texture_object;
+    cudaArray*              cu_array_3d;
+};

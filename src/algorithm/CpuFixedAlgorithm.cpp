@@ -78,7 +78,7 @@ void CpuFixedAlgorithm::projection_loop(const Scanline& line, std::complex<float
         // Add scaled amplitude to closest index
         int closest_index = (int) std::floor(r*2.0*m_excitation.sampling_frequency/(m_param_sound_speed)+0.5f);
 
-        bc_float scaled_ampl = m_beamProfile->sampleProfile(r,l,e)*scatterer.amplitude;
+        bc_float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*scatterer.amplitude;
         
         // Avoid out of bound seg.fault
         if (closest_index < 0 || closest_index >= num_time_samples) {

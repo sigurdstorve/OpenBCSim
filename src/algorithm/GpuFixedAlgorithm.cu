@@ -62,6 +62,74 @@ __global__ void FixedAlgKernel(float* point_xs,
         return;
     }
 
+    const float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
+    
+    // compute dot products
+    auto radial_dist  = dot(point, rad_dir);
+    const auto lateral_dist = dot(point, lat_dir);
+    const auto elev_dist    = dot(point, ele_dir);
+
+    if (use_arc_projection) {
+        // Use "arc projection" in the radial direction: use length of vector from
+        // beam's origin to the scatterer with the same sign as the projection onto
+        // the line.
+        radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
+    }
+
+    const float weight = ComputeWeightAnalytical(sigma_lateral, sigma_elevational, radial_dist, lateral_dist, elev_dist);
+
+    const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
+    
+    if (radial_index >= 0 && radial_index < num_time_samples) {
+        //atomicAdd(res+radial_index, weight*point_as[global_idx]);
+        if (use_phase_delay) {
+            // handle sub-sample displacement with a complex phase
+            const auto true_index = fs_hertz*2.0f*radial_dist/sound_speed;
+            const float ss_delay = (radial_index - true_index)/fs_hertz;
+            const float complex_phase = 6.283185307179586*demod_freq*ss_delay;
+
+            // exp(i*theta) = cos(theta) + i*sin(theta)
+            float sin_value, cos_value;
+            sincosf(complex_phase, &sin_value, &cos_value);
+
+            const auto w = weight*point_as[global_idx];
+            atomicAdd(&(res[radial_index].x), w*cos_value);
+            atomicAdd(&(res[radial_index].y), w*sin_value);
+        } else {
+            atomicAdd(&(res[radial_index].x), weight*point_as[global_idx]);
+        }
+    }
+}
+
+__global__ void FixedAlgKernel_LUT(float* point_xs,
+                                   float* point_ys,
+                                   float* point_zs,
+                                   float* point_as,
+                                   float3 rad_dir,
+                                   float3 lat_dir,
+                                   float3 ele_dir,
+                                   float3 origin,
+                                   float  fs_hertz,
+                                   int    num_time_samples,
+                                   float  sound_speed,
+                                   cuComplex* res,
+                                   bool   use_arc_projection,
+                                   int    num_scatterers,
+                                   bool   use_phase_delay,
+                                   float  demod_freq,
+                                   cudaTextureObject_t lut_tex,
+                                   float lut_r_min,
+                                   float lut_r_max,
+                                   float lut_l_min,
+                                   float lut_l_max,
+                                   float lut_e_min,
+                                   float lut_e_max) {
+
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx >= num_scatterers) {
+        return;
+    }
+
     float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
     
     // compute dot products
@@ -76,9 +144,9 @@ __global__ void FixedAlgKernel(float* point_xs,
         radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
     }
 
-    const float two_sigma_lateral_squared     = 2.0f*sigma_lateral*sigma_lateral;
-    const float two_sigma_elevational_squared = 2.0f*sigma_elevational*sigma_elevational; 
-    const float weight = expf(-(lateral_dist*lateral_dist/two_sigma_lateral_squared + elev_dist*elev_dist/two_sigma_elevational_squared));
+    // Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
+    const auto weight = ComputeWeightLUT(lut_tex, radial_dist, lateral_dist, elev_dist,
+                                         lut_r_min, lut_r_max, lut_l_min, lut_l_max, lut_e_min, lut_e_max);
 
     const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
     
@@ -124,25 +192,58 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
     
-    FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
-                                                             m_device_point_ys->data(),
-                                                             m_device_point_zs->data(),
-                                                             m_device_point_as->data(),
-                                                             rad_dir,
-                                                             lat_dir,
-                                                             ele_dir,
-                                                             origin,
-                                                             m_excitation.sampling_frequency,
-                                                             m_num_time_samples,
-                                                             m_beam_profile->getSigmaLateral(),
-                                                             m_beam_profile->getSigmaElevational(),
-                                                             m_param_sound_speed,
-                                                             m_device_time_proj[stream_no]->data(),
-                                                             m_param_use_arc_projection,
-                                                             m_num_scatterers,
-                                                             m_enable_phase_delay,
-                                                             m_excitation.demod_freq);
-    
+    // Beam profile type determines which kernel to call
+    switch(m_cur_beam_profile_type) {
+    case BeamProfileType::ANALYTICAL:
+        FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
+                                                                 m_device_point_ys->data(),
+                                                                 m_device_point_zs->data(),
+                                                                 m_device_point_as->data(),
+                                                                 rad_dir,
+                                                                 lat_dir,
+                                                                 ele_dir,
+                                                                 origin,
+                                                                 m_excitation.sampling_frequency,
+                                                                 m_num_time_samples,
+                                                                 m_analytical_sigma_lat,
+                                                                 m_analytical_sigma_ele,
+                                                                 m_param_sound_speed,
+                                                                 m_device_time_proj[stream_no]->data(),
+                                                                 m_param_use_arc_projection,
+                                                                 m_num_scatterers,
+                                                                 m_enable_phase_delay,
+                                                                 m_excitation.demod_freq);
+
+        break;
+    case BeamProfileType::LOOKUP:
+        FixedAlgKernel_LUT<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
+                                                                     m_device_point_ys->data(),
+                                                                     m_device_point_zs->data(),
+                                                                     m_device_point_as->data(),
+                                                                     rad_dir,
+                                                                     lat_dir,
+                                                                     ele_dir,
+                                                                     origin,
+                                                                     m_excitation.sampling_frequency,
+                                                                     m_num_time_samples,
+                                                                     m_param_sound_speed,
+                                                                     m_device_time_proj[stream_no]->data(),
+                                                                     m_param_use_arc_projection,
+                                                                     m_num_scatterers,
+                                                                     m_enable_phase_delay,
+                                                                     m_excitation.demod_freq,
+                                                                     m_device_beam_profile->get(),
+                                                                     m_lut_r_min,
+                                                                     m_lut_r_max,
+                                                                     m_lut_l_min,
+                                                                     m_lut_l_max,
+                                                                     m_lut_e_min,
+                                                                     m_lut_e_max
+                                                                     );
+        break;
+    default:
+        throw std::logic_error("unknown beam profile type");
+    };
 }
 
 

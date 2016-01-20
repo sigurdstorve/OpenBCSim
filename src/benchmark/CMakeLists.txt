@@ -22,4 +22,11 @@ if (BCSIM_ENABLE_CUDA)
     target_link_libraries(gpu_texture_example
                           ${CUDA_LIBRARIES}
                           )
+    cuda_add_executable(gpu_3d_texture_example
+                        gpu_3d_texture_example.cu
+                        ../algorithm/cuda_helpers.h
+                        )
+    target_link_libraries(gpu_3d_texture_example
+                          ${CUDA_LIBRARIES}
+                         )
 endif()

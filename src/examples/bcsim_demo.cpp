@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
     // Either analytical or lookup table.
     IBeamProfile::s_ptr beam_profile;
     beam_profile = IBeamProfile::s_ptr(new GaussianBeamProfile(0.2e-3, 0.2e-3));
-    simulator->set_beam_profile(beam_profile);
+    simulator->set_analytical_profile(beam_profile);
     
     try {
         if (runLoop) {

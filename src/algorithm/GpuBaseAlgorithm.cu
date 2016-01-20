@@ -33,6 +33,30 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gpu_alg_common.cuh"
 #include "common_utils.hpp" // for compute_num_rf_samples
 #include "discrete_hilbert_mask.hpp"
+#include "cuda_debug_utils.h"
+#include "device_launch_parameters.h"
+
+// Slice a 3D lookup table through plane defined by two unit vectors.
+// X- and y-components of grid determines the number of samples.
+// NOTE: Number of threads in each block should be one.
+__global__ void SliceLookupTable(float3 origin,
+                                 float3 dir0,
+                                 float3 dir1,
+                                 float* output,
+                                 cudaTextureObject_t lut_tex) {
+    const int global_idx = blockIdx.x*gridDim.x + blockIdx.y;
+    
+    // FORMULA: offset = dim0*num_samples1 + dim1
+    const int idx0 = blockIdx.x;  // idx0 = 0..gridDim.x
+    const int idx1 = blockIdx.y;  // idx1 = 1..gridDim.y
+
+    // Map to normalized distance in [0.0, 1.0]
+    const auto normalized_dist0 = static_cast<float>(idx0)/(gridDim.x-1);
+    const auto normalized_dist1 = static_cast<float>(idx1)/(gridDim.y-1);
+
+    const auto tex_pos = origin + dir0*normalized_dist0 + dir1*normalized_dist1;
+    output[global_idx] = tex3D<float>(lut_tex, tex_pos.x, tex_pos.y, tex_pos.z);
+}
 
 namespace bcsim {
 GpuBaseAlgorithm::GpuBaseAlgorithm()
@@ -40,10 +64,10 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_can_change_cuda_device(true),
       m_param_num_cuda_streams(2),
       m_num_time_samples(8192),  // TODO: remove this limitation
-      m_beam_profile(nullptr),
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
-      m_store_kernel_details(false)
+      m_store_kernel_details(false),
+      m_device_beam_profile(nullptr)
 {
     // ensure that CUDA device properties is stored
     save_cuda_device_properties();
@@ -131,15 +155,6 @@ void GpuBaseAlgorithm::save_cuda_device_properties() {
     }
 }
 
-void GpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
-    auto gaussian_profile = std::dynamic_pointer_cast<bcsim::GaussianBeamProfile>(beam_profile);
-    if (!gaussian_profile) {
-        throw std::runtime_error("GPU algorithm currently only supports analytical beam profiles");
-    }
-    m_beam_profile = gaussian_profile;   
-}
-
-
 void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float> > >&  /*out*/ rf_lines) {
     m_can_change_cuda_device = false;
     
@@ -156,8 +171,8 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         throw std::runtime_error("No scanlines in scansequence");
     }
 
-    if (m_beam_profile == nullptr) {
-        throw std::runtime_error("No beam profile is set");
+    if (m_cur_beam_profile_type == BeamProfileType::NOT_CONFIGURED) {
+        throw std::runtime_error("No beam profile is configured");
     }
     
     // compute the number of blocks needed to project all scatterers and check that
@@ -338,6 +353,99 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     }
 
     m_num_beams_allocated = static_cast<int>(num_beams);
+}
+
+void GpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
+    std::cout << "Setting analytical beam profile for GPU algorithm" << std::endl;
+    const auto analytical_profile = std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile);
+    if (!analytical_profile) throw std::runtime_error("GpuBaseAlgorithm: failed to cast beam profile");
+    m_cur_beam_profile_type = BeamProfileType::ANALYTICAL;
+
+    m_analytical_sigma_lat = analytical_profile->getSigmaLateral();
+    m_analytical_sigma_ele = analytical_profile->getSigmaElevational();
+}
+
+void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
+    std::cout << "Setting LUT profile for GPU algorithm" << std::endl;
+    const auto lut_beam_profile = std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile);
+    if (!lut_beam_profile) throw std::runtime_error("GpuBaseAlgorithm: failed to cast beam profile");
+    m_cur_beam_profile_type = BeamProfileType::LOOKUP;
+
+    int num_samples_rad = lut_beam_profile->getNumSamplesRadial();
+    int num_samples_lat = lut_beam_profile->getNumSamplesLateral();
+    int num_samples_ele = lut_beam_profile->getNumSamplesElevational();
+    std::cout << "=== set_lookup_profile() ===" << std::endl;
+    std::cout << "num_samples_rad: " << num_samples_rad << std::endl;
+    std::cout << "num_samples_lat: " << num_samples_lat << std::endl;
+    std::cout << "num_samples_ele: " << num_samples_ele << std::endl;
+        
+    const auto r_range = lut_beam_profile->getRangeRange();
+    const auto l_range = lut_beam_profile->getLateralRange();
+    const auto e_range = lut_beam_profile->getElevationalRange();
+
+    // map to linear memory with correct 3D layout
+    const auto total = num_samples_rad*num_samples_lat*num_samples_ele;
+    std::vector<float> temp_samples;
+    temp_samples.reserve(total);
+    for (int zi = 0; zi < num_samples_rad; zi++) {
+        for (int yi = 0; yi < num_samples_lat; yi++) {
+            for (int xi = 0; xi < num_samples_ele; xi++) {
+                const auto x = l_range.first + xi*(l_range.last-l_range.first)/(num_samples_lat-1);
+                const auto y = e_range.first + yi*(e_range.last-e_range.first)/(num_samples_ele-1);
+                const auto z = r_range.first + zi*(r_range.last-r_range.first)/(num_samples_rad-1);
+                temp_samples.push_back(lut_beam_profile->sampleProfile(z, x, y));
+            }
+        }
+    }
+    m_device_beam_profile = DeviceBeamProfileRAII::u_ptr(new DeviceBeamProfileRAII(DeviceBeamProfileRAII::TableExtent3D(num_samples_lat, num_samples_ele, num_samples_rad),
+                                                                                    temp_samples));
+    // store spatial extent of profile.
+    m_lut_r_min = r_range.first;
+    m_lut_r_max = r_range.last;
+    m_lut_l_min = l_range.first;
+    m_lut_l_max = l_range.last;
+    m_lut_e_min = e_range.first;
+    m_lut_e_max = e_range.last;
+
+    std::cout << "Created a new DeviceBeamProfileRAII.\n";
+    
+    const std::string raw_lut_path("d:/temp/raw_lookup_table/");
+    //dump_orthogonal_lut_slices(raw_lut_path);
+
+}
+
+void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
+    const auto write_raw = [&](float3 origin, float3 dir0, float3 dir1, std::string raw_file) {
+        const int num_samples = 1024;
+        const int total_num_samples = num_samples*num_samples;
+        const int num_bytes = sizeof(float)*total_num_samples;
+        DeviceBufferRAII<float> device_slice(static_cast<size_t>(num_bytes));
+            
+        dim3 grid_size(num_samples, num_samples, 1);
+        dim3 block_size(1, 1, 1);
+        SliceLookupTable<<<grid_size, block_size>>>(origin, dir0, dir1,
+                                                    device_slice.data(),
+                                                    m_device_beam_profile->get());
+        cudaErrorCheck( cudaDeviceSynchronize() );
+        dump_device_buffer_as_raw_file(device_slice, raw_file);
+    };
+
+    // slice in the middle lateral-elevational plane (radial dist is 0.5)
+    write_raw(make_float3(0.0f, 0.0f, 0.5f),
+                make_float3(1.0f, 0.0f, 0.0f),
+                make_float3(0.0f, 1.0f, 0.0f),
+                raw_path + "lut_slice_lat_ele.raw");
+    // slice the middle lateral-radial plane (elevational dist is 0.5)
+    write_raw(make_float3(0.0f, 0.5f, 0.0f),
+                make_float3(1.0f, 0.0f, 0.0f),
+                make_float3(0.0f, 0.0f, 1.0f),
+                raw_path + "lut_slice_lat_rad.raw");
+    // slice the middle elevational-radial plane (lateral dist is 0.5)
+    write_raw(make_float3(0.5f, 0.0f, 0.0f),
+                make_float3(0.0f, 1.0f, 0.0f),
+                make_float3(0.0f, 0.0f, 1.0f),
+                raw_path + "lut_slice_ele_rad.raw");
+
 }
 
 }   // end namespace

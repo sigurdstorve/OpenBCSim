@@ -50,7 +50,6 @@ namespace bcsim {
 CpuBaseAlgorithm::CpuBaseAlgorithm()
         : m_scan_sequence_configured(false),
           m_excitation_configured(false),
-          m_beam_profile_configured(false),
           m_scatterers_configured(false),
           m_omp_num_threads(1) {
     
@@ -123,11 +122,6 @@ void CpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     m_excitation_configured = true;
     configure_convolvers_if_possible();
 }   
-
-void CpuBaseAlgorithm::set_beam_profile(IBeamProfile::s_ptr beam_profile) {
-    m_beamProfile = beam_profile;
-    m_beam_profile_configured = true;
-}
 
 void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float>> > & rfLines) {
     throw_if_not_configured();
@@ -216,10 +210,38 @@ void CpuBaseAlgorithm::configure_convolvers_if_possible() {
 }
 
 void CpuBaseAlgorithm::throw_if_not_configured() {
-    if (!m_scan_sequence_configured)    throw std::runtime_error("Scan sequence not configured.");
-    if (!m_excitation_configured)       throw std::runtime_error("Excitation not configured.");
-    if (!m_beam_profile_configured)     throw std::runtime_error("Beam profile not configured.");
-    if (!m_scatterers_configured)       throw std::runtime_error("Scatterers not configured.");
+    if (!m_scan_sequence_configured) {
+        throw std::runtime_error("Scan sequence not configured.");
+    }
+    if (!m_excitation_configured) {
+        throw std::runtime_error("Excitation not configured.");
+    }
+    if (m_cur_beam_profile_type == BeamProfileType::NOT_CONFIGURED){
+        throw std::runtime_error("Beam profile not configured.");
+    }
+    if (!m_scatterers_configured) {
+        throw std::runtime_error("Scatterers not configured.");
+    }
+}
+
+void CpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
+    std::cout << "Setting analytical beam profile for CPU algorithm" << std::endl;
+
+    const auto temp = std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile);
+    if (!temp) throw std::runtime_error("CpuBaseAlgorithm: failed to cast beam profile");
+    m_cur_beam_profile_type = BeamProfileType::ANALYTICAL;
+
+    m_beam_profile = beam_profile;
+}
+
+void CpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
+    std::cout << "Setting LUT beam profile for CPU algorithm" << std::endl;
+
+    const auto temp = std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile);
+    if (!temp) throw std::runtime_error("CpuBaseAlgorithm: failed to cast beam profile");
+    m_cur_beam_profile_type = BeamProfileType::LOOKUP;
+
+    m_beam_profile = beam_profile;
 }
 
 }   // namespace

@@ -35,6 +35,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
+enum class BeamProfileType {
+    NOT_CONFIGURED = 0,
+    ANALYTICAL,     // Analytical Gaussian beam profile
+    LOOKUP          // Lookup-table based beam profile
+};
     
 // Common functionality for CPU- and GPU-algorithms.
 class BaseAlgorithm : public IAlgorithm {
@@ -45,7 +50,7 @@ public:
     virtual void set_parameter(const std::string& key, const std::string& value) override;
 
     virtual std::vector<double> get_debug_data(const std::string& identifier) const override;
-    
+
 protected:
     float       m_param_sound_speed;
     int         m_param_verbose;
@@ -53,6 +58,9 @@ protected:
     bool        m_param_use_arc_projection;
     int         m_radial_decimation;
     bool        m_enable_phase_delay;
+
+    // The beam profile (analytical expression or LUT)
+    BeamProfileType m_cur_beam_profile_type; 
 
     // storage of debug data
     std::map<std::string, std::vector<double>>  m_debug_data;

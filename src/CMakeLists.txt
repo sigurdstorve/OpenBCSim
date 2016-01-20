@@ -160,6 +160,7 @@ if (BCSIM_ENABLE_CUDA)
                      algorithm/GpuSplineAlgorithm2.cuh
                      algorithm/cuda_helpers.h
                      algorithm/cufft_helpers.h
+                     algorithm/cuda_debug_utils.h
                      )
     target_link_libraries(BCSimCUDA
                           ${CUDA_LIBRARIES}

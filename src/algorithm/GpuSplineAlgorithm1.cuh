@@ -59,14 +59,18 @@ public:
         m_fixed_alg->set_excitation(new_excitation);
     }
 
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile) override {
-        m_fixed_alg->set_beam_profile(beam_profile);
-    }
-
     virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
 
     std::vector<double> get_debug_data(const std::string& identifier) const override {
         return m_fixed_alg->get_debug_data(identifier);
+    }
+
+    virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile) override {
+        m_fixed_alg->set_analytical_profile(beam_profile);
+    }
+
+    virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override {
+        m_fixed_alg->set_lookup_profile(beam_profile);
     }
     
 private:

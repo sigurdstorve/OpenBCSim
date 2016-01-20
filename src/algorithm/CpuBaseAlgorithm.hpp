@@ -50,10 +50,12 @@ public:
 
     virtual void set_excitation(const ExcitationSignal& new_excitation)                 override;
 
-    virtual void set_beam_profile(IBeamProfile::s_ptr beam_profile)                     override;
-
     virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
-    
+
+    virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile) override;
+
+    virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override;
+
 protected:
     // Use as many cores as possible for simulation.
     void set_use_all_available_cores();
@@ -85,8 +87,6 @@ protected:
     ExcitationSignal                         m_excitation;
     // Pointer to one FFT-convolver for each thread.
     std::vector<IBeamConvolver::ptr>         convolvers;
-    // The beam profile (analytical expression or LUT)
-    IBeamProfile::s_ptr                      m_beamProfile;
     
     // The number of time samples in each RF line in the scan sequence.
     size_t                                  m_rf_line_num_samples;
@@ -95,7 +95,6 @@ protected:
     // before doing the simulations.
     bool m_scan_sequence_configured;
     bool m_excitation_configured;
-    bool m_beam_profile_configured; 
     bool m_scatterers_configured;   
     
     // Number of threads to use for simulation.
@@ -105,6 +104,9 @@ protected:
     // signal prior to convolution.
     std::default_random_engine      m_random_engine;
     std::normal_distribution<float> m_normal_dist;
+
+    // Current active beam profile.
+    IBeamProfile::s_ptr             m_beam_profile;         // TEMPORARY
 };
 
 }   // end namespace

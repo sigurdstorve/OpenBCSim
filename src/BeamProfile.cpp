@@ -90,9 +90,9 @@ bc_float LUTBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
     const auto e0 = static_cast<int>(temp_e); const auto e1 = static_cast<int>(temp_e+1);
     
     // fractional parts
-    const auto dr = static_cast<bc_float>(temp_r - r0);
-    const auto dl = static_cast<bc_float>(temp_l - l0);
-    const auto de = static_cast<bc_float>(temp_e - e0);
+    const auto fractional_r = static_cast<bc_float>(temp_r - r0);
+    const auto fractional_l = static_cast<bc_float>(temp_l - l0);
+    const auto fractional_e = static_cast<bc_float>(temp_e - e0);
 
     // return zeros outside
     if ((r0 < 0) || (r0 >= m_num_samples_rad) || (r1 < 0) || (r1 >= m_num_samples_rad)) {
@@ -117,17 +117,17 @@ bc_float LUTBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
     c111 = m_samples[getIndex(r1, l1, e1)];
 
     // radial interpolation
-    const auto c00 = (1.0f-dr)*c000 + dr*c100;
-    const auto c10 = (1.0f-dr)*c010 + dr*c110;
-    const auto c01 = (1.0f-dr)*c001 + dr*c101;
-    const auto c11 = (1.0f-dr)*c011 + dr*c111;
+    const auto c00 = (1.0f-fractional_r)*c000 + fractional_r*c100;
+    const auto c10 = (1.0f-fractional_r)*c010 + fractional_r*c110;
+    const auto c01 = (1.0f-fractional_r)*c001 + fractional_r*c101;
+    const auto c11 = (1.0f-fractional_r)*c011 + fractional_r*c111;
 
     // lateral interpolation
-    const auto c0 = (1.0f-dl)*c00 + dl*c10;
-    const auto c1 = (1.0f-dl)*c01 + dl*c11;
+    const auto c0 = (1.0f-fractional_l)*c00 + fractional_l*c10;
+    const auto c1 = (1.0f-fractional_l)*c01 + fractional_l*c11;
 
     // finally, elevational interpolation
-    return (1.0f-de)*c0 + de*c1;
+    return (1.0f-fractional_e)*c0 + fractional_e*c1;
 }
 
 void LUTBeamProfile::setDiscreteSample(int ir, int il, int ie, bc_float new_sample) {
