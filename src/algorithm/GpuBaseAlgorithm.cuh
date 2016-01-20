@@ -55,6 +55,9 @@ public:
     virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override;
 
 protected:
+    // Debug functionality: slice the 3D texture and write as RAW file to disk.    
+    void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path);
+
     void create_cuda_stream_wrappers(int num_streams);
     
     int get_num_cuda_devices() const;

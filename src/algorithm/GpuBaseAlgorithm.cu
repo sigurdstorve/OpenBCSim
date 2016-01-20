@@ -409,7 +409,12 @@ void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
 
     std::cout << "Created a new DeviceBeamProfileRAII.\n";
     
-    // Slice the 3D texture and write as RAW file to disk.    
+    const std::string raw_lut_path("d:/temp/raw_lookup_table/");
+    dump_orthogonal_lut_slices(raw_lut_path);
+
+}
+
+void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
     const auto write_raw = [&](float3 origin, float3 dir0, float3 dir1, std::string raw_file) {
         const int num_samples = 1024;
         const int total_num_samples = num_samples*num_samples;
@@ -425,7 +430,6 @@ void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
         dump_device_buffer_as_raw_file(device_slice, raw_file);
     };
 
-    const std::string raw_path("d:/temp/raw_lookup_table/");
     // slice in the middle lateral-elevational plane (radial dist is 0.5)
     write_raw(make_float3(0.0f, 0.0f, 0.5f),
                 make_float3(1.0f, 0.0f, 0.0f),
@@ -441,6 +445,7 @@ void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
                 make_float3(0.0f, 1.0f, 0.0f),
                 make_float3(0.0f, 0.0f, 1.0f),
                 raw_path + "lut_slice_ele_rad.raw");
+
 }
 
 }   // end namespace
