@@ -63,7 +63,6 @@ protected:
 
     // The beam profile (analytical expression or LUT)
     BeamProfileType m_cur_beam_profile_type; 
-    bool        m_beam_profile_configured;
 
     // storage of debug data
     std::map<std::string, std::vector<double>>  m_debug_data;

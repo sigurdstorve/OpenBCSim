@@ -171,7 +171,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         throw std::runtime_error("No scanlines in scansequence");
     }
 
-    if (!m_beam_profile_configured) {
+    if (m_cur_beam_profile_type == BeamProfileType::NOT_CONFIGURED) {
         throw std::runtime_error("No beam profile is configured");
     }
     

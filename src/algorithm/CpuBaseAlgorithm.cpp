@@ -210,10 +210,18 @@ void CpuBaseAlgorithm::configure_convolvers_if_possible() {
 }
 
 void CpuBaseAlgorithm::throw_if_not_configured() {
-    if (!m_scan_sequence_configured)    throw std::runtime_error("Scan sequence not configured.");
-    if (!m_excitation_configured)       throw std::runtime_error("Excitation not configured.");
-    if (!m_beam_profile_configured)     throw std::runtime_error("Beam profile not configured.");
-    if (!m_scatterers_configured)       throw std::runtime_error("Scatterers not configured.");
+    if (!m_scan_sequence_configured) {
+        throw std::runtime_error("Scan sequence not configured.");
+    }
+    if (!m_excitation_configured) {
+        throw std::runtime_error("Excitation not configured.");
+    }
+    if (m_cur_beam_profile_type == BeamProfileType::NOT_CONFIGURED){
+        throw std::runtime_error("Beam profile not configured.");
+    }
+    if (!m_scatterers_configured) {
+        throw std::runtime_error("Scatterers not configured.");
+    }
 }
 
 void CpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
