@@ -410,7 +410,7 @@ void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     std::cout << "Created a new DeviceBeamProfileRAII.\n";
     
     const std::string raw_lut_path("d:/temp/raw_lookup_table/");
-    dump_orthogonal_lut_slices(raw_lut_path);
+    //dump_orthogonal_lut_slices(raw_lut_path);
 
 }
 
