@@ -12,8 +12,8 @@ description="""
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("h5_file", help="Output beam profile")
-    parser.add_argument("--rad_min", type=float, default=-2e-2)
-    parser.add_argument("--rad_max", type=float, default=2e-2)
+    parser.add_argument("--rad_min", type=float, default=0.0)
+    parser.add_argument("--rad_max", type=float, default=0.15)
     parser.add_argument("--ele_min", type=float, default=-2e-2)
     parser.add_argument("--ele_max", type=float, default=2e-2)
     parser.add_argument("--lat_min", type=float, default=-2e-2)
