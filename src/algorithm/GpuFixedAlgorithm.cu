@@ -48,6 +48,24 @@ __device__ float ComputeWeightAnalytical(float sigma_lateral,
     return expf(-(lateral_dist*lateral_dist/two_sigma_lateral_squared + elev_dist*elev_dist/two_sigma_elevational_squared));
 }
 
+// 3D texture based lookup-table beam profile.
+__device__ float ComputeWeightLUT(cudaTextureObject_t lut_tex,
+                                  float radial_dist,
+                                  float lateral_dist, 
+                                  float elev_dist,
+                                  float lut_r_min,
+                                  float lut_r_max,
+                                  float lut_l_min,
+                                  float lut_l_max,
+                                  float lut_e_min,
+                                  float lut_e_max
+                                  ) {
+    const auto r_normalized = (radial_dist-lut_r_min)/(lut_r_max-lut_r_min);
+    const auto l_normalized = (lateral_dist-lut_l_min)/(lut_l_max-lut_l_min);
+    const auto e_normalized = (elev_dist-lut_e_min)/(lut_e_max-lut_e_min);
+    return tex3D<float>(lut_tex, l_normalized, e_normalized, r_normalized);
+}
+
 __global__ void FixedAlgKernel(float* point_xs,
                                float* point_ys,
                                float* point_zs,
@@ -155,11 +173,8 @@ __global__ void FixedAlgKernel_LUT(float* point_xs,
     }
 
     // Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
-    
-    const auto r_normalized = (radial_dist-lut_r_min)/(lut_r_max-lut_r_min);
-    const auto l_normalized = (lateral_dist-lut_l_min)/(lut_l_max-lut_l_min);
-    const auto e_normalized = (elev_dist-lut_e_min)/(lut_e_max-lut_e_min);
-    const auto weight = tex3D<float>(lut_tex, l_normalized, e_normalized, r_normalized);
+    const auto weight = ComputeWeightLUT(lut_tex, radial_dist, lateral_dist, elev_dist,
+                                         lut_r_min, lut_r_max, lut_l_min, lut_l_max, lut_e_min, lut_e_max);
 
     const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
     
