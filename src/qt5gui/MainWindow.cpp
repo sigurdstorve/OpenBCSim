@@ -229,7 +229,7 @@ void MainWindow::createMenus() {
     connect(refresh_settings_act, SIGNAL(triggered()), this, SLOT(onLoadIniSettings()));
     fileMenu->addAction(refresh_settings_act);
 
-    auto load_beamprofile_lut_act = new QAction(tr("Load LUT beamprofile [experimental!]"), this);
+    auto load_beamprofile_lut_act = new QAction(tr("Load LUT beamprofile"), this);
     connect(load_beamprofile_lut_act, SIGNAL(triggered()), this, SLOT(onLoadBeamProfileLUT()));
     fileMenu->addAction(load_beamprofile_lut_act);
 
