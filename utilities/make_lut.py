@@ -9,43 +9,37 @@ description="""
     beam profile.
 """
 
-if __name__ == '__main__':
-    sigma_lat = 1e-3
-    sigma_ele = 1e-3
-    num_rad_samples = 128
-    num_lat_samples = 64
-    num_ele_samples = 63
-    r_min = 0.0; r_max = 0.12
-    l_min = -3e-3; l_max = 3e-3
-    e_min = -3e-3; e_max = 3e-3
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("h5_file", help="Output beam profile")
+    parser.add_argument("--rad_min", type=float, default=-2e-2)
+    parser.add_argument("--rad_max", type=float, default=2e-2)
+    parser.add_argument("--ele_min", type=float, default=-2e-2)
+    parser.add_argument("--ele_max", type=float, default=2e-2)
+    parser.add_argument("--lat_min", type=float, default=-2e-2)
+    parser.add_argument("--lat_max", type=float, default=2e-2)
+    parser.add_argument("--num_samples_rad", type=int, default=128)
+    parser.add_argument("--num_samples_lat", type=int, default=32)
+    parser.add_argument("--num_samples_ele", type=int, default=32)
+    parser.add_argument("--r_min", help="Radius at start depth", type=float, default=5e-3)
+    parser.add_argument("--r_max", help="Radius at end depth", type=float, default=13e-3)
+    args = parser.parse_args()
     
-    h5_file = 'gaussian_lut.h5'
+    data_dims = (args.num_samples_rad, args.num_samples_lat, args.num_samples_ele)
+    data = np.empty(data_dims, dtype="float32")
+    for lat_i in range(args.num_samples_lat):
+        print "%2.1f%% complete..." % (100.0*lat_i/args.num_samples_lat)
+        for ele_i in range(args.num_samples_ele):
+            for rad_i in range(args.num_samples_rad):
+                x = args.lat_min + lat_i*(args.lat_max-args.lat_min)/(args.num_samples_lat-1)
+                y = args.ele_min + ele_i*(args.ele_max-args.ele_min)/(args.num_samples_ele-1)
+                r = args.r_min + rad_i*(args.r_max-args.r_min)/(args.num_samples_rad-1) # lat/ele radius
+                data[rad_i, lat_i, ele_i] = np.exp(-(x**2+y**2)/r**2)
     
-    r_mesh, l_mesh, e_mesh = np.meshgrid(np.linspace(r_min, r_max, num_rad_samples),
-                                         np.linspace(l_min, l_max, num_lat_samples),
-                                         np.linspace(e_min, e_max, num_ele_samples),
-                                         indexing='ij')
-    
-    beam_profile = np.exp( -(l_mesh**2/sigma_lat**2 + e_mesh**2/sigma_ele**2) )
-
-    # probably a nicer way to do this...
-    for rad_idx, r_norm in enumerate(np.linspace(0.0, 1.0, num_rad_samples)):
-        w = 1.0/(2*r_norm+0.1)
-        print 'Radial index: %d: w=%f' % (rad_idx, w)
-        beam_profile[rad_idx, :, :] *= w
-        
-    print beam_profile[0,:,:]
-    print beam_profile[-1,:,:]
-    
-    with h5py.File(h5_file, 'w') as f:
-        f["beam_profile"] = np.array(beam_profile, dtype='float32')
-        f["rad_extent"]   = np.array([r_min, r_max], dtype='float32')
-        f["lat_extent"]   = np.array([l_min, l_max], dtype='float32')
-        f["ele_extent"]   = np.array([e_min, e_max], dtype='float32')
-        
-    if True:
-        import matplotlib.pyplot as plt
-        rad_idx = num_rad_samples/2
-        plt.imshow(beam_profile[rad_idx,:,:])
-        plt.show()
+    with h5py.File(args.h5_file, 'w') as f:
+        f["beam_profile"] = data
+        f["rad_extent"]   = np.array([args.rad_min, args.rad_max], dtype="float32")
+        f["lat_extent"]   = np.array([args.lat_min, args.lat_max], dtype="float32")
+        f["ele_extent"]   = np.array([args.ele_min, args.ele_max], dtype="float32")
+    print "Beam profile written to %s" % args.h5_file
     
