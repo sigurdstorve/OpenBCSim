@@ -40,7 +40,8 @@ BaseAlgorithm::BaseAlgorithm()
       m_param_use_arc_projection(true),
       m_radial_decimation(1),
       m_enable_phase_delay(false),
-      m_beam_profile_configured(false)
+      m_beam_profile_configured(false),
+      m_cur_beam_profile_type(BeamProfileType::NOT_CONFIGURED)
 {
 }
 

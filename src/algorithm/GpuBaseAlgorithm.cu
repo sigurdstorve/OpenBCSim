@@ -359,7 +359,7 @@ void GpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) 
     std::cout << "Setting analytical beam profile for GPU algorithm" << std::endl;
     const auto analytical_profile = std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile);
     if (!analytical_profile) throw std::runtime_error("GpuBaseAlgorithm: failed to cast beam profile");
-    m_cur_beam_profile_type = BeamProfile::ANALYTICAL;
+    m_cur_beam_profile_type = BeamProfileType::ANALYTICAL;
 
     m_analytical_sigma_lat = analytical_profile->getSigmaLateral();
     m_analytical_sigma_ele = analytical_profile->getSigmaElevational();
@@ -369,7 +369,7 @@ void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     std::cout << "Setting LUT profile for GPU algorithm" << std::endl;
     const auto lut_beam_profile = std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile);
     if (!lut_beam_profile) throw std::runtime_error("GpuBaseAlgorithm: failed to cast beam profile");
-    m_cur_beam_profile_type = BeamProfile::LOOKUP;
+    m_cur_beam_profile_type = BeamProfileType::LOOKUP;
 
     int num_samples_rad = lut_beam_profile->getNumSamplesRadial();
     int num_samples_lat = lut_beam_profile->getNumSamplesLateral();

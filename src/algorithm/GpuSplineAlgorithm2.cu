@@ -177,7 +177,7 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     // TODO: Is it neccessary to have both m_num_splines AND m_num_scatterers? They
     // are equal...
 
-    if (m_cur_beam_profile_type != BeamProfile::ANALYTICAL) {
+    if (m_cur_beam_profile_type != BeamProfileType::ANALYTICAL) {
         throw std::runtime_error("GpuSplineAlgorithm2 currently only supports analytical beam profile");
     }
 

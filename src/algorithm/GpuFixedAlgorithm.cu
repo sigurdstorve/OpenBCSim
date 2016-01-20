@@ -194,7 +194,7 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     
     // Beam profile type determines which kernel to call
     switch(m_cur_beam_profile_type) {
-    case BeamProfile::ANALYTICAL:
+    case BeamProfileType::ANALYTICAL:
         FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                                  m_device_point_ys->data(),
                                                                  m_device_point_zs->data(),
@@ -215,7 +215,7 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
                                                                  m_excitation.demod_freq);
 
         break;
-    case BeamProfile::LOOKUP:
+    case BeamProfileType::LOOKUP:
         FixedAlgKernel_LUT<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
                                                                      m_device_point_ys->data(),
                                                                      m_device_point_zs->data(),

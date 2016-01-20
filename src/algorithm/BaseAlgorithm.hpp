@@ -35,7 +35,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-enum class BeamProfile {
+enum class BeamProfileType {
+    NOT_CONFIGURED = 0,
     ANALYTICAL,     // Analytical Gaussian beam profile
     LOOKUP          // Lookup-table based beam profile
 };
@@ -61,7 +62,7 @@ protected:
     bool        m_enable_phase_delay;
 
     // The beam profile (analytical expression or LUT)
-    BeamProfile m_cur_beam_profile_type; 
+    BeamProfileType m_cur_beam_profile_type; 
     bool        m_beam_profile_configured;
 
     // storage of debug data
