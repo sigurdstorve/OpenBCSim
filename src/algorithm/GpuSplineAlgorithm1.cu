@@ -61,12 +61,11 @@ __global__ void RenderSplineKernel(const float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    float rendered_a = 0.0f;
+    float rendered_a = control_as[NUM_SPLINES*0 + idx]; // TEMPORARY HACK: using amplitude from first node
     for (int i = 0; i < NUM_CS; i++) {
         rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis[i];
         rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis[i];
         rendered_z += control_zs[NUM_SPLINES*i + idx]*eval_basis[i];
-        rendered_a += control_as[NUM_SPLINES*i + idx]*eval_basis[i];
     }
 
     // write result to memory
