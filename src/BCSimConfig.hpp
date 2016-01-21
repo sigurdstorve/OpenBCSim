@@ -113,9 +113,6 @@ struct SplineScatterers : public Scatterers {
     // all point scatterers.
     int                         spline_degree;
     std::vector<bc_float>       knot_vector;
-    // TODO: Consider adding number of control points since common
-    // for all. Currently an element in 'nodes' must be inspected
-    // to determine it, which is inconvenient.
     
     // For each point scatterer: a list of spline control points.
     std::vector<std::vector<PointScatterer> > nodes;
