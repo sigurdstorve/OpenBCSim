@@ -58,12 +58,13 @@ if __name__ == "__main__":
     
     # Set spline scatterers
     with h5py.File(args.scatterer_file, "r") as f:
-        nodes         = np.array(f["nodes"].value, dtype="float32")
-        knot_vector   = np.array(f["knot_vector"].value, dtype="float32")
-        spline_degree = int(f["spline_degree"].value)
+        control_points = np.array(f["control_points"].value, dtype="float32")
+        amplitudes     = np.array(f["amplitudes"].value, dtype="float32")
+        knot_vector    = np.array(f["knot_vector"].value, dtype="float32")
+        spline_degree  = int(f["spline_degree"].value)
         
-    sim.set_spline_scatterers(spline_degree, knot_vector, nodes)
-    print "Number of scatterers: %d" % nodes.shape[0]
+    sim.set_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
+    print "Number of scatterers: %d" % control_points.shape[0]
     
     # Define excitation signal
     t_vector = np.arange(-16/args.fc, 16/args.fc, 1.0/args.fs)
