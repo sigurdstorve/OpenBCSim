@@ -34,7 +34,7 @@ if __name__ == "__main__":
     img_extent = [ele_extent[0], ele_extent[1], lat_extent[0], lat_extent[1]] # riktig?
     for r_idx in range(num_rad_samples):
         plt.clf()
-        plt.imshow(beam_profile[r_idx,:,:], extent=img_extent, cmap="Greys", aspect="auto", interpolation="nearest")
+        plt.imshow(beam_profile[r_idx,:,:], extent=img_extent, cmap="Greys_r", aspect="auto", interpolation="nearest")
         plt.draw()
         plt.title("Radial index %d of %d" % (r_idx+1, num_rad_samples))
         plt.colorbar()
