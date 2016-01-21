@@ -92,7 +92,7 @@ Scatterers::s_ptr render_fixed_scatterers(SplineScatterers::s_ptr spline_scatter
     
         
     // precompute basis functions
-    const auto num_cs = spline_scatterers->nodes[0].size();
+    const auto num_cs = spline_scatterers->get_num_control_points();
     std::vector<float> basis_fn(num_cs);
     for (size_t i = 0; i < num_cs; i++) {
         basis_fn[i] = bspline_storve::bsplineBasis(i, spline_scatterers->spline_degree, timestamp, spline_scatterers->knot_vector);
