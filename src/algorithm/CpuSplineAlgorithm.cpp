@@ -69,18 +69,16 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         basis_functions[i] = b;
     }
     for (int scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
-        // Compute position of current scatterer by evaluating spline in current timestep        
-        PointScatterer scatterer;
-        scatterer.pos = vector3(0.0f, 0.0f, 0.0f); // TODO: not neccessary to set to zero since constructor does that?
-        scatterer.amplitude = m_scatterers->amplitudes[scatterer_no]; // TEMPORARY HACK: using amplitude of first control point.
 
+        // Compute position of current scatterer by evaluating spline in current timestep        
+        vector3 scatterer_pos(0.0f, 0.0f, 0.0f);
         for (int i = 0; i < num_control_points; i++) {
-            scatterer.pos       += m_scatterers->control_points[scatterer_no][i]*basis_functions[i];
+            scatterer_pos += m_scatterers->control_points[scatterer_no][i]*basis_functions[i];
         }
         
         // Map the global cartesian scatterer position into the beam's local
         // coordinate system.
-        vector3 temp = scatterer.pos - line.get_origin();
+        vector3 temp = scatterer_pos - line.get_origin();
         bc_float r = temp.dot(line.get_direction());       // radial component
         bc_float l = temp.dot(line.get_lateral_dir());     // lateral component
         bc_float e = temp.dot(line.get_elevational_dir()); // elevational component
@@ -100,7 +98,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         const bc_float sampling_time_step = 1.0/m_excitation.sampling_frequency;
         int closest_index = (int) std::floor(r*2.0/(m_param_sound_speed*sampling_time_step)+0.5f);
         
-        bc_float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*scatterer.amplitude;
+        bc_float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*m_scatterers->amplitudes[scatterer_no];
         
         // Avoid out of bound seg.fault
         if (closest_index < 0 || closest_index >= num_time_samples) {
