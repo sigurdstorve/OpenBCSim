@@ -19,22 +19,23 @@ def create_phantom(args):
     
     knot_avgs = bsplines.control_points(args.spline_degree, knot_vector)
     
-    nodes = np.empty( (args.num_scatterers, args.num_control_points, 4), dtype='float32')        
+    control_points = np.empty( (args.num_scatterers, args.num_control_points, 3), dtype='float32')        
+    amplitudes = np.random.uniform(low=0.0, high=1.0, size=(args.num_scatterers,))
     for scatterer_i in range(args.num_scatterers):
         print 'Scatterer %d of %d' % (scatterer_i, args.num_scatterers)
         # generate random start point
         x0 = random.uniform(args.x_min, args.x_max)
         y0 = random.uniform(args.y_min, args.y_max)
         z0 = args.z0 + random.uniform(-0.5, 0.5)*args.thickness
-        scatterer_amplitude=random.uniform(0.0, 1.0)       
         for control_pt_i, t_star in enumerate(knot_avgs):
             x = x0
             y = y0
             z = z0 + args.ampl*np.cos(2*np.pi*args.freq*t_star)
-            nodes[scatterer_i, control_pt_i, :] = [x, y, z, scatterer_amplitude]                     
+            control_points[scatterer_i, control_pt_i, :] = [x, y, z]                     
     
     with h5py.File(args.h5_file, 'w') as f:
-        f["nodes"] = nodes
+        f["control_points"] = control_points
+        f["amplitudes"] = np.array(amplitudes, dtype="float32")
         f["spline_degree"] = args.spline_degree
         f["file_format_version"] = "1"
         f["knot_vector"] = knot_vector

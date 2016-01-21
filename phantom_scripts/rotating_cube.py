@@ -21,7 +21,7 @@ def create_phantom(args):
     scatterers[1, :] = ys
     scatterers[2, :] = zs
     
-    nodes = np.empty( (args.num_scatterers, args.num_cs, 4), dtype='float32')
+    control_points = np.empty( (args.num_scatterers, args.num_cs, 3), dtype='float32')
     
     knots = bsplines.uniform_regular_knot_vector(args.num_cs, args.spline_degree, t0=args.t0, t1=args.t1)
     knot_avgs = bsplines.control_points(args.spline_degree, knots)
@@ -36,12 +36,12 @@ def create_phantom(args):
         
         temp = np.dot(rot_mat, scatterers).transpose()
         temp[:, 2] += args.z0
-        nodes[:, control_point_i, 0:3] = temp
-        nodes[:, control_point_i, 3] = as_
+        control_points[:, control_point_i, 0:3] = temp
            
     with h5py.File(args.h5_file, 'w') as f:
         f["spline_degree"] = args.spline_degree
-        f["nodes"] = nodes
+        f["control_points"] = control_points
+        f["amplitudes"] = np.array(as_, dtype="float32")
         f["knot_vector"] = knots
 
 if __name__ == '__main__':

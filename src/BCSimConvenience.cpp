@@ -92,7 +92,7 @@ Scatterers::s_ptr render_fixed_scatterers(SplineScatterers::s_ptr spline_scatter
     
         
     // precompute basis functions
-    const auto num_cs = spline_scatterers->nodes[0].size();
+    const auto num_cs = spline_scatterers->get_num_control_points();
     std::vector<float> basis_fn(num_cs);
     for (size_t i = 0; i < num_cs; i++) {
         basis_fn[i] = bspline_storve::bsplineBasis(i, spline_scatterers->spline_degree, timestamp, spline_scatterers->knot_vector);
@@ -103,10 +103,9 @@ Scatterers::s_ptr render_fixed_scatterers(SplineScatterers::s_ptr spline_scatter
     for (size_t spline_no = 0; spline_no < num_scatterers; spline_no++) {
         PointScatterer scatterer;
         scatterer.pos       = vector3(0.0f, 0.0f, 0.0f);
-        scatterer.amplitude = 0.0f;
+        scatterer.amplitude = spline_scatterers->amplitudes[spline_no];
         for (size_t i = 0; i < num_cs; i++) {
-            scatterer.pos       += spline_scatterers->nodes[spline_no][i].pos*basis_fn[i];
-            scatterer.amplitude += spline_scatterers->nodes[spline_no][i].amplitude*basis_fn[i];
+            scatterer.pos += spline_scatterers->control_points[spline_no][i]*basis_fn[i];
         }
         res->scatterers[spline_no] = scatterer;
     }

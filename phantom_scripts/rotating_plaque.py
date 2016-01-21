@@ -37,22 +37,25 @@ def create_phantom(args):
     knot_vector = np.array(knot_vector, dtype='float32')
     knot_avgs = bsplines.control_points(args.spline_degree, knot_vector)
 
-    nodes = np.zeros( (num_scatterers, args.num_cs, 4), dtype='float32')
+    control_points = np.zeros( (num_scatterers, args.num_cs, 3), dtype='float32')
+    amplitudes = np.zeros( (num_scatterers,), dtype="float32")
     
     for i in range(args.num_cs):
         theta = i*np.pi*2/args.num_cs
-        nodes[:num_tissue_scatterers,i,0] = xs
-        nodes[:num_tissue_scatterers,i,1] = ys
-        nodes[:num_tissue_scatterers,i,2] = zs
-        nodes[:num_tissue_scatterers,i,3] = ampls
+        control_points[:num_tissue_scatterers,i,0] = xs
+        control_points[:num_tissue_scatterers,i,1] = ys
+        control_points[:num_tissue_scatterers,i,2] = zs
 
-        nodes[num_tissue_scatterers:,i,0] = plaque_xs + args.radius*np.sin(theta)
-        nodes[num_tissue_scatterers:,i,1] = plaque_ys
-        nodes[num_tissue_scatterers:,i,2] = plaque_zs + args.z0 + args.radius*np.cos(theta)
-        nodes[num_tissue_scatterers:,i,3] = plaque_ampls
+        control_points[num_tissue_scatterers:,i,0] = plaque_xs + args.radius*np.sin(theta)
+        control_points[num_tissue_scatterers:,i,1] = plaque_ys
+        control_points[num_tissue_scatterers:,i,2] = plaque_zs + args.z0 + args.radius*np.cos(theta)
+
+        amplitudes[num_tissue_scatterers:] = plaque_ampls
+        amplitudes[:num_tissue_scatterers] = ampls
     
     with h5py.File(args.h5_file, 'w') as f:
-        f["nodes"] = nodes
+        f["control_points"] = control_points
+        f["amplitudes"] = amplitudes
         f["spline_degree"] = args.spline_degree
         f["knot_vector"] = knot_vector
     

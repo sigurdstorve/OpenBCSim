@@ -57,10 +57,12 @@ protected:
     
 protected:
     
-    // device memory for spline scatterers control points and amplitudes
+    // device memory for control points for all spline scatterers.
     DeviceBufferRAII<float>::u_ptr      m_device_control_xs;
     DeviceBufferRAII<float>::u_ptr      m_device_control_ys;
     DeviceBufferRAII<float>::u_ptr      m_device_control_zs;
+
+    // device memory for all scatterer amplitudes - one for each scatterer spline.
     DeviceBufferRAII<float>::u_ptr      m_device_control_as;
     
     // The knot vector common to all splines.

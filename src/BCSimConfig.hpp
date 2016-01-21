@@ -106,19 +106,28 @@ struct SplineScatterers : public Scatterers {
     typedef std::shared_ptr<SplineScatterers> s_ptr;
 
     virtual int num_scatterers() const {
-        return static_cast<int>(nodes.size());
+        // assert(control_points.size() == amplitudes.size());
+        return static_cast<int>(control_points.size());
+    }
+
+    // Returns the number of control points for each spline
+    // scatterer (same for all scatterers).
+    size_t get_num_control_points() const {
+        if (num_scatterers() == 0) {
+            throw std::runtime_error("No scatterers in dataset");
+        }
+        return control_points[0].size();
     }
     
     // Spline degree and knot vector are common for
     // all point scatterers.
     int                         spline_degree;
     std::vector<bc_float>       knot_vector;
-    // TODO: Consider adding number of control points since common
-    // for all. Currently an element in 'nodes' must be inspected
-    // to determine it, which is inconvenient.
     
-    // For each point scatterer: a list of spline control points.
-    std::vector<std::vector<PointScatterer> > nodes;
+    // For each scatterer: list of control points in space and a scalar amplitude
+    // Indexed by scatterer no.
+    std::vector<std::vector<vector3>> control_points;
+    std::vector<bc_float>             amplitudes;
 };
 
 

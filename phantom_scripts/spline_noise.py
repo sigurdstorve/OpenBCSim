@@ -8,13 +8,14 @@ description = """\
 """
 
 def create_phantom(args):
-    nodes = np.empty((args.num_scatterers, args.num_cs, 4), dtype='float32')
-    nodes[:,:,0] = np.random.uniform(size=(args.num_scatterers, args.num_cs), low=args.x_min, high=args.x_max)
-    nodes[:,:,1] = np.random.uniform(size=(args.num_scatterers, args.num_cs), low=args.y_min, high=args.y_max)
-    nodes[:,:,2] = np.random.uniform(size=(args.num_scatterers, args.num_cs), low=args.z_min, high=args.z_max)
-    nodes[:,:,3] = np.random.uniform(size=(args.num_scatterers, args.num_cs), low=0.0, high=1.0)
+    control_points = np.empty((args.num_scatterers, args.num_cs, 3), dtype='float32')
+    control_points[:,:,0] = np.random.uniform(size=(args.num_scatterers, args.num_cs), low=args.x_min, high=args.x_max)
+    control_points[:,:,1] = np.random.uniform(size=(args.num_scatterers, args.num_cs), low=args.y_min, high=args.y_max)
+    control_points[:,:,2] = np.random.uniform(size=(args.num_scatterers, args.num_cs), low=args.z_min, high=args.z_max)
+    amplitudes = np.random.uniform(size=(args.num_scatterers,), low=0.0, high=1.0)
     with h5py.File(args.h5_file, 'w') as f:
-        f["nodes"] = nodes
+        f["control_points"] = control_points
+        f["amplitudes"] = np.array(amplitudes, dtype="float32")
         f["spline_degree"] = args.spline_degree
         f["knot_vector"] = np.array(bsplines.uniform_regular_knot_vector(args.num_cs, args.spline_degree, t0=0.0, t1=1.001), dtype='float32')
     print 'Dataset written to %s' % args.h5_file

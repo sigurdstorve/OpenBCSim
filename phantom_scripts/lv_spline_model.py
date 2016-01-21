@@ -70,24 +70,24 @@ def create_phantom(args):
     knot_vector = np.array(knot_vector, dtype='float32')
     knot_avgs = bsplines.control_points(args.spline_degree, knot_vector)
 
-    nodes = np.zeros( (num_scatterers, args.num_cs, 4), dtype='float32')
+    control_points = np.zeros( (num_scatterers, args.num_cs, 3), dtype='float32')
     for cs_i, t_star in enumerate(knot_avgs):
         print 'Computing control points for knot average %d of %d' % (cs_i+1, args.num_cs)
 
         s = scale_fn(t_star)
 
         # Compute control point position. Amplitude is unchanged.
-        nodes[:,cs_i,0] = s*np.array(xs)
-        nodes[:,cs_i,1] = s*np.array(ys)
-        nodes[:,cs_i,2] = s*np.array(zs)
-        nodes[:,cs_i,3] = _as 
+        control_points[:,cs_i,0] = s*np.array(xs)
+        control_points[:,cs_i,1] = s*np.array(ys)
+        control_points[:,cs_i,2] = s*np.array(zs)
 
     
     # Write results to disk
     with h5py.File(args.h5_file) as f:
         f['spline_degree'] = args.spline_degree
         f['knot_vector'] = knot_vector
-        f['nodes'] = nodes
+        f['control_points'] = control_points
+        f['amplitudes'] = np.array(_as, dtype="float32")
     
     print 'Spline scatterer dataset written to %s' % args.h5_file
 

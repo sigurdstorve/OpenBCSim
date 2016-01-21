@@ -249,5 +249,5 @@ if __name__ == '__main__':
     create_2d_cyst_phantom()
     create_simple_phantom()
     print 'NOTE: This is the last script and may take a while to finish...'
-    #create_artery_phantom()
+    create_artery_phantom()
     

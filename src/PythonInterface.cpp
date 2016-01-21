@@ -92,7 +92,8 @@ public:
 
     void set_spline_scatterers(int spline_degree,
                                numpy_boost<float, 1> knot_vector,
-                               numpy_boost<float, 3> nodes) {
+                               numpy_boost<float, 3> control_points,
+                               numpy_boost<float, 1> amplitudes) {
 
         auto new_scatterers = SplineScatterers::s_ptr(new SplineScatterers);
         
@@ -109,12 +110,12 @@ public:
         }
         
         // Get size for all three dimensions of nodes array
-        auto node_dims = get_dimensions(nodes);
-        if (node_dims.size() != 3) {
-            throw std::runtime_error(std::string(__FUNCTION__) + " : invalid nodes rank");
+        auto control_points_dims = get_dimensions(control_points);
+        if (control_points_dims.size() != 3) {
+            throw std::runtime_error(std::string(__FUNCTION__) + " : invalid control_points rank");
         }
-        int num_scatterers = node_dims[0];
-        int num_control_points = node_dims[1];
+        int num_scatterers = control_points_dims[0];
+        int num_control_points = control_points_dims[1];
         
         // Sanity check
         if (num_knots != (num_control_points + spline_degree + 1)) {
@@ -124,23 +125,29 @@ public:
         std::cout << "Number of scatterers: " << num_scatterers << std::endl;
         std::cout << "Number of control points for each scatterer: " << num_control_points << std::endl;
         
-        if (node_dims[2] != 4) {
-            throw std::runtime_error(std::string(__FUNCTION__) + " : size of dimension 3 must be four (x,y,z,ampl)");
+        if (control_points_dims[2] != 3) {
+            throw std::runtime_error(std::string(__FUNCTION__) + " : size of dimension 3 must be three (x,y,z)");
+        }
+
+        const auto amplitudes_size = get_dimensions(amplitudes);
+        if (amplitudes_size[0] != num_scatterers) {
+            throw std::runtime_error("Mismatch between control_points and amplitudes");
         }
                 
-        
-        new_scatterers->nodes.resize(num_scatterers);
+        new_scatterers->control_points.resize(num_scatterers);
+        new_scatterers->amplitudes.resize(num_scatterers);
+
         for (int scatterer_i = 0; scatterer_i < num_scatterers; scatterer_i++) {
-            new_scatterers->nodes[scatterer_i].resize(num_control_points);
+            new_scatterers->amplitudes[scatterer_i] = amplitudes[scatterer_i];
+
+            new_scatterers->control_points[scatterer_i].resize(num_control_points);
             for (int control_point_i = 0; control_point_i < num_control_points; control_point_i++) {
-                PointScatterer scatterer;
+               
+                const vector3 pos(control_points[scatterer_i][control_point_i][0],
+                                  control_points[scatterer_i][control_point_i][1],
+                                  control_points[scatterer_i][control_point_i][2]);
                 
-                scatterer.pos = vector3(nodes[scatterer_i][control_point_i][0],
-                                        nodes[scatterer_i][control_point_i][1],
-                                        nodes[scatterer_i][control_point_i][2]);
-                
-                scatterer.amplitude = nodes[scatterer_i][control_point_i][3];
-                new_scatterers->nodes[scatterer_i][control_point_i] = scatterer;
+                new_scatterers->control_points[scatterer_i][control_point_i] = pos;
             }
         }
 
