@@ -29,26 +29,25 @@ def create_phantom(args):
     num_scatterers = len(xs)
     
     # Create random amplitudes
-    _as = np.random.uniform(low=0.0, high=1.0, size=(num_scatterers,))  
+    amplitudes = np.random.uniform(low=0.0, high=1.0, size=(num_scatterers,))  
     
     # Create knot vector
     knots = bsplines.uniform_regular_knot_vector(args.num_control_points, args.spline_degree,
                                                  t0=start_time, t1=end_time)
     knot_avgs = bsplines.control_points(args.spline_degree, knots)
     
-    nodes = np.empty((num_scatterers, args.num_control_points, 4), dtype='float32')
+    control_points = np.empty((num_scatterers, args.num_control_points, 3), dtype='float32')
 
     for c_i, t_star in enumerate(knot_avgs):
         alpha = scale_fn(t_star)
-        nodes[:, c_i, 0] = xs/np.sqrt(alpha)
-        nodes[:, c_i, 1] = ys/np.sqrt(alpha)
-        nodes[:, c_i, 2] = zs*alpha
-        nodes[:, c_i, 3] = _as
-    
+        control_points[:, c_i, 0] = xs/np.sqrt(alpha)
+        control_points[:, c_i, 1] = ys/np.sqrt(alpha)
+        control_points[:, c_i, 2] = zs*alpha
 
     with h5py.File(args.h5_out, 'w') as f:
         f["spline_degree"] = args.spline_degree
-        f["nodes"] = nodes
+        f["control_points"] = control_points
+        f["amplitudes"] = np.array(amplitudes, dtype="float32")
         f["knot_vector"] = np.array(knots, dtype='float32')    
     print 'Spline scatterer dataset written to %s' % args.h5_out
     
