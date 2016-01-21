@@ -149,16 +149,12 @@ void example(int argc, char** argv) {
     std::uniform_real_distribution<float> y_dist(-0.01f, 0.01f);
     std::uniform_real_distribution<float> z_dist(0.04f, 0.10f);
     std::uniform_real_distribution<float> a_dist(-1.0f, 1.0f);
-    spline_scatterers->nodes.clear();
+    spline_scatterers->control_points.clear();
     for (size_t scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
-        std::vector<bcsim::PointScatterer> control_points;
+        spline_scatterers->amplitudes.push_back( a_dist(gen) );
         for (size_t i = 0; i < num_cs; i++) {
-            bcsim::PointScatterer scatterer;
-            scatterer.amplitude = a_dist(gen);
-            scatterer.pos = bcsim::vector3(x_dist(gen), y_dist(gen), z_dist(gen));
-            control_points.push_back(scatterer);
+            spline_scatterers->control_points[scatterer_no].push_back( bcsim::vector3(x_dist(gen), y_dist(gen), z_dist(gen)) );
         }
-        spline_scatterers->nodes.push_back(control_points);
     }
 
     auto scatterers = bcsim::Scatterers::s_ptr(spline_scatterers);

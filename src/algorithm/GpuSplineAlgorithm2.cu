@@ -353,10 +353,10 @@ void GpuSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scat
     for (size_t spline_no = 0; spline_no < m_num_splines; spline_no++) {
         for (size_t i = 0; i < m_num_cs; i++) {
             const size_t offset = spline_no + i*m_num_splines;
-            host_control_xs[offset] = scatterers->nodes[spline_no][i].pos.x;
-            host_control_ys[offset] = scatterers->nodes[spline_no][i].pos.y;
-            host_control_zs[offset] = scatterers->nodes[spline_no][i].pos.z;
-            host_control_as[offset] = scatterers->nodes[spline_no][i].amplitude;
+            host_control_xs[offset] = scatterers->control_points[spline_no][i].x;
+            host_control_ys[offset] = scatterers->control_points[spline_no][i].y;
+            host_control_zs[offset] = scatterers->control_points[spline_no][i].z;
+            host_control_as[offset] = scatterers->amplitudes[spline_no];    // TODO: UPDATE
         }
     }
     

@@ -129,18 +129,20 @@ public:
         }
                 
         
-        new_scatterers->nodes.resize(num_scatterers);
+        new_scatterers->control_points.resize(num_scatterers);
+        new_scatterers->amplitudes.resize(num_scatterers);
+
         for (int scatterer_i = 0; scatterer_i < num_scatterers; scatterer_i++) {
-            new_scatterers->nodes[scatterer_i].resize(num_control_points);
+            new_scatterers->amplitudes[scatterer_i] = nodes[scatterer_i][0][3];     // TEMPORARY HACK: Using amplitude from first control point
+
+            new_scatterers->control_points[scatterer_i].resize(num_control_points);
             for (int control_point_i = 0; control_point_i < num_control_points; control_point_i++) {
-                PointScatterer scatterer;
+               
+                const vector3 pos(nodes[scatterer_i][control_point_i][0],
+                                  nodes[scatterer_i][control_point_i][1],
+                                  nodes[scatterer_i][control_point_i][2]);
                 
-                scatterer.pos = vector3(nodes[scatterer_i][control_point_i][0],
-                                        nodes[scatterer_i][control_point_i][1],
-                                        nodes[scatterer_i][control_point_i][2]);
-                
-                scatterer.amplitude = nodes[scatterer_i][control_point_i][3];
-                new_scatterers->nodes[scatterer_i][control_point_i] = scatterer;
+                new_scatterers->control_points[scatterer_i][control_point_i] = pos;
             }
         }
 

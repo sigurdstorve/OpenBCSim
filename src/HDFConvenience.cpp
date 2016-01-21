@@ -168,16 +168,15 @@ Scatterers::s_ptr loadSplineScatterersFromHdf(const std::string& h5_file) {
         if (num_comp != 4) {
             throw std::runtime_error("SplineScatterer illegal number of components (should be 4)");
         }
-        res->nodes.resize(num_scatterers);
+        res->control_points.resize(num_scatterers);
+        res->amplitudes.resize(num_scatterers);
         for (size_t scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
-            std::vector<PointScatterer> control_points;
+            res->amplitudes[scatterer_no] = nodes[scatterer_no][0][3]; // TEMPORARY HACK: using amplitude from first scatterer control points
+
             for (size_t cs_no = 0; cs_no < num_cs; cs_no++) {
-                PointScatterer scatterer;
-                scatterer.pos = vector3(nodes[scatterer_no][cs_no][0], nodes[scatterer_no][cs_no][1], nodes[scatterer_no][cs_no][2]);
-                scatterer.amplitude = nodes[scatterer_no][cs_no][3];
-                control_points.push_back(scatterer);
+                const vector3 pt(nodes[scatterer_no][cs_no][0], nodes[scatterer_no][cs_no][1], nodes[scatterer_no][cs_no][2]);
+                res->control_points[scatterer_no].push_back(pt);
             }
-            res->nodes[scatterer_no] = control_points;
         }
     } catch (...) {
         throw std::runtime_error("Failed to configure spline scatterer dataset");
