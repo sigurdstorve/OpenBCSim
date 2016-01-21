@@ -17,4 +17,4 @@ target_link_libraries(all_tests
                       ${Boost_LIBRARIES}
                       ${HDF5_LIBRARIES}
                       )
-
+install(TARGETS all_tests DESTINATION bin)

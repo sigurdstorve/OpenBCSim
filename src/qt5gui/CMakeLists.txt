@@ -65,3 +65,4 @@ if (BCSIM_ENABLE_QWT)
 endif()
                       
 
+install(TARGETS BCSimGUI DESTINATION bin)

@@ -241,7 +241,9 @@ endif()
 # Define installation of binaries and public API headers
 install(TARGETS LibBCSim DESTINATION lib)
 if (BCSIM_BUILD_PYTHON_INTERFACE)
-    install(TARGETS pyrfsim DESTINATION lib)
+    # put it in "bin" because it needs many of the same DLLs
+    # as the executables.
+    install(TARGETS pyrfsim DESTINATION bin)
 endif()
 
 install(FILES "${PROJECT_BINARY_DIR}/bcsim_defines.h" DESTINATION include)
