@@ -715,7 +715,7 @@ void MainWindow::onAboutScatterers() {
     
     if (spline_scatterers) {
         info += " spline scatterers of degree " + QString::number(spline_scatterers->spline_degree);
-        info += ", each consisting of " + QString::number(spline_scatterers->nodes[0].size()) + " control points.";
+        info += ", each consisting of " + QString::number(spline_scatterers->get_num_control_points()) + " control points.";
     } else if (fixed_scatterers) {
         info += " fixed scatterers.";
     } else {
