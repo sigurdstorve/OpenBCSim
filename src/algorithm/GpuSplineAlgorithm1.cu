@@ -43,11 +43,9 @@ __constant__ float eval_basis[MAX_CS];
 __global__ void RenderSplineKernel(const float* control_xs,
                                    const float* control_ys,
                                    const float* control_zs,
-                                   const float* control_as,
                                    float* rendered_xs,
                                    float* rendered_ys,
                                    float* rendered_zs,
-                                   float* rendered_as,
                                    int NUM_CS,
                                    int NUM_SPLINES) {
 
@@ -61,7 +59,6 @@ __global__ void RenderSplineKernel(const float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    float rendered_a = control_as[NUM_SPLINES*0 + idx]; // TEMPORARY HACK: using amplitude from first node
     for (int i = 0; i < NUM_CS; i++) {
         rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis[i];
         rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis[i];
@@ -72,7 +69,6 @@ __global__ void RenderSplineKernel(const float* control_xs,
     rendered_xs[idx] = rendered_x;
     rendered_ys[idx] = rendered_y;
     rendered_zs[idx] = rendered_z;
-    rendered_as[idx] = rendered_a;
 }
 
 
@@ -109,21 +105,20 @@ void GpuSplineAlgorithm1::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
     m_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
     m_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
 
     // store the control points with correct memory layout of the host
     std::vector<float> host_control_xs(total_num_cs);
     std::vector<float> host_control_ys(total_num_cs);
     std::vector<float> host_control_zs(total_num_cs);
-    std::vector<float> host_control_as(total_num_cs);
+    std::vector<float> host_control_as(m_num_splines);
 
     for (size_t spline_no = 0; spline_no < m_num_splines; spline_no++) {
+        host_control_as[spline_no] = scatterers->amplitudes[spline_no];
         for (size_t i = 0; i < m_num_cs; i++) {
             const size_t offset = spline_no + i*m_num_splines;
             host_control_xs[offset] = scatterers->control_points[spline_no][i].x;
             host_control_ys[offset] = scatterers->control_points[spline_no][i].y;
             host_control_zs[offset] = scatterers->control_points[spline_no][i].z;
-            host_control_as[offset] = scatterers->amplitudes[spline_no]; // TODO: UPDATE
         }
     }
     
@@ -131,8 +126,6 @@ void GpuSplineAlgorithm1::set_scatterers(Scatterers::s_ptr new_scatterers) {
     cudaErrorCheck( cudaMemcpy(m_control_xs->data(), host_control_xs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
     cudaErrorCheck( cudaMemcpy(m_control_ys->data(), host_control_ys.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
     cudaErrorCheck( cudaMemcpy(m_control_zs->data(), host_control_zs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_control_as->data(), host_control_as.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-
 
     // device memory to hold x, y, z, a components of rendered splines
     size_t rendered_num_bytes = m_num_splines*sizeof(float);
@@ -141,6 +134,9 @@ void GpuSplineAlgorithm1::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_fixed_alg->m_device_point_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(rendered_num_bytes));
     m_fixed_alg->m_device_point_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(rendered_num_bytes));
     m_fixed_alg->m_num_scatterers = m_num_splines;
+
+    // copy amplitudes directly from host memory.
+    cudaErrorCheck( cudaMemcpy(m_fixed_alg->m_device_point_as->data(), host_control_as.data(), rendered_num_bytes, cudaMemcpyHostToDevice) );
 
     // Store the knot vector.
     m_common_knots = scatterers->knot_vector;
@@ -193,11 +189,9 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     RenderSplineKernel<<<grid_size, block_size>>>(m_control_xs->data(),
                                                   m_control_ys->data(),
                                                   m_control_zs->data(),
-                                                  m_control_as->data(),
                                                   m_fixed_alg->m_device_point_xs->data(),
                                                   m_fixed_alg->m_device_point_ys->data(),
                                                   m_fixed_alg->m_device_point_zs->data(),
-                                                  m_fixed_alg->m_device_point_as->data(),
                                                   m_num_cs,
                                                   m_num_splines);
     cudaErrorCheck( cudaDeviceSynchronize() );
