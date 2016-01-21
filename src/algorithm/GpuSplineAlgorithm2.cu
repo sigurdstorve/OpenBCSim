@@ -76,7 +76,6 @@ __global__ void SplineAlgKernel(float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    float rendered_a = control_as[NUM_SPLINES*0 + global_idx];  // TEMPORARY HACK: Using first node's amplitude
     for (int i = 0; i < NUM_CS; i++) {
         size_t eval_basis_i = i + eval_basis_offset_elements;
         rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
@@ -104,7 +103,6 @@ __global__ void SplineAlgKernel(float* control_xs,
     const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
     
     if (radial_index >= 0 && radial_index < num_time_samples) {
-        //atomicAdd(res+radial_index, weight*rendered_a);
         if (use_phase_delay) {
             // handle sub-sample displacement with a complex phase
             const auto true_index = fs_hertz*2.0f*radial_dist/sound_speed;
@@ -115,11 +113,11 @@ __global__ void SplineAlgKernel(float* control_xs,
             float sin_value, cos_value;
             sincosf(complex_phase, &sin_value, &cos_value);
 
-            const auto w = weight*rendered_a;
+            const auto w = weight*control_as[global_idx];
             atomicAdd(&(res[radial_index].x), w*cos_value);
             atomicAdd(&(res[radial_index].y), w*sin_value);
         } else {
-            atomicAdd(&(res[radial_index].x), weight*rendered_a);
+            atomicAdd(&(res[radial_index].x), weight*control_as[global_idx]);
         }
     }
 }
@@ -161,7 +159,6 @@ __global__ void SplineAlgKernel_LUT(float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    float rendered_a = control_as[NUM_SPLINES*0 + global_idx]; // TEMPORARY HACK: Using first node's amplitude
     for (int i = 0; i < NUM_CS; i++) {
         size_t eval_basis_i = i + eval_basis_offset_elements;
         rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
@@ -191,7 +188,6 @@ __global__ void SplineAlgKernel_LUT(float* control_xs,
     const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
     
     if (radial_index >= 0 && radial_index < num_time_samples) {
-        //atomicAdd(res+radial_index, weight*rendered_a);
         if (use_phase_delay) {
             // handle sub-sample displacement with a complex phase
             const auto true_index = fs_hertz*2.0f*radial_dist/sound_speed;
@@ -202,11 +198,11 @@ __global__ void SplineAlgKernel_LUT(float* control_xs,
             float sin_value, cos_value;
             sincosf(complex_phase, &sin_value, &cos_value);
 
-            const auto w = weight*rendered_a;
+            const auto w = weight*control_as[global_idx];
             atomicAdd(&(res[radial_index].x), w*cos_value);
             atomicAdd(&(res[radial_index].y), w*sin_value);
         } else {
-            atomicAdd(&(res[radial_index].x), weight*rendered_a);
+            atomicAdd(&(res[radial_index].x), weight*control_as[global_idx]);
         }
     }
 }
@@ -336,27 +332,28 @@ void GpuSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scat
     std::cout << "Allocating memory on host for reorganizing spline data\n";
 
 
-    // device memory to hold x, y, z components of all spline control points
+    // device memory to hold x, y, z components of all spline control points and amplitudes of all splines.
     const size_t total_num_cs = m_num_splines*m_num_cs;
     const size_t cs_num_bytes = total_num_cs*sizeof(float);
+    const size_t amplitudes_num_bytes = m_num_splines*sizeof(float);
     m_device_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
     m_device_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
     m_device_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_device_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
+    m_device_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(amplitudes_num_bytes));
         
     // store the control points with correct memory layout of the host
     std::vector<float> host_control_xs(total_num_cs);
     std::vector<float> host_control_ys(total_num_cs);
     std::vector<float> host_control_zs(total_num_cs);
-    std::vector<float> host_control_as(total_num_cs);
+    std::vector<float> host_control_as(m_num_splines); // only one amplitude for each scatterer.
 
     for (size_t spline_no = 0; spline_no < m_num_splines; spline_no++) {
+        host_control_as[spline_no] = scatterers->amplitudes[spline_no];
         for (size_t i = 0; i < m_num_cs; i++) {
             const size_t offset = spline_no + i*m_num_splines;
             host_control_xs[offset] = scatterers->control_points[spline_no][i].x;
             host_control_ys[offset] = scatterers->control_points[spline_no][i].y;
             host_control_zs[offset] = scatterers->control_points[spline_no][i].z;
-            host_control_as[offset] = scatterers->amplitudes[spline_no];    // TODO: UPDATE
         }
     }
     
@@ -364,11 +361,12 @@ void GpuSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scat
     cudaErrorCheck( cudaMemcpy(m_device_control_xs->data(), host_control_xs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
     cudaErrorCheck( cudaMemcpy(m_device_control_ys->data(), host_control_ys.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
     cudaErrorCheck( cudaMemcpy(m_device_control_zs->data(), host_control_zs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_device_control_as->data(), host_control_as.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    
+    // copy amplitudes to GPU memory.
+    cudaErrorCheck( cudaMemcpy(m_device_control_as->data(), host_control_as.data(), amplitudes_num_bytes, cudaMemcpyHostToDevice) );
 
     // Store the knot vector.
     m_common_knots = scatterers->knot_vector;
-    
 }
 
 void GpuSplineAlgorithm2::set_scatterers(Scatterers::s_ptr new_scatterers) {
