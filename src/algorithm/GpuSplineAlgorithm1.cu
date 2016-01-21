@@ -93,7 +93,7 @@ void GpuSplineAlgorithm1::set_scatterers(Scatterers::s_ptr new_scatterers) {
         throw std::runtime_error("No scatterers");
     }
     m_spline_degree = scatterers->spline_degree;
-    m_num_cs = scatterers->nodes[0].size();
+    m_num_cs = scatterers->get_num_control_points();
 
     if (m_num_cs > MAX_CS) {
         throw std::runtime_error("Too many control points in spline");
