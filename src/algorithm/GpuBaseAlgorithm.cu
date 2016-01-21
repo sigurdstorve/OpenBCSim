@@ -409,8 +409,16 @@ void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
 
     std::cout << "Created a new DeviceBeamProfileRAII.\n";
     
-    const std::string raw_lut_path("d:/temp/raw_lookup_table/");
-    //dump_orthogonal_lut_slices(raw_lut_path);
+    if (false) {
+        const std::string raw_lut_path("d:/temp/raw_lookup_table/");
+        dump_orthogonal_lut_slices(raw_lut_path);
+        // write extents
+        std::ofstream out_stream;
+        out_stream.open(raw_lut_path + "/extents.txt");
+        out_stream << m_lut_r_min << " " << m_lut_r_max << std::endl;
+        out_stream << m_lut_l_min << " " << m_lut_l_max << std::endl;
+        out_stream << m_lut_e_min << " " << m_lut_e_max << std::endl;
+    }
 
 }
 
@@ -445,6 +453,14 @@ void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
                 make_float3(0.0f, 1.0f, 0.0f),
                 make_float3(0.0f, 0.0f, 1.0f),
                 raw_path + "lut_slice_ele_rad.raw");
+
+    // 6 equally spaced lateral-elevational slices of [0.0, 1.0]
+    for (int i = 0; i <=5; i++) {
+        write_raw(make_float3(0.0f, 0.0f, static_cast<float>(i)/5),
+                  make_float3(1.0f, 0.0f, 0.0f),
+                  make_float3(0.0f, 1.0f, 0.0f),
+                  raw_path + "lut_slice_lat_ele_"+std::to_string(i)+".raw");
+    }
 
 }
 
