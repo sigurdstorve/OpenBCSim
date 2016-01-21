@@ -76,13 +76,12 @@ __global__ void SplineAlgKernel(float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    float rendered_a = 0.0f;
+    float rendered_a = control_as[NUM_SPLINES*0 + global_idx];  // TEMPORARY HACK: Using first node's amplitude
     for (int i = 0; i < NUM_CS; i++) {
         size_t eval_basis_i = i + eval_basis_offset_elements;
         rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
         rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
         rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_a += control_as[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
     }
 
     // step 2: compute projections
@@ -162,13 +161,12 @@ __global__ void SplineAlgKernel_LUT(float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    float rendered_a = 0.0f;
+    float rendered_a = control_as[NUM_SPLINES*0 + global_idx]; // TEMPORARY HACK: Using first node's amplitude
     for (int i = 0; i < NUM_CS; i++) {
         size_t eval_basis_i = i + eval_basis_offset_elements;
         rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
         rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
         rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_a += control_as[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
     }
 
     // step 2: compute projections
