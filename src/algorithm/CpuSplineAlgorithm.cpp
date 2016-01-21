@@ -56,9 +56,8 @@ void CpuSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
 
 void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
-    const int num_scatterers = m_scatterers->nodes.size();
-    // TODO: Improve. Use that all splines have same number of control points
-    const int num_control_points = m_scatterers->nodes[0].size();
+    const int num_scatterers = m_scatterers->num_scatterers();
+    const int num_control_points = m_scatterers->get_num_control_points();
     std::vector<bc_float> basis_functions(num_control_points);
     
     // Precompute all B-spline basis function for current timestep
