@@ -611,12 +611,12 @@ void MainWindow::initializeFixedVisualization(const QString& h5_file) {
 // Currently ignoring weights when visualizing
 void MainWindow::initializeSplineVisualization(const QString& h5_file) {
     SimpleHDF::SimpleHDF5Reader reader(h5_file.toUtf8().constData());
-    auto nodes       =  reader.readMultiArray<float, 3>("nodes");
-    auto knot_vector =  reader.readStdVector<float>("knot_vector");
-    int spline_degree = reader.readScalar<int>("spline_degree");
+    auto control_points =  reader.readMultiArray<float, 3>("control_points");
+    auto knot_vector    =  reader.readStdVector<float>("knot_vector");
+    int spline_degree   = reader.readScalar<int>("spline_degree");
 
-    auto shape = nodes.shape();
-    auto dimensionality = nodes.num_dimensions();
+    auto shape = control_points.shape();
+    auto dimensionality = control_points.num_dimensions();
     Q_ASSERT(dimensionality == 3);
     int num_scatterers = static_cast<int>(shape[0]);
     int num_cs = static_cast<int>(shape[1]);
@@ -644,7 +644,9 @@ void MainWindow::initializeSplineVisualization(const QString& h5_file) {
         curve.degree = spline_degree;
         curve.cs.resize(num_cs);
         for (int cs_no = 0; cs_no < num_cs; cs_no++) {
-            curve.cs[cs_no] = bcsim::vector3(nodes[ind][cs_no][0], nodes[ind][cs_no][1], nodes[ind][cs_no][2]);
+            curve.cs[cs_no] = bcsim::vector3(control_points[ind][cs_no][0],
+                                             control_points[ind][cs_no][1],
+                                             control_points[ind][cs_no][2]);
         }
         splines[scatterer_no] = curve;
     }

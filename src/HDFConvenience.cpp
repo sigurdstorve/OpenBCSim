@@ -53,9 +53,10 @@ std::string AutodetectScatteresType(const std::string& h5_file) {
         loaded_fixed = false;
     }
     try {
-        auto nodes        = loader.readMultiArray<float, 3>("nodes");
-        int spline_degree = loader.readScalar<int>("spline_degree");
-        auto knots        = loader.readMultiArray<float, 1>("knot_vector");
+        auto control_points = loader.readMultiArray<float, 3>("control_points");
+        auto amplitudes     = loader.readMultiArray<float, 1>("amplitudes");
+        int spline_degree   = loader.readScalar<int>("spline_degree");
+        auto knots          = loader.readMultiArray<float, 1>("knot_vector");
     } catch (...) {
         loaded_spline = false;
     }
@@ -152,29 +153,33 @@ Scatterers::s_ptr loadFixedScatterersFromHdf(const std::string& h5_file) {
 Scatterers::s_ptr loadSplineScatterersFromHdf(const std::string& h5_file) {
     SimpleHDF::SimpleHDF5Reader loader(h5_file);
     auto res = new SplineScatterers;
+
     try {
-        auto nodes         = loader.readMultiArray<float, 3>("nodes");
-        int spline_degree  = loader.readScalar<int>("spline_degree");
-        auto knot_vector   = loader.readStdVector<float>("knot_vector");
+        auto control_points = loader.readMultiArray<float, 3>("control_points");
+        auto amplitudes     = loader.readMultiArray<float, 1>("amplitudes");
+        int spline_degree   = loader.readScalar<int>("spline_degree");
+        auto knot_vector    = loader.readStdVector<float>("knot_vector");
 
         res->spline_degree = spline_degree;
         res->knot_vector = knot_vector;
 
-        // Copy nodes
-        auto shape = nodes.shape();
+        // Copy control points
+        auto shape = control_points.shape();
         size_t num_scatterers = shape[0];
         size_t num_cs = shape[1];
         size_t num_comp = shape[2];
-        if (num_comp != 4) {
-            throw std::runtime_error("SplineScatterer illegal number of components (should be 4)");
+        if (num_comp != 3) {
+            throw std::runtime_error("SplineScatterer illegal number of components (should be 3)");
         }
         res->control_points.resize(num_scatterers);
         res->amplitudes.resize(num_scatterers);
         for (size_t scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
-            res->amplitudes[scatterer_no] = nodes[scatterer_no][0][3]; // TEMPORARY HACK: using amplitude from first scatterer control points
+            res->amplitudes[scatterer_no] = amplitudes[scatterer_no];
 
             for (size_t cs_no = 0; cs_no < num_cs; cs_no++) {
-                const vector3 pt(nodes[scatterer_no][cs_no][0], nodes[scatterer_no][cs_no][1], nodes[scatterer_no][cs_no][2]);
+                const vector3 pt(control_points[scatterer_no][cs_no][0],
+                                 control_points[scatterer_no][cs_no][1],
+                                 control_points[scatterer_no][cs_no][2]);
                 res->control_points[scatterer_no].push_back(pt);
             }
         }
