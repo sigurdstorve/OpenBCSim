@@ -108,6 +108,15 @@ struct SplineScatterers : public Scatterers {
     virtual int num_scatterers() const {
         return static_cast<int>(nodes.size());
     }
+
+    // Returns the number of control points for each spline
+    // scatterer (same for all scatterers).
+    size_t get_num_control_points() const {
+        if (nodes.size() == 0) {
+            throw std::runtime_error("No scatterers in dataset");
+        }
+        return nodes[0].size();
+    }
     
     // Spline degree and knot vector are common for
     // all point scatterers.
