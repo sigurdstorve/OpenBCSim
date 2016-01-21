@@ -103,10 +103,9 @@ Scatterers::s_ptr render_fixed_scatterers(SplineScatterers::s_ptr spline_scatter
     for (size_t spline_no = 0; spline_no < num_scatterers; spline_no++) {
         PointScatterer scatterer;
         scatterer.pos       = vector3(0.0f, 0.0f, 0.0f);
-        scatterer.amplitude = 0.0f;
+        scatterer.amplitude = spline_scatterers->nodes[spline_no][0].amplitude; // TEMPORARY HACK: Using amplitude of first scatterer
         for (size_t i = 0; i < num_cs; i++) {
-            scatterer.pos       += spline_scatterers->nodes[spline_no][i].pos*basis_fn[i];
-            scatterer.amplitude += spline_scatterers->nodes[spline_no][i].amplitude*basis_fn[i];
+            scatterer.pos += spline_scatterers->nodes[spline_no][i].pos*basis_fn[i];
         }
         res->scatterers[spline_no] = scatterer;
     }
