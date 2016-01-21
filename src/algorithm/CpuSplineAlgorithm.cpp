@@ -73,10 +73,9 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         // Compute position of current scatterer by evaluating spline in current timestep        
         PointScatterer scatterer;
         scatterer.pos = vector3(0.0f, 0.0f, 0.0f); // TODO: not neccessary to set to zero since constructor does that?
-        scatterer.amplitude = 0.0f;
+        scatterer.amplitude = m_scatterers->nodes[scatterer_no][0].amplitude; // TEMPORARY HACK: using amplitude of first control point.
         for (int i = 0; i < num_control_points; i++) {
             scatterer.pos       += m_scatterers->nodes[scatterer_no][i].pos*basis_functions[i];
-            scatterer.amplitude += m_scatterers->nodes[scatterer_no][i].amplitude*basis_functions[i];
         }
         
         // Map the global cartesian scatterer position into the beam's local
