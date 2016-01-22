@@ -67,7 +67,8 @@ T bsplineBasis(int j, int p, T x, const std::vector<T>& knots) {
     }
 }
 
-// Determine which knot span a parameter value is in. Returns -1 on error.
+// Determine which knot span a parameter value is in.
+// Throws std::runtime_error if interval cannot be found.
 template <typename T>
 int compute_knot_interval(const std::vector<T>& knots, T t) {
     for (int i = 0; i < static_cast<int>(knots.size())-1; i++) {
@@ -75,7 +76,7 @@ int compute_knot_interval(const std::vector<T>& knots, T t) {
             return i;
         }
     }
-    return -1;
+    throw std::runtime_error(std::string(__FUNCTION__) + " : could not determine knot interval");
 }
 
 }   // end namespace
