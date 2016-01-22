@@ -29,12 +29,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <iostream>
 #include <vector>
+#include <tuple>
 #include <cuda.h>
 #include <device_launch_parameters.h>
 #include "cuda_helpers.h"
 #include "bspline.hpp"
 #include "LibBCSim.hpp"
 #include "GpuSplineAlgorithm1.cuh"
+#include "common_utils.hpp"
 
 #define MAX_CS 20
 
@@ -46,7 +48,8 @@ __global__ void RenderSplineKernel(const float* control_xs,
                                    float* rendered_xs,
                                    float* rendered_ys,
                                    float* rendered_zs,
-                                   int NUM_CS,
+                                   int cs_idx_start,
+                                   int cs_idx_end,
                                    int NUM_SPLINES) {
 
     const int idx = blockDim.x*blockIdx.x + threadIdx.x;
@@ -59,7 +62,7 @@ __global__ void RenderSplineKernel(const float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    for (int i = 0; i < NUM_CS; i++) {
+    for (int i = cs_idx_start; i <= cs_idx_end; i++) {
         rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis[i];
         rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis[i];
         rendered_z += control_zs[NUM_SPLINES*i + idx]*eval_basis[i];
@@ -180,6 +183,11 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     }
     cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, host_basis_functions.data(), m_num_cs*sizeof(float)) );
     
+    int cs_idx_start, cs_idx_end;
+    std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(m_common_knots,
+                                                                              PARAMETER_VAL,
+                                                                              m_spline_degree);
+    sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end);
 
     int num_threads = 128;
     int num_blocks = round_up_div(m_num_splines, num_threads);
@@ -192,7 +200,8 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
                                                   m_fixed_alg->m_device_point_xs->data(),
                                                   m_fixed_alg->m_device_point_ys->data(),
                                                   m_fixed_alg->m_device_point_zs->data(),
-                                                  m_num_cs,
+                                                  cs_idx_start,
+                                                  cs_idx_end,
                                                   m_num_splines);
     cudaErrorCheck( cudaDeviceSynchronize() );
     //auto ms = event_timer.stop();
