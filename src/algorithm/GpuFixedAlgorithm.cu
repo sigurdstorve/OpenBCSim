@@ -123,16 +123,6 @@ GpuFixedAlgorithm::GpuFixedAlgorithm()
 void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
 
-    // TODO: Move out conversion code            
-    auto temp_rad_dir = scanline.get_direction();
-    auto temp_lat_dir = scanline.get_lateral_dir();
-    auto temp_ele_dir = scanline.get_elevational_dir();
-    auto temp_origin  = scanline.get_origin();
-    auto rad_dir      = make_float3(temp_rad_dir.x, temp_rad_dir.y, temp_rad_dir.z);
-    auto lat_dir      = make_float3(temp_lat_dir.x, temp_lat_dir.y, temp_lat_dir.z);
-    auto ele_dir      = make_float3(temp_ele_dir.x, temp_ele_dir.y, temp_ele_dir.z);
-    auto origin       = make_float3(temp_origin.x, temp_origin.y, temp_origin.z);
-
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
     
@@ -142,10 +132,10 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     params.point_ys          = m_device_point_ys->data();
     params.point_zs          = m_device_point_zs->data();
     params.point_as          = m_device_point_as->data();
-    params.rad_dir           = rad_dir;
-    params.lat_dir           = lat_dir;
-    params.ele_dir           = ele_dir;
-    params.origin            = origin;
+    params.rad_dir           = to_float3(scanline.get_direction());
+    params.lat_dir           = to_float3(scanline.get_lateral_dir());
+    params.ele_dir           = to_float3(scanline.get_elevational_dir());
+    params.origin            = to_float3(scanline.get_origin());
     params.fs_hertz          = m_excitation.sampling_frequency;
     params.num_time_samples  = m_num_time_samples;
     params.sigma_lateral     = m_analytical_sigma_lat;

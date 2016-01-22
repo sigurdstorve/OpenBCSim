@@ -37,6 +37,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
+// convert bcsim::vector3 to CUDA float3 datatype
+inline float3 to_float3(const bcsim::vector3& v) {
+    return make_float3(v.x, v.y, v.z);
+}
+
 class GpuBaseAlgorithm : public BaseAlgorithm {
 public:
     GpuBaseAlgorithm();
