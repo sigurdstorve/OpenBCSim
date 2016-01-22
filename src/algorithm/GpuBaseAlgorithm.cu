@@ -66,11 +66,12 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_num_time_samples(8192),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
-      m_store_kernel_details(false),
-      m_device_beam_profile(nullptr)
+      m_store_kernel_details(false)
 {
     // ensure that CUDA device properties is stored
     save_cuda_device_properties();
+
+    create_dummy_lut_profile();
 }
 
 int GpuBaseAlgorithm::get_num_cuda_devices() const {
@@ -462,6 +463,12 @@ void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
                   raw_path + "lut_slice_lat_ele_"+std::to_string(i)+".raw");
     }
 
+}
+
+void GpuBaseAlgorithm::create_dummy_lut_profile() {
+    const size_t n = 16;
+    std::vector<float> dummy_samples(n*n*n, 0.0f);
+    m_device_beam_profile = DeviceBeamProfileRAII::u_ptr(new DeviceBeamProfileRAII(DeviceBeamProfileRAII::TableExtent3D(n, n, n), dummy_samples));
 }
 
 }   // end namespace
