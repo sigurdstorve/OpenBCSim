@@ -37,47 +37,49 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
+struct FixedAlgKernelParams {
+    float* point_xs;            // pointer to device memory x components
+    float* point_ys;            // pointer to device memory y components
+    float* point_zs;            // pointer to device memory z components
+    float* point_as;            // pointer to device memory amplitudes
+    float3 rad_dir;             // radial direction unit vector
+    float3 lat_dir;             // lateral direction unit vector
+    float3 ele_dir;             // elevational direction unit vector
+    float3 origin;              // beam's origin
+    float  fs_hertz;            // temporal sampling frequency in hertz
+    int    num_time_samples;    // number of samples in time signal
+    float  sigma_lateral;       // lateral beam width (for analyical beam profile)
+    float  sigma_elevational;   // elevational beam width (for analytical beam profile)
+    float  sound_speed;         // speed of sound in meters per second
+    cuComplex* res;             // the output buffer (complex projected amplitudes)
+    float  demod_freq;          // complex demodulation frequency.
+    int    num_scatterers;      // number of scatterers
+    cudaTextureObject_t lut_tex; // 3D texture object (for lookup-table beam profile)
+    float lut_r_min;            // min. radial extent (for lookup-table beam profile)
+    float lut_r_max;            // max. radial extent (for lookup-table beam profile)
+    float lut_l_min;            // min. lateral extent (for lookup-table beam profile)
+    float lut_l_max;            // max. lateral extent (for lookup-table beam profile)
+    float lut_e_min;            // min. elevational extent (for lookup-table beam profile)
+    float lut_e_max;            // max. elevational extent (for lookup-table beam profile)
+    bool   use_arc_projection;  // TEMPORARY FLAG - WILL BE REPLACED WITH TEMPLATE PARAMETER
+    bool   use_phase_delay;     // TEMPORARY FLAG - WILL BE REPLACED WITH TEMPLATE PARAMETER
+    bool   use_lut;             // TEMPORARY FLAG - WILL BE REPLACED WITH TEMPLATE PARAMETER
+};
 
-__global__ void FixedAlgKernel(float* point_xs,
-                               float* point_ys,
-                               float* point_zs,
-                               float* point_as,
-                               float3 rad_dir,
-                               float3 lat_dir,
-                               float3 ele_dir,
-                               float3 origin,
-                               float  fs_hertz,
-                               int    num_time_samples,
-                               float  sigma_lateral,
-                               float  sigma_elevational,
-                               float  sound_speed,
-                               cuComplex* res,
-                               bool   use_arc_projection,
-                               int    num_scatterers,
-                               bool   use_phase_delay,
-                               float  demod_freq,
-                               cudaTextureObject_t lut_tex,
-                               float lut_r_min,
-                               float lut_r_max,
-                               float lut_l_min,
-                               float lut_l_max,
-                               float lut_e_min,
-                               float lut_e_max,
-                               bool use_lut) {
-
+__global__ void FixedAlgKernel(FixedAlgKernelParams params) {
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx >= num_scatterers) {
+    if (global_idx >= params.num_scatterers) {
         return;
     }
 
-    const float3 point = make_float3(point_xs[global_idx], point_ys[global_idx], point_zs[global_idx]) - origin;
+    const float3 point = make_float3(params.point_xs[global_idx], params.point_ys[global_idx], params.point_zs[global_idx]) - params.origin;
     
     // compute dot products
-    auto radial_dist  = dot(point, rad_dir);
-    const auto lateral_dist = dot(point, lat_dir);
-    const auto elev_dist    = dot(point, ele_dir);
+    auto radial_dist  = dot(point, params.rad_dir);
+    const auto lateral_dist = dot(point, params.lat_dir);
+    const auto elev_dist    = dot(point, params.ele_dir);
 
-    if (use_arc_projection) {
+    if (params.use_arc_projection) {
         // Use "arc projection" in the radial direction: use length of vector from
         // beam's origin to the scatterer with the same sign as the projection onto
         // the line.
@@ -85,33 +87,33 @@ __global__ void FixedAlgKernel(float* point_xs,
     }
 
     float weight;
-    if (use_lut) {
+    if (params.use_lut) {
         // Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
-        weight = ComputeWeightLUT(lut_tex, radial_dist, lateral_dist, elev_dist,
-                                  lut_r_min, lut_r_max, lut_l_min, lut_l_max, lut_e_min, lut_e_max);
+        weight = ComputeWeightLUT(params.lut_tex, radial_dist, lateral_dist, elev_dist,
+                                  params.lut_r_min, params.lut_r_max, params.lut_l_min, params.lut_l_max, params.lut_e_min, params.lut_e_max);
     } else {
-        weight = ComputeWeightAnalytical(sigma_lateral, sigma_elevational, radial_dist, lateral_dist, elev_dist);
+        weight = ComputeWeightAnalytical(params.sigma_lateral, params.sigma_elevational, radial_dist, lateral_dist, elev_dist);
     }
 
-    const int radial_index = static_cast<int>(fs_hertz*2.0f*radial_dist/sound_speed + 0.5f);
+    const int radial_index = static_cast<int>(params.fs_hertz*2.0f*radial_dist/params.sound_speed + 0.5f);
     
-    if (radial_index >= 0 && radial_index < num_time_samples) {
+    if (radial_index >= 0 && radial_index < params.num_time_samples) {
         //atomicAdd(res+radial_index, weight*point_as[global_idx]);
-        if (use_phase_delay) {
+        if (params.use_phase_delay) {
             // handle sub-sample displacement with a complex phase
-            const auto true_index = fs_hertz*2.0f*radial_dist/sound_speed;
-            const float ss_delay = (radial_index - true_index)/fs_hertz;
-            const float complex_phase = 6.283185307179586*demod_freq*ss_delay;
+            const auto true_index = params.fs_hertz*2.0f*radial_dist/params.sound_speed;
+            const float ss_delay = (radial_index - true_index)/params.fs_hertz;
+            const float complex_phase = 6.283185307179586*params.demod_freq*ss_delay;
 
             // exp(i*theta) = cos(theta) + i*sin(theta)
             float sin_value, cos_value;
             sincosf(complex_phase, &sin_value, &cos_value);
 
-            const auto w = weight*point_as[global_idx];
-            atomicAdd(&(res[radial_index].x), w*cos_value);
-            atomicAdd(&(res[radial_index].y), w*sin_value);
+            const auto w = weight*params.point_as[global_idx];
+            atomicAdd(&(params.res[radial_index].x), w*cos_value);
+            atomicAdd(&(params.res[radial_index].y), w*sin_value);
         } else {
-            atomicAdd(&(res[radial_index].x), weight*point_as[global_idx]);
+            atomicAdd(&(params.res[radial_index].x), weight*params.point_as[global_idx]);
         }
     }
 }
@@ -136,6 +138,33 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
     
+    // prepare struct with parameters
+    FixedAlgKernelParams params;
+    params.point_xs          = m_device_point_xs->data();
+    params.point_ys          = m_device_point_ys->data();
+    params.point_zs          = m_device_point_zs->data();
+    params.point_as          = m_device_point_as->data();
+    params.rad_dir           = rad_dir;
+    params.lat_dir           = lat_dir;
+    params.ele_dir           = ele_dir;
+    params.origin            = origin;
+    params.fs_hertz          = m_excitation.sampling_frequency;
+    params.num_time_samples  = m_num_time_samples;
+    params.sigma_lateral     = m_analytical_sigma_lat;
+    params.sigma_elevational = m_analytical_sigma_ele;
+    params.sound_speed       = m_param_sound_speed;
+    params.res               = m_device_time_proj[stream_no]->data();
+    params.demod_freq        = m_excitation.demod_freq;
+    params.num_scatterers    = m_num_scatterers;
+    params.lut_tex           = m_device_beam_profile->get();
+    params.lut_r_min         = m_lut_r_min;
+    params.lut_r_max         = m_lut_r_max;
+    params.lut_l_min         = m_lut_l_min;
+    params.lut_l_max         = m_lut_l_max;
+    params.lut_e_min         = m_lut_e_min;
+    params.lut_e_max         = m_lut_e_max;
+
+    // map beam profile type to boolean flag
     bool use_lut;
     switch(m_cur_beam_profile_type) {
     case BeamProfileType::ANALYTICAL:
@@ -148,32 +177,12 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
         throw std::logic_error("unknown beam profile type");
     }
 
-    FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_point_xs->data(),
-                                                                m_device_point_ys->data(),
-                                                                m_device_point_zs->data(),
-                                                                m_device_point_as->data(),
-                                                                rad_dir,
-                                                                lat_dir,
-                                                                ele_dir,
-                                                                origin,
-                                                                m_excitation.sampling_frequency,
-                                                                m_num_time_samples,
-                                                                m_analytical_sigma_lat,
-                                                                m_analytical_sigma_ele,
-                                                                m_param_sound_speed,
-                                                                m_device_time_proj[stream_no]->data(),
-                                                                m_param_use_arc_projection,
-                                                                m_num_scatterers,
-                                                                m_enable_phase_delay,
-                                                                m_excitation.demod_freq,
-                                                                m_device_beam_profile->get(),
-                                                                m_lut_r_min,
-                                                                m_lut_r_max,
-                                                                m_lut_l_min,
-                                                                m_lut_l_max,
-                                                                m_lut_e_min,
-                                                                m_lut_e_max,
-                                                                use_lut);
+    // TEMP FLAGS - WILL BE REPLACED WITH TEMPLATE PARAMS
+    params.use_arc_projection = m_param_use_arc_projection;
+    params.use_phase_delay    = m_enable_phase_delay;
+    params.use_lut            = use_lut;
+
+    FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
 }
 
 
