@@ -40,4 +40,23 @@ size_t compute_num_rf_samples(T sound_speed, T line_length, T sampling_freq) {
     return static_cast<size_t>(std::floor(sampling_freq*max_time + 0.5)); 
 }
 
+// When evaluating a spline as a sum of control points and basis functions,
+// only degree+1 terms are non-zero. The start and end index (inclusive) can
+// be computed. This function asserts that the skipped basis functions are in
+// fact zero. Note that this function relies on a vector of all evaluated basis
+// functions.
+//
+// Returns true if test passes.
+template <typename T>
+bool sanity_check_spline_lower_upper_bound(const std::vector<T>& all_basis_functions,
+                                           int cs_idx_start, int cs_idx_end) {
+    for (int i = 0; i < cs_idx_start; i++) {
+        if (std::abs(all_basis_functions[i]) > 1e-6) return false;
+    }
+    for (int i = cs_idx_end+1; i < all_basis_functions.size(); i++) {
+        if (std::abs(all_basis_functions[i]) > 1e-6) return false;
+    }
+    return true;
+}
+
 }   // end namespace
