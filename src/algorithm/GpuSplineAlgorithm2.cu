@@ -53,8 +53,8 @@ struct SplineAlgKernelParams {
     float3 rad_dir;                     // radial direction unit vector
     float3 lat_dir;                     // lateral direction unit vector
     float3 ele_dir;                     // elevational direction unit vector
-    float3 origin;                      // beam's origin.
-    float  fs_hertz;                    // temporal sampling frequency in hert
+    float3 origin;                      // beam's origin
+    float  fs_hertz;                    // temporal sampling frequency in hertz
     int    num_time_samples;            // number of samples in time signal
     float  sigma_lateral;               // lateral beam width (for analyical beam profile)
     float  sigma_elevational;           // elevational beam width (for analytical beam profile)
