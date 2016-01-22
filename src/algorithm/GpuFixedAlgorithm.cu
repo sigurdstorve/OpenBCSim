@@ -61,11 +61,9 @@ struct FixedAlgKernelParams {
     float lut_l_max;            // max. lateral extent (for lookup-table beam profile)
     float lut_e_min;            // min. elevational extent (for lookup-table beam profile)
     float lut_e_max;            // max. elevational extent (for lookup-table beam profile)
-    bool   use_arc_projection;  // TEMPORARY FLAG - WILL BE REPLACED WITH TEMPLATE PARAMETER
-    bool   use_phase_delay;     // TEMPORARY FLAG - WILL BE REPLACED WITH TEMPLATE PARAMETER
-    bool   use_lut;             // TEMPORARY FLAG - WILL BE REPLACED WITH TEMPLATE PARAMETER
 };
 
+template <bool use_arc_projection, bool use_phase_delay, bool use_lut>
 __global__ void FixedAlgKernel(FixedAlgKernelParams params) {
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (global_idx >= params.num_scatterers) {
@@ -79,7 +77,7 @@ __global__ void FixedAlgKernel(FixedAlgKernelParams params) {
     const auto lateral_dist = dot(point, params.lat_dir);
     const auto elev_dist    = dot(point, params.ele_dir);
 
-    if (params.use_arc_projection) {
+    if (use_arc_projection) {
         // Use "arc projection" in the radial direction: use length of vector from
         // beam's origin to the scatterer with the same sign as the projection onto
         // the line.
@@ -87,7 +85,7 @@ __global__ void FixedAlgKernel(FixedAlgKernelParams params) {
     }
 
     float weight;
-    if (params.use_lut) {
+    if (use_lut) {
         // Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
         weight = ComputeWeightLUT(params.lut_tex, radial_dist, lateral_dist, elev_dist,
                                   params.lut_r_min, params.lut_r_max, params.lut_l_min, params.lut_l_max, params.lut_e_min, params.lut_e_max);
@@ -99,7 +97,7 @@ __global__ void FixedAlgKernel(FixedAlgKernelParams params) {
     
     if (radial_index >= 0 && radial_index < params.num_time_samples) {
         //atomicAdd(res+radial_index, weight*point_as[global_idx]);
-        if (params.use_phase_delay) {
+        if (use_phase_delay) {
             // handle sub-sample displacement with a complex phase
             const auto true_index = params.fs_hertz*2.0f*radial_dist/params.sound_speed;
             const float ss_delay = (radial_index - true_index)/params.fs_hertz;
@@ -177,12 +175,25 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
         throw std::logic_error("unknown beam profile type");
     }
 
-    // TEMP FLAGS - WILL BE REPLACED WITH TEMPLATE PARAMS
-    params.use_arc_projection = m_param_use_arc_projection;
-    params.use_phase_delay    = m_enable_phase_delay;
-    params.use_lut            = use_lut;
-
-    FixedAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
+        FixedAlgKernel<false, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
+        FixedAlgKernel<false, false, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (!m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
+        FixedAlgKernel<false, true, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (!m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
+        FixedAlgKernel<false, true, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
+        FixedAlgKernel<true, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
+        FixedAlgKernel<true, false, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
+        FixedAlgKernel<true, true, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
+        FixedAlgKernel<true, true, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else {
+        throw std::logic_error("this should never happen");
+    }
 }
 
 
