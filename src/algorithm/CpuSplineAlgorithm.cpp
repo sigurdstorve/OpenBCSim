@@ -57,9 +57,37 @@ void CpuSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
 void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->num_scatterers();
+    
+    // The number of control points most be at least one more than the degree
     const int num_control_points = m_scatterers->get_num_control_points();
+    if (num_control_points <= m_scatterers->spline_degree) {
+        throw std::runtime_error("too few spline control points for given degree");
+    }
+    
     std::vector<bc_float> basis_functions(num_control_points);
     
+    // Determine which knot span current timestamp is in
+    const auto& knots = m_scatterers->knot_vector;
+    const auto timestamp = line.get_timestamp();
+    int mu = -1;
+    for (int interval_no = 0; interval_no < static_cast<int>(knots.size())-1; interval_no++) {
+        // in [i, i+1)?
+        if ((timestamp >= knots[interval_no]) && (timestamp < knots[interval_no+1])) {
+            mu = interval_no;
+            break;
+        }
+    }
+    if (mu == -1) {
+        throw std::runtime_error("Failed to determine knot interval");
+    }
+
+    int lower_lim = 0;
+    int upper_lim = num_control_points-1;
+    if (true) {
+        lower_lim = mu - m_scatterers->spline_degree;
+        upper_lim = mu;
+    }
+
     // Precompute all B-spline basis function for current timestep
     for (int i = 0; i < num_control_points; i++) {
         const bc_float b = bspline_storve::bsplineBasis(i,
@@ -72,7 +100,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
 
         // Compute position of current scatterer by evaluating spline in current timestep        
         vector3 scatterer_pos(0.0f, 0.0f, 0.0f);
-        for (int i = 0; i < num_control_points; i++) {
+        for (int i = lower_lim; i < upper_lim; i++) {
             scatterer_pos += m_scatterers->control_points[scatterer_no][i]*basis_functions[i];
         }
         
