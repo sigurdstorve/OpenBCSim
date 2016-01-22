@@ -187,7 +187,9 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(m_common_knots,
                                                                               PARAMETER_VAL,
                                                                               m_spline_degree);
-    sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end);
+    if (!sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end)) {
+        throw std::runtime_error("b-spline basis bounds failed sanity check");
+    }
 
     int num_threads = 128;
     int num_blocks = round_up_div(m_num_splines, num_threads);

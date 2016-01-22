@@ -268,7 +268,9 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(m_common_knots,
                                                                               scanline.get_timestamp(),
                                                                               m_spline_degree);
-    sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end);
+    if (!sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end)) {
+        throw std::runtime_error("b-spline basis bounds failed sanity check");
+    }
 
     switch (m_cur_beam_profile_type) {
     case BeamProfileType::ANALYTICAL:
