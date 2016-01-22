@@ -73,13 +73,15 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
 
     int lower_lim = 0;
     int upper_lim = num_control_points-1;
-    if (true) {
+    if (m_param_sum_all_cs) {
+        std::cout << "debug mode: summing over i = " << lower_lim << "..." << upper_lim << std::endl;
+    } else {
         std::tie(lower_lim, upper_lim) = bspline_storve::get_lower_upper_inds(m_scatterers->knot_vector,
                                                                               line.get_timestamp(),
                                                                               m_scatterers->spline_degree);
-    }
-    if (!sanity_check_spline_lower_upper_bound(basis_functions, lower_lim, upper_lim)) {
-        throw std::runtime_error("b-spline basis bounds failed sanity check");
+        if (!sanity_check_spline_lower_upper_bound(basis_functions, lower_lim, upper_lim)) {
+            throw std::runtime_error("b-spline basis bounds failed sanity check");
+        }
     }
 
     // Precompute all B-spline basis function for current timestep
