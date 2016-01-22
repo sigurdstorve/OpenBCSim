@@ -43,12 +43,17 @@ public:
     
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers) override;
 
+    virtual void set_parameter(const std::string& key, const std::string& value) override;
+
 protected:
     virtual void projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) override;
 
 private:
     SplineScatterers::s_ptr    m_scatterers;
 
+    // Debug parameter: If true, sum over all B-spline basis functions instead of
+    // only those with non-zero basis functions. Result should be the same.
+    bool                       m_param_sum_all_cs;
 };
 
 
