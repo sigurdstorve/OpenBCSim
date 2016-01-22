@@ -90,7 +90,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
 
         // Compute position of current scatterer by evaluating spline in current timestep        
         vector3 scatterer_pos(0.0f, 0.0f, 0.0f);
-        for (int i = lower_lim; i < upper_lim; i++) {
+        for (int i = lower_lim; i <= upper_lim; i++) {
             scatterer_pos += m_scatterers->control_points[scatterer_no][i]*basis_functions[i];
         }
         
