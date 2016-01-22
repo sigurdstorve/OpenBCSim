@@ -31,15 +31,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <stdexcept>
 #include <cmath>
+#include <tuple>
 #include "bcsim_defines.h"
 #include "CpuSplineAlgorithm.hpp"
 #include "bspline.hpp"
 #include "safe_omp.h"
+#include "common_utils.hpp"
 
 namespace bcsim {
 
 CpuSplineAlgorithm::CpuSplineAlgorithm()
-        : CpuBaseAlgorithm() { }
+        : CpuBaseAlgorithm(),
+          m_param_sum_all_cs(false) { }
      
 void CpuSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);
@@ -57,9 +60,30 @@ void CpuSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
 void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->num_scatterers();
+    
+    // The number of control points most be at least one more than the degree
     const int num_control_points = m_scatterers->get_num_control_points();
+    if (num_control_points <= m_scatterers->spline_degree) {
+        throw std::runtime_error("too few spline control points for given degree");
+    }
+    
     std::vector<bc_float> basis_functions(num_control_points);
     
+    int mu = bspline_storve::compute_knot_interval(m_scatterers->knot_vector, line.get_timestamp());
+
+    int lower_lim = 0;
+    int upper_lim = num_control_points-1;
+    if (m_param_sum_all_cs) {
+        std::cout << "debug mode: summing over i = " << lower_lim << "..." << upper_lim << std::endl;
+    } else {
+        std::tie(lower_lim, upper_lim) = bspline_storve::get_lower_upper_inds(m_scatterers->knot_vector,
+                                                                              line.get_timestamp(),
+                                                                              m_scatterers->spline_degree);
+        if (!sanity_check_spline_lower_upper_bound(basis_functions, lower_lim, upper_lim)) {
+            throw std::runtime_error("b-spline basis bounds failed sanity check");
+        }
+    }
+
     // Precompute all B-spline basis function for current timestep
     for (int i = 0; i < num_control_points; i++) {
         const bc_float b = bspline_storve::bsplineBasis(i,
@@ -72,7 +96,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
 
         // Compute position of current scatterer by evaluating spline in current timestep        
         vector3 scatterer_pos(0.0f, 0.0f, 0.0f);
-        for (int i = 0; i < num_control_points; i++) {
+        for (int i = lower_lim; i <= upper_lim; i++) {
             scatterer_pos += m_scatterers->control_points[scatterer_no][i]*basis_functions[i];
         }
         
@@ -121,5 +145,20 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         }
     }
 }
+
+void CpuSplineAlgorithm::set_parameter(const std::string& key, const std::string& value) {
+    if (key == "sum_all_cs") {
+        if ((value == "on") || (value == "true")) {
+            m_param_sum_all_cs = true;
+        } else if ((value == "off") || (value == "false")) {
+            m_param_sum_all_cs = false;
+        } else {
+            throw std::runtime_error("invalid value for " + key);
+        }
+    } else {
+        CpuBaseAlgorithm::set_parameter(key, value);
+    }
+}
+
 
 }   // namespace
