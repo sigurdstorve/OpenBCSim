@@ -67,4 +67,15 @@ T bsplineBasis(int j, int p, T x, const std::vector<T>& knots) {
     }
 }
 
+// Determine which knot span a parameter value is in. Returns -1 on error.
+template <typename T>
+int compute_knot_interval(const std::vector<T>& knots, T t) {
+    for (int i = 0; i < static_cast<int>(knots.size())-1; i++) {
+        if ((t >= knots[i]) && (t < knots[i+1])) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 }   // end namespace
