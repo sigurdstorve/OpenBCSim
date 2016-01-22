@@ -27,6 +27,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <tuple>
 #include <cuda.h>
 #include "GpuSplineAlgorithm2.cuh"
 #include "cuda_helpers.h"
@@ -34,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "bspline.hpp"
 #include "gpu_alg_common.cuh" // for misc. CUDA kernels
+#include "common_utils.hpp"
 #include <math_functions.h> // for copysignf()
 
 // maximum number of spline control points for each scatterer
@@ -57,7 +59,8 @@ __global__ void SplineAlgKernel(float* control_xs,
                                 float  sigma_lateral,
                                 float  sigma_elevational,
                                 float  sound_speed,
-                                int    NUM_CS,
+                                int    cs_idx_start,
+                                int    cs_idx_end,
                                 int    NUM_SPLINES,
                                 cuComplex* res,
                                 size_t eval_basis_offset_elements,
@@ -76,7 +79,7 @@ __global__ void SplineAlgKernel(float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    for (int i = 0; i < NUM_CS; i++) {
+    for (int i = cs_idx_start; i <= cs_idx_end; i++) {
         size_t eval_basis_i = i + eval_basis_offset_elements;
         rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
         rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
@@ -133,7 +136,8 @@ __global__ void SplineAlgKernel_LUT(float* control_xs,
                                     float  fs_hertz,
                                     int    num_time_samples,
                                     float  sound_speed,
-                                    int    NUM_CS,
+                                    int    cs_idx_start,
+                                    int    cs_idx_end,
                                     int    NUM_SPLINES,
                                     cuComplex* res,
                                     size_t eval_basis_offset_elements,
@@ -159,7 +163,7 @@ __global__ void SplineAlgKernel_LUT(float* control_xs,
     float rendered_x = 0.0f;
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
-    for (int i = 0; i < NUM_CS; i++) {
+    for (int i = cs_idx_start; i <= cs_idx_end; i++) {
         size_t eval_basis_i = i + eval_basis_offset_elements;
         rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
         rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
@@ -259,6 +263,13 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     // TODO: Is it neccessary to have both m_num_splines AND m_num_scatterers? They
     // are equal...
 
+    // compute sum limits (inclusive)
+    int cs_idx_start, cs_idx_end;
+    std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(m_common_knots,
+                                                                              scanline.get_timestamp(),
+                                                                              m_spline_degree);
+    sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end);
+
     switch (m_cur_beam_profile_type) {
     case BeamProfileType::ANALYTICAL:
         SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(m_device_control_xs->data(),
@@ -274,7 +285,8 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                                                   m_analytical_sigma_lat,
                                                                   m_analytical_sigma_ele,
                                                                   m_param_sound_speed,
-                                                                  m_num_cs,
+                                                                  cs_idx_start,
+                                                                  cs_idx_end,
                                                                   m_num_splines,
                                                                   m_device_time_proj[stream_no]->data(),
                                                                   eval_basis_offset_elements,
@@ -294,7 +306,8 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
                                                                       m_excitation.sampling_frequency,
                                                                       m_num_time_samples,
                                                                       m_param_sound_speed,
-                                                                      m_num_cs,
+                                                                      cs_idx_start,
+                                                                      cs_idx_end,
                                                                       m_num_splines,
                                                                       m_device_time_proj[stream_no]->data(),
                                                                       eval_basis_offset_elements,
