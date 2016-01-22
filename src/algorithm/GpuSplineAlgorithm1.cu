@@ -38,9 +38,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GpuSplineAlgorithm1.cuh"
 #include "common_utils.hpp"
 
-#define MAX_CS 20
+#define MAX_SPLINE_DEGREE 4
 
-__constant__ float eval_basis[MAX_CS];
+__constant__ float eval_basis[MAX_SPLINE_DEGREE+1];
 
 __global__ void RenderSplineKernel(const float* control_xs,
                                    const float* control_ys,
@@ -63,9 +63,9 @@ __global__ void RenderSplineKernel(const float* control_xs,
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
     for (int i = cs_idx_start; i <= cs_idx_end; i++) {
-        rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis[i];
-        rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis[i];
-        rendered_z += control_zs[NUM_SPLINES*i + idx]*eval_basis[i];
+        rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
+        rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
+        rendered_z += control_zs[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
     }
 
     // write result to memory
@@ -92,12 +92,12 @@ void GpuSplineAlgorithm1::set_scatterers(Scatterers::s_ptr new_scatterers) {
         throw std::runtime_error("No scatterers");
     }
     m_spline_degree = scatterers->spline_degree;
-    m_num_cs = scatterers->get_num_control_points();
 
-    if (m_num_cs > MAX_CS) {
-        throw std::runtime_error("Too many control points in spline");
+    if (m_spline_degree > MAX_SPLINE_DEGREE) {
+        throw std::runtime_error("maximum spline degree supported is " + std::to_string(MAX_SPLINE_DEGREE));
     }
 
+    m_num_cs = scatterers->get_num_control_points();
     std::cout << "Num spline scatterers: " << m_num_splines << std::endl;
     std::cout << "Allocating memory on host for reorganizing spline data\n";
 
@@ -154,8 +154,7 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     //EventTimerRAII event_timer;
     //event_timer.restart();
 
-    // For now it is a requirement that all lines in the scan sequence have the same
-    // timestamp. This limitation will be removed in the future.
+    // all lines in the scan sequence have the same timestamp
     if (!has_equal_timestamps(new_scan_sequence)) {
         throw std::runtime_error("scan sequences must currently have equal timestamps");
     }
@@ -176,21 +175,30 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
 
 
 
-    // evaluate the basis functions and upload to constant memory.
-    std::vector<float> host_basis_functions(m_num_cs);
-    for (int i = 0; i < m_num_cs; i++) {
-        host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, PARAMETER_VAL, m_common_knots);
-    }
-    cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, host_basis_functions.data(), m_num_cs*sizeof(float)) );
-    
+    // evaluate the basis functions and upload to constant memory - always at max degree+1
+    // basis functions that are non-zero at any parameter value.
     int cs_idx_start, cs_idx_end;
     std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(m_common_knots,
                                                                               PARAMETER_VAL,
                                                                               m_spline_degree);
+    const auto num_nonzero = cs_idx_end-cs_idx_start+1;
+    if (num_nonzero != m_spline_degree+1) throw std::logic_error("illegal number of non-zero basis functions");
+
+    // evaluate all basis functions since it will be checked that the ones supposed to
+    // be zero in fact are zero.
+    std::vector<float> host_basis_functions(m_num_cs); // TODO: move to set_scatterers()?
+    for (int i = 0; i < m_num_cs; i++) {
+        host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, PARAMETER_VAL, m_common_knots);
+    }
+    
     if (!sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end)) {
         throw std::runtime_error("b-spline basis bounds failed sanity check");
     }
-
+    
+    // only copy the non-zero-basis functions
+    const auto src_ptr = host_basis_functions.data() + cs_idx_start;
+    cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, src_ptr, num_nonzero*sizeof(float)) );
+    
     int num_threads = 128;
     int num_blocks = round_up_div(m_num_splines, num_threads);
     dim3 grid_size(num_blocks, 1, 1);
