@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <stdexcept>
 #include <cmath>
+#include <tuple>
 #include "bcsim_defines.h"
 #include "CpuSplineAlgorithm.hpp"
 #include "bspline.hpp"
@@ -66,26 +67,15 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
     
     std::vector<bc_float> basis_functions(num_control_points);
     
-    // Determine which knot span current timestamp is in
-    const auto& knots = m_scatterers->knot_vector;
-    const auto timestamp = line.get_timestamp();
-    int mu = -1;
-    for (int interval_no = 0; interval_no < static_cast<int>(knots.size())-1; interval_no++) {
-        // in [i, i+1)?
-        if ((timestamp >= knots[interval_no]) && (timestamp < knots[interval_no+1])) {
-            mu = interval_no;
-            break;
-        }
-    }
-    if (mu == -1) {
-        throw std::runtime_error("Failed to determine knot interval");
-    }
+    int mu = bspline_storve::compute_knot_interval(m_scatterers->knot_vector, line.get_timestamp());
+
 
     int lower_lim = 0;
     int upper_lim = num_control_points-1;
     if (true) {
-        lower_lim = mu - m_scatterers->spline_degree;
-        upper_lim = mu;
+        std::tie(lower_lim, upper_lim) = bspline_storve::get_lower_upper_inds(m_scatterers->knot_vector,
+                                                                              line.get_timestamp(),
+                                                                              m_scatterers->spline_degree);
     }
 
     // Precompute all B-spline basis function for current timestep
