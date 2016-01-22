@@ -249,12 +249,49 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
         throw std::logic_error("GpuSplineAlgorithm2: unknown beam profile type");
     }
 
-    // set the temporary flags
-    params.use_arc_projection = m_param_use_arc_projection;
-    params.use_lut            = use_lut;
-    params.use_phase_delay    = m_enable_phase_delay;
-
-    SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
+        params.use_arc_projection = false;
+        params.use_phase_delay    = false;
+        params.use_lut            = false;
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
+        params.use_arc_projection = false;
+        params.use_phase_delay    = false;
+        params.use_lut            = true;
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (!m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
+        params.use_arc_projection = false;
+        params.use_phase_delay    = true;
+        params.use_lut            = false;
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (!m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
+        params.use_arc_projection = false;
+        params.use_phase_delay    = true;
+        params.use_lut            = true;
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
+        params.use_arc_projection = true;
+        params.use_phase_delay    = false;
+        params.use_lut            = false;
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
+        params.use_arc_projection = true;
+        params.use_phase_delay    = false;
+        params.use_lut            = true;
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
+        params.use_arc_projection = true;
+        params.use_phase_delay    = true;
+        params.use_lut            = false;
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else if (m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
+        params.use_arc_projection = true;
+        params.use_phase_delay    = true;
+        params.use_lut            = true;
+        SplineAlgKernel<<<grid_size, block_size, 0, cur_stream>>>(params);
+    } else {
+        throw std::logic_error("this should never happen");
+    }
 }
 
 void GpuSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
