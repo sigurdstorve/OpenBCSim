@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cmath>
 #include <vector>
+#include <utility>
 
 namespace bspline_storve {
 
@@ -77,6 +78,15 @@ int compute_knot_interval(const std::vector<T>& knots, T t) {
         }
     }
     throw std::runtime_error(std::string(__FUNCTION__) + " : could not determine knot interval");
+}
+
+// Compute lower and upper sum indices for the non-zero basis
+// functions. Both are inclusive.
+// Throw std::runtime_error on error.
+template <typename T>
+std::pair<int, int> get_lower_upper_inds(const std::vector<T>& knots, T t, int degree) {
+    const int mu = compute_knot_interval(knots, t);
+    return std::make_pair(mu-degree, mu);
 }
 
 }   // end namespace
