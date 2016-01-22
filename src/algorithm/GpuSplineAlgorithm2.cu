@@ -38,13 +38,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common_utils.hpp"
 #include <math_functions.h> // for copysignf()
 
-// maximum number of spline control points for each scatterer
-#define MAX_CS 20
+#define MAX_SPLINE_DEGREE 4
 // the maximum number of CUDA streams that can be used when simulating RF lines
 #define MAX_NUM_CUDA_STREAMS 2
 
 
-__constant__ float eval_basis[MAX_CS*MAX_NUM_CUDA_STREAMS];
+__constant__ float eval_basis[(MAX_SPLINE_DEGREE+1)*MAX_NUM_CUDA_STREAMS];
 
 __global__ void SplineAlgKernel(float* control_xs,
                                 float* control_ys,
@@ -81,9 +80,9 @@ __global__ void SplineAlgKernel(float* control_xs,
     float rendered_z = 0.0f;
     for (int i = cs_idx_start; i <= cs_idx_end; i++) {
         size_t eval_basis_i = i + eval_basis_offset_elements;
-        rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
+        rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-cs_idx_start];
+        rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-cs_idx_start];
+        rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-cs_idx_start];
     }
 
     // step 2: compute projections
@@ -165,9 +164,9 @@ __global__ void SplineAlgKernel_LUT(float* control_xs,
     float rendered_z = 0.0f;
     for (int i = cs_idx_start; i <= cs_idx_end; i++) {
         size_t eval_basis_i = i + eval_basis_offset_elements;
-        rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
-        rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i];
+        rendered_x += control_xs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-cs_idx_start];
+        rendered_y += control_ys[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-cs_idx_start];
+        rendered_z += control_zs[NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-cs_idx_start];
     }
 
     // step 2: compute projections
@@ -245,17 +244,12 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     auto origin       = make_float3(temp_origin.x, temp_origin.y, temp_origin.z);
         
     // evaluate the basis functions and upload to constant memory.
-    size_t eval_basis_offset_elements = m_num_cs*stream_no;
+    const auto num_nonzero = m_spline_degree+1;
+    size_t eval_basis_offset_elements = num_nonzero*stream_no;
     std::vector<float> host_basis_functions(m_num_cs);
     for (int i = 0; i < m_num_cs; i++) {
         host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, scanline.get_timestamp(), m_common_knots);
     }
-    cudaErrorCheck(cudaMemcpyToSymbolAsync(eval_basis,
-                                            host_basis_functions.data(),
-                                            m_num_cs*sizeof(float),
-                                            eval_basis_offset_elements*sizeof(float),
-                                            cudaMemcpyHostToDevice,
-                                            cur_stream));
 
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(m_param_threads_per_block, 1, 1);
@@ -271,6 +265,15 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     if (!sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end)) {
         throw std::runtime_error("b-spline basis bounds failed sanity check");
     }
+    if (cs_idx_end-cs_idx_start+1 != num_nonzero) throw std::logic_error("illegal number of non-zero basis functions");
+
+    cudaErrorCheck(cudaMemcpyToSymbolAsync(eval_basis,
+                                           host_basis_functions.data() + cs_idx_start,
+                                           num_nonzero*sizeof(float),
+                                           eval_basis_offset_elements*sizeof(float),
+                                           cudaMemcpyHostToDevice,
+                                           cur_stream));
+
 
     switch (m_cur_beam_profile_type) {
     case BeamProfileType::ANALYTICAL:
@@ -339,8 +342,8 @@ void GpuSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scat
     m_spline_degree = scatterers->spline_degree;
     m_num_cs = scatterers->get_num_control_points();
 
-    if (m_num_cs > MAX_CS) {
-        throw std::runtime_error("Too many control points in spline");
+    if (m_spline_degree > MAX_SPLINE_DEGREE) {
+        throw std::runtime_error("maximum spline degree supported is " + std::to_string(MAX_SPLINE_DEGREE));
     }
 
     std::cout << "Num spline scatterers: " << m_num_splines << std::endl;
