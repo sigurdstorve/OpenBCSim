@@ -1,4 +1,5 @@
 #pragma once
+#include <cstring> // for std::memset
 #include <iostream>
 #include <stdexcept>
 #include <string>
