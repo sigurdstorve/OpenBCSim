@@ -42,7 +42,7 @@ def create_phantom(args):
         f["spline_degree"] = args.spline_degree
         f["control_points"] = control_points
         f["amplitudes"] = np.array(as_, dtype="float32")
-        f["knot_vector"] = knots
+        f["knot_vector"] = np.array(knots, dtype="float32")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
