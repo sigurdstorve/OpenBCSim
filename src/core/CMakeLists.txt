@@ -33,13 +33,6 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
 add_library(LibBCSim STATIC ${CORE_LIBRARY_SOURCE_FILES})
 
 if (BCSIM_ENABLE_CUDA)
-    if(UNIX)
-        # Tell host compiler to use -fPIC
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -std=c++11 -Xcompiler -fPIC)
-    else()
-        # C++11 is enabled by default in MSVC
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3)
-    endif()
     cuda_add_library(BCSimCUDA
                      algorithm/GpuBaseAlgorithm.cuh
                      algorithm/GpuBaseAlgorithm.cu

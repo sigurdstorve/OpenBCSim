@@ -56,6 +56,13 @@ if (BCSIM_ENABLE_CUDA)
     include_directories(${CUDA_INCLUDE_DIRS})
     # Optimized flags: -O3-gencode arch=compute_30,code=sm_30;-use_fast_math
     # Put in CUDA_NVCC_FLAGS_RELEASE
+    if(UNIX)
+        # Tell host compiler to use -fPIC
+        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -std=c++11 -Xcompiler -fPIC)
+    else()
+        # C++11 is enabled by default in MSVC
+        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3)
+    endif()
 endif()
 
 # Need to add -fPIC on 64-bit Linux
