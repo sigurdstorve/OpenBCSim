@@ -31,22 +31,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-GaussianBeamProfile::GaussianBeamProfile(bc_float sigma_lateral, bc_float sigma_elevational) {
+GaussianBeamProfile::GaussianBeamProfile(float sigma_lateral, float sigma_elevational) {
     setSigmaLateral(sigma_lateral);
     setSigmaElevational(sigma_elevational);
 }
 
-void GaussianBeamProfile::setSigmaLateral(bc_float new_sigma_lateral) {
+void GaussianBeamProfile::setSigmaLateral(float new_sigma_lateral) {
     m_sigma_lateral = new_sigma_lateral;
     updateCaching();
 }
     
-void GaussianBeamProfile::setSigmaElevational(bc_float new_sigma_elevational) {
+void GaussianBeamProfile::setSigmaElevational(float new_sigma_elevational) {
     m_sigma_elevational = new_sigma_elevational;
     updateCaching();
 }
     
-bc_float GaussianBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
+float GaussianBeamProfile::sampleProfile(float r, float l, float e) {
     return std::exp(-(l*l/m_two_sigma_lateral_squared + e*e/m_two_sigma_elevational_squared));
 }
     
@@ -76,7 +76,7 @@ LUTBeamProfile::LUTBeamProfile(int num_samples_rad, int num_samples_lat, int num
         
 }
 
-bc_float LUTBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
+float LUTBeamProfile::sampleProfile(float r, float l, float e) {
     // map to indices
     const auto temp_r = (r-m_range_range.first) / m_dr;
     const auto temp_l = (l-m_lateral_range.first) / m_dl;
@@ -89,9 +89,9 @@ bc_float LUTBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
     const auto e0 = static_cast<int>(temp_e); const auto e1 = static_cast<int>(temp_e+1);
     
     // fractional parts
-    const auto fractional_r = static_cast<bc_float>(temp_r - r0);
-    const auto fractional_l = static_cast<bc_float>(temp_l - l0);
-    const auto fractional_e = static_cast<bc_float>(temp_e - e0);
+    const auto fractional_r = static_cast<float>(temp_r - r0);
+    const auto fractional_l = static_cast<float>(temp_l - l0);
+    const auto fractional_e = static_cast<float>(temp_e - e0);
 
     // return zeros outside
     if ((r0 < 0) || (r0 >= m_num_samples_rad) || (r1 < 0) || (r1 >= m_num_samples_rad)) {
@@ -105,7 +105,7 @@ bc_float LUTBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
     }
     
     // samples in a cube around current point
-    bc_float c000,c001,c010,c011,c100,c101,c110,c111;
+    float c000,c001,c010,c011,c100,c101,c110,c111;
     c000 = m_samples[getIndex(r0, l0, e0)];
     c001 = m_samples[getIndex(r0, l0, e1)];
     c010 = m_samples[getIndex(r0, l1, e0)];
@@ -129,7 +129,7 @@ bc_float LUTBeamProfile::sampleProfile(bc_float r, bc_float l, bc_float e) {
     return (1.0f-fractional_e)*c0 + fractional_e*c1;
 }
 
-void LUTBeamProfile::setDiscreteSample(int ir, int il, int ie, bc_float new_sample) {
+void LUTBeamProfile::setDiscreteSample(int ir, int il, int ie, float new_sample) {
     if (ir < 0 || ir >= m_num_samples_rad) return;
     if (il < 0 || il >= m_num_samples_lat) return;
     if (ie < 0 || ie >= m_num_samples_ele) return;

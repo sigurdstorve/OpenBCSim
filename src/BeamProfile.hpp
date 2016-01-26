@@ -49,38 +49,38 @@ public:
       * \param l    The lateral component
       * \param e    The elevational component
       */
-    virtual bc_float sampleProfile(bc_float r, bc_float l, bc_float e) = 0;
+    virtual float sampleProfile(float r, float l, float e) = 0;
 };
 
 // Analytical infinitely long Gaussian cylinder with an elliptical cross section
 // parameterized by a lateral and elevational sigma value.
 class DLL_PUBLIC GaussianBeamProfile : public IBeamProfile {
 public:
-    GaussianBeamProfile(bc_float sigmaLateral, bc_float sigmaElevational);
+    GaussianBeamProfile(float sigmaLateral, float sigmaElevational);
     
     //Set a new lateral sigma value.
-    void setSigmaLateral(bc_float newSigmaLateral);
+    void setSigmaLateral(float newSigmaLateral);
     
     // Set a new elevational sigma value.
-    void setSigmaElevational(bc_float newSigmaElevational);
+    void setSigmaElevational(float newSigmaElevational);
         
-    virtual bc_float sampleProfile(bc_float r, bc_float l, bc_float e);
+    virtual float sampleProfile(float r, float l, float e);
     
     // HACK needed for current GPU algorithms which needs sigma values as
     // kernel parameters
-    bc_float getSigmaLateral()     const { return m_sigma_lateral; }
-    bc_float getSigmaElevational() const { return m_sigma_elevational; }
+    float getSigmaLateral()     const { return m_sigma_lateral; }
+    float getSigmaElevational() const { return m_sigma_elevational; }
 
 protected:
     void updateCaching();
     
 protected:
-    bc_float m_sigma_lateral;             // PSF sigma in lateral direction [m] 
-    bc_float m_sigma_elevational;         // PSF sigma in elevational direction [m]
+    float m_sigma_lateral;             // PSF sigma in lateral direction [m] 
+    float m_sigma_elevational;         // PSF sigma in elevational direction [m]
     
     // Cached values
-    bc_float m_two_sigma_lateral_squared;
-    bc_float m_two_sigma_elevational_squared;
+    float m_two_sigma_lateral_squared;
+    float m_two_sigma_elevational_squared;
 };
 
 
@@ -92,10 +92,10 @@ public:
     LUTBeamProfile(int num_samples_rad, int num_samples_lat, int num_samples_ele,
                    Interval range_range, Interval lateral_range, Interval elevational_range);
     
-    virtual bc_float sampleProfile(bc_float r, bc_float l, bc_float e);
+    virtual float sampleProfile(float r, float l, float e);
         
     // Set sample based on discrete indices.
-    void setDiscreteSample(int ir, int il, int ie, bc_float new_sample);
+    void setDiscreteSample(int ir, int il, int ie, float new_sample);
 
     Interval getRangeRange() const {
         return m_range_range;
@@ -135,7 +135,7 @@ protected:
     double m_dr;
     double m_dl;
     double m_de;
-    std::vector<bc_float> m_samples;
+    std::vector<float> m_samples;
     Interval m_range_range;
     Interval m_lateral_range;
     Interval m_elevational_range;

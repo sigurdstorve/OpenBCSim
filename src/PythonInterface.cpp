@@ -194,7 +194,7 @@ public:
         }
         size_t numSamples = samplesDims[0];
 
-        std::vector<bc_float> s(numSamples);
+        std::vector<float> s(numSamples);
         for (size_t i = 0; i < numSamples; i++) {
             s[i] = samples[i];
         }
@@ -269,7 +269,7 @@ public:
 
     PyObject* simulate_lines() {
         // Simulate
-        std::vector<std::vector<std::complex<bc_float>> > rf_lines;
+        std::vector<std::vector<std::complex<float>> > rf_lines;
         m_rf_simulator->simulate_lines(rf_lines);
         int num_rf_lines = rf_lines.size();
         // all lines have same number of samples

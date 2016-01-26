@@ -68,7 +68,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         throw std::runtime_error("too few spline control points for given degree");
     }
     
-    std::vector<bc_float> basis_functions(num_control_points);
+    std::vector<float> basis_functions(num_control_points);
     
     int mu = bspline_storve::compute_knot_interval(m_scatterers->knot_vector, line.get_timestamp());
 
@@ -87,7 +87,7 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
 
     // Precompute all B-spline basis function for current timestep
     for (int i = 0; i < num_control_points; i++) {
-        const bc_float b = bspline_storve::bsplineBasis(i,
+        const float b = bspline_storve::bsplineBasis(i,
                                                         m_scatterers->spline_degree,
                                                         line.get_timestamp(),
                                                         m_scatterers->knot_vector);
@@ -104,9 +104,9 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         // Map the global cartesian scatterer position into the beam's local
         // coordinate system.
         vector3 temp = scatterer_pos - line.get_origin();
-        bc_float r = temp.dot(line.get_direction());       // radial component
-        bc_float l = temp.dot(line.get_lateral_dir());     // lateral component
-        bc_float e = temp.dot(line.get_elevational_dir()); // elevational component
+        float r = temp.dot(line.get_direction());       // radial component
+        float l = temp.dot(line.get_lateral_dir());     // lateral component
+        float e = temp.dot(line.get_elevational_dir()); // elevational component
         
         // Use "arc projection" in the radial direction: use length of vector from
         // beam's origin to the scatterer with the same sign as the projection onto
@@ -120,10 +120,10 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         }
 
         // Add scaled amplitude to closest index
-        const bc_float sampling_time_step = 1.0/m_excitation.sampling_frequency;
+        const float sampling_time_step = 1.0/m_excitation.sampling_frequency;
         int closest_index = (int) std::floor(r*2.0/(m_param_sound_speed*sampling_time_step)+0.5f);
         
-        bc_float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*m_scatterers->amplitudes[scatterer_no];
+        float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*m_scatterers->amplitudes[scatterer_no];
         
         // Avoid out of bound seg.fault
         if (closest_index < 0 || closest_index >= num_time_samples) {

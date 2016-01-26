@@ -156,7 +156,7 @@ void GpuBaseAlgorithm::save_cuda_device_properties() {
     }
 }
 
-void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float> > >&  /*out*/ rf_lines) {
+void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > >&  /*out*/ rf_lines) {
     m_can_change_cuda_device = false;
     
     if (m_stream_wrappers.size() == 0) {
@@ -279,7 +279,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
     // only copy what is needed in the above kernel.
     rf_lines.clear();
     for (size_t line_no = 0; line_no < num_lines; line_no++) {
-        std::vector<std::complex<bc_float>> temp_samples; // .reserve
+        std::vector<std::complex<float>> temp_samples; // .reserve
         for (size_t i = 0; i < num_return_samples; i += m_radial_decimation) {
             temp_samples.push_back(m_host_rf_lines[line_no]->data()[i+delay_compensation_num_samples]);
         }

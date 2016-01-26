@@ -59,7 +59,7 @@ public:
         m_fixed_alg->set_excitation(new_excitation);
     }
 
-    virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
+    virtual void simulate_lines(std::vector<std::vector<std::complex<float>> >&  /*out*/ rf_lines) override;
 
     std::vector<double> get_debug_data(const std::string& identifier) const override {
         return m_fixed_alg->get_debug_data(identifier);

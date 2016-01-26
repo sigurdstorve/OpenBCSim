@@ -39,8 +39,7 @@ namespace bcsim {
 
 // Define the precision level to work at (32- or 64-bit floats)
 // NOTE: currently only float should be used.
-#define bc_float float
-typedef Vector3D<bc_float> vector3;
+typedef Vector3D<float> vector3;
 
 struct Interval {
 public:
@@ -52,7 +51,7 @@ public:
 // Radiofrequency excitation signal.
 struct ExcitationSignal {
     // Discrete excitation signal samples
-    std::vector<bc_float> samples;
+    std::vector<float> samples;
     
     // The index of vector "samples" for which time is zero,
     // i.e. the center of the pulse.
@@ -117,12 +116,12 @@ struct SplineScatterers : public Scatterers {
     // Spline degree and knot vector are common for
     // all point scatterers.
     int                         spline_degree;
-    std::vector<bc_float>       knot_vector;
+    std::vector<float>          knot_vector;
     
     // For each scatterer: list of control points in space and a scalar amplitude
     // Indexed by scatterer no.
     std::vector<std::vector<vector3>> control_points;
-    std::vector<bc_float>             amplitudes;
+    std::vector<float>                amplitudes;
 };
 
 

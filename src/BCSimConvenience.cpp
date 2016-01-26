@@ -37,14 +37,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-std::vector<std::vector<bc_float> > decimate_frame(const std::vector<std::vector<bc_float> >& frame, int rad_decimation) {
+std::vector<std::vector<float> > decimate_frame(const std::vector<std::vector<float> >& frame, int rad_decimation) {
     if (rad_decimation < 1) throw std::runtime_error("Invalid decimation value");
 
     auto num_beams = frame.size();
     auto num_samples = frame[0].size();
     auto num_samples_dec = num_samples / rad_decimation;
     
-    std::vector<std::vector<bc_float> > decimated_frame(num_beams);
+    std::vector<std::vector<float> > decimated_frame(num_beams);
     for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
         decimated_frame[beam_no].resize(num_samples_dec);
         for (size_t sample_no = 0; sample_no < num_samples_dec; sample_no++) {
@@ -54,23 +54,23 @@ std::vector<std::vector<bc_float> > decimate_frame(const std::vector<std::vector
     return decimated_frame;
 }
 
-bc_float get_max_value(const std::vector<std::vector<bc_float> >& image_lines) {
-    std::vector<bc_float> max_values;
+float get_max_value(const std::vector<std::vector<float> >& image_lines) {
+    std::vector<float> max_values;
     for (const auto& image_line : image_lines) {
         max_values.push_back(*std::max_element(image_line.begin(), image_line.end()));
     }
     return *std::max_element(max_values.begin(), max_values.end());
 }
 
-void log_compress_frame(std::vector<std::vector<bc_float> >& image_lines, float dyn_range, float normalize_factor, float gain_factor) {
+void log_compress_frame(std::vector<std::vector<float> >& image_lines, float dyn_range, float normalize_factor, float gain_factor) {
 
     auto num_beams   = image_lines.size();
     auto num_samples = image_lines[0].size(); 
 
     for (auto& beam : image_lines) {
-        std::transform(beam.begin(), beam.end(), beam.begin(), [=](bc_float pixel) {
+        std::transform(beam.begin(), beam.end(), beam.begin(), [=](float pixel) {
             // log-compression
-            pixel = static_cast<bc_float>(20.0*std::log10(gain_factor*pixel/normalize_factor));
+            pixel = static_cast<float>(20.0*std::log10(gain_factor*pixel/normalize_factor));
             pixel = (255.0/dyn_range)*(pixel + dyn_range);
             
             // clamp to [0, 255]
@@ -192,9 +192,9 @@ namespace detail {
         boost::numeric::ublas::vector<T> temp_v(3);
         temp_v(0) = static_cast<T>(v.x); temp_v(1) = static_cast<T>(v.y); temp_v(2) = static_cast<T>(v.z);
         const auto transformed = boost::numeric::ublas::prod(matrix33, temp_v);
-        return vector3(static_cast<bc_float>(transformed(0)),
-                       static_cast<bc_float>(transformed(1)),
-                       static_cast<bc_float>(transformed(2)));
+        return vector3(static_cast<float>(transformed(0)),
+                       static_cast<float>(transformed(1)),
+                       static_cast<float>(transformed(2)));
     }
 }
 

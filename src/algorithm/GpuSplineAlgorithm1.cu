@@ -145,7 +145,7 @@ void GpuSplineAlgorithm1::set_scatterers(Scatterers::s_ptr new_scatterers) {
     m_common_knots = scatterers->knot_vector;
 }
 
-void GpuSplineAlgorithm1::simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) {
+void GpuSplineAlgorithm1::simulate_lines(std::vector<std::vector<std::complex<float>> >&  /*out*/ rf_lines) {
     m_fixed_alg->simulate_lines(rf_lines);
 }
 

@@ -51,7 +51,7 @@ void printHelpAndExit(char **argv) {
     std::exit(0);
 }
 
-void dumpRfFrame(std::string filename, std::vector<std::vector<bc_float> > rfLines, bool envDetect) {
+void dumpRfFrame(std::string filename, std::vector<std::vector<float> > rfLines, bool envDetect) {
     auto numLines = rfLines.size();
     auto numSamples = rfLines[0].size();
     std::ofstream outfile;
@@ -107,13 +107,13 @@ int main(int argc, char **argv) {
             // Run forever to verify full CPU load.
             int counter = 0;
             while (1) {
-                std::vector<std::vector<std::complex<bc_float>> > rfFrame;    
+                std::vector<std::vector<std::complex<float>> > rfFrame;    
                 std::cout << counter++ << std::endl;
                 simulator->simulate_lines(rfFrame);
             }
         } else {
             // Simulate one frame and dump to disk.
-            std::vector<std::vector<std::complex<bc_float>> > rfFrame;    
+            std::vector<std::vector<std::complex<float>> > rfFrame;    
             simulator->simulate_lines(rfFrame);
             //std::string outfile = "frame.rf";
             //dumpRfFrame(outfile, rfFrame, true);

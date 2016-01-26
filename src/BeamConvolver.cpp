@@ -61,7 +61,7 @@ public:
 
     // Use contents of the time-projected buffer and create an RF line.
     // Process the time-projections by doing FFT -> Multiply -> IFFT
-    virtual std::vector<std::complex<bc_float>> process() {
+    virtual std::vector<std::complex<float>> process() {
         auto temp_buffer = fft(m_time_proj_buffer);
         std::transform(std::begin(temp_buffer), std::end(temp_buffer), std::begin(m_excitation_fft), std::begin(temp_buffer), std::multiplies<std::complex<float>>());
         temp_buffer = ifft(temp_buffer);
@@ -69,14 +69,14 @@ public:
 
         // extract output, compensate for delay introduced by convolving with excitation
         auto start = std::begin(temp_buffer) + m_excitation_delay;
-        return std::vector<std::complex<bc_float>>(start, start + m_num_proj_samples);
+        return std::vector<std::complex<float>>(start, start + m_num_proj_samples);
     }
 
 protected:
     // Precompute Hilbert-transformed FFT of excitation signal.
     void precompute_excitation_fft(const ExcitationSignal& excitation) {
         std::vector<std::complex<float>> padded_excitation(m_fft_length, std::complex<float>(0.0f, 0.0f));
-        std::transform(std::begin(excitation.samples), std::end(excitation.samples), std::begin(padded_excitation), [](bc_float v) {
+        std::transform(std::begin(excitation.samples), std::end(excitation.samples), std::begin(padded_excitation), [](float v) {
             return std::complex<float>(static_cast<float>(v), 0.0f);
         });
         m_excitation_fft = fft(padded_excitation);

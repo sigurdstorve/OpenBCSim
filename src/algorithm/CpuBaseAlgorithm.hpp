@@ -49,7 +49,7 @@ public:
 
     virtual void set_excitation(const ExcitationSignal& new_excitation)                 override;
 
-    virtual void simulate_lines(std::vector<std::vector<std::complex<bc_float>> >&  /*out*/ rf_lines) override;
+    virtual void simulate_lines(std::vector<std::vector<std::complex<float>> >&  /*out*/ rf_lines) override;
 
     virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile) override;
 
@@ -74,7 +74,7 @@ protected:
     // Simulate a single RF line.
     // Returns a std::vector of IQ signal samples.
     // Sampling frequency is the same as for the excitation signal. TODO: Not so with decimation...
-    std::vector<std::complex<bc_float>> simulate_line(const Scanline& line);
+    std::vector<std::complex<float>> simulate_line(const Scanline& line);
 
     // Main projection loop must be implemented in subclass.
     virtual void projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) = 0;

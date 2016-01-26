@@ -130,7 +130,7 @@ void CpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     configure_convolvers_if_possible();
 }   
 
-void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_float>> > & rfLines) {
+void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float>> > & rfLines) {
     throw_if_not_configured();
     const auto num_scanlines = m_scan_sequence->get_num_lines();
     rfLines.resize(num_scanlines);
@@ -154,7 +154,7 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
     }
 }
 
-std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
+std::vector<std::complex<float>> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
 #ifdef BCSIM_ENABLE_OPENMP
     const int thread_idx = omp_get_thread_num();
 #else
@@ -203,7 +203,7 @@ std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanli
     
     // Decimate
     // TODO: Consider reserve to avoid unneeded allocations resulting from push_back()?
-    std::vector<std::complex<bc_float>> res;
+    std::vector<std::complex<float>> res;
     for (int i = 0; i < static_cast<int>(temp_line.size()); i += m_radial_decimation) {
         res.push_back(temp_line[i]);
     }

@@ -512,7 +512,7 @@ void MainWindow::doSimulation() {
     
     //qDebug() << "doSimulation(): simulation time is " << m_sim_time_manager->get_time();
 
-    std::vector<std::vector<std::complex<bc_float>> > rf_lines_complex;
+    std::vector<std::vector<std::complex<float>> > rf_lines_complex;
     
     std::vector<float> sim_milliseconds;
     const auto num_rep = m_settings->value("simulate_lines_num_rep", 1).toInt();
@@ -528,9 +528,9 @@ void MainWindow::doSimulation() {
         // Transform complex IQ samples to real-valued envelope.
         if (rf_lines_complex.size() == 0) throw std::runtime_error("No lines returned");
         const auto num_iq_samples = rf_lines_complex[0].size();;
-        std::vector<std::vector<bc_float>> rf_lines;
+        std::vector<std::vector<float>> rf_lines;
         for (size_t line_no = 0; line_no < rf_lines_complex.size(); line_no++) {
-            std::vector<bc_float> temp;
+            std::vector<float> temp;
             temp.reserve(num_iq_samples);
             for (size_t i = 0; i < rf_lines_complex[line_no].size(); i++) {
                 temp.push_back(std::abs(rf_lines_complex[line_no][i]));
@@ -781,7 +781,7 @@ void MainWindow::onLoadSimulatedData() {
         throw std::runtime_error("real/imag rank mismatch");
     }
 
-    std::vector<std::vector<std::vector<bc_float>>> env_frames;
+    std::vector<std::vector<std::vector<float>>> env_frames;
     if (sim_data_rank == 3) {
         // load IQ data from disk
         auto temp_real = hdf_reader.readMultiArray<float, 3>("sim_data_real");
@@ -797,7 +797,7 @@ void MainWindow::onLoadSimulatedData() {
         if (temp_imag.shape()[2] != num_lines) throw std::runtime_error("real/imag mismatch in dimension 2");
 
         for (size_t frame_no = 0; frame_no < num_frames; frame_no++) {
-            std::vector<std::vector<bc_float>> env_lines(num_lines);
+            std::vector<std::vector<float>> env_lines(num_lines);
             for (size_t i = 0; i < num_lines; i++) {
                 env_lines[i].resize(num_samples);
                 for (size_t n = 0; n < num_samples; n++) {
@@ -820,7 +820,7 @@ void MainWindow::onLoadSimulatedData() {
         if (temp_imag.shape()[0] != num_samples) throw std::runtime_error("real/imag mismatch in dimension 0");
         if (temp_imag.shape()[1] != num_lines) throw std::runtime_error("real/imag mismatch in dimension 1");
         
-        std::vector<std::vector<bc_float>> env_lines(num_lines);
+        std::vector<std::vector<float>> env_lines(num_lines);
         for (size_t i = 0; i < num_lines; i++) {
             env_lines[i].resize(num_samples);
             for (size_t n = 0; n < num_samples; n++) {

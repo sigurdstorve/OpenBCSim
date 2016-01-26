@@ -51,7 +51,7 @@ public:
     virtual std::complex<float>* get_zeroed_time_proj_signal() = 0;
     
     // Processed the time-projections into (decimated?) IQ data
-    virtual std::vector<std::complex<bc_float>> process()     = 0;
+    virtual std::vector<std::complex<float>> process()         = 0;
 };
 
 
