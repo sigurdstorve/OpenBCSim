@@ -40,13 +40,8 @@ namespace bcsim {
 
 // Define the precision level to work at (32- or 64-bit floats)
 // NOTE: currently only float should be used.
-#if BCSIM_USE_DOUBLE_PRECISION
-    #define bc_float double
-#else
-    #define bc_float float
-#endif
+#define bc_float float
 typedef Vector3D<bc_float> vector3;
-
 
 struct Interval {
 public:

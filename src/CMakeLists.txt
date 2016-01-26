@@ -14,8 +14,6 @@ option(BCSIM_BUILD_PYTHON_INTERFACE
        "Build Python interface" OFF)
 option(BCSIM_ENABLE_NAN_CHECK
        "Enable NaN checking (for debug builds)" ON)
-option(BCSIM_USE_DOUBLE_PRECISION
-       "Compile using C++ double instead of float for increased precision" OFF)
 option(BCSIM_ENABLE_CUDA
        "Build the GPU algorithms" OFF)
 option(BCSIM_BUILD_QT5_GUI
