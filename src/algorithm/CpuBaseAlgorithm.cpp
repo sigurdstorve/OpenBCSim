@@ -70,8 +70,8 @@ void CpuBaseAlgorithm::set_use_specific_num_cores(int num_threads) {
 #else
     max_threads = 1;
 #endif
-    if (num_threads < 0) {
-        throw std::runtime_error("Number of cores cannot be negative");
+    if (num_threads <= 0) {
+        throw std::runtime_error("Number of cores must be at least one.");
     } else if (num_threads > max_threads) {
         throw std::runtime_error("Number of cores not supported by computer");
     }
