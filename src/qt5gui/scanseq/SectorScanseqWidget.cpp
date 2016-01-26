@@ -5,7 +5,7 @@
 #include <QPushButton>
 #include <QGroupBox>
 #include <QDebug>
-#include "to_string.hpp"
+#include "../../core/to_string.hpp"
 
 SectorScanseqWidget::SectorScanseqWidget(QWidget* parent)
     : QWidget(parent)

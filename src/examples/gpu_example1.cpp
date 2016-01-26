@@ -32,8 +32,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 #include <stdexcept>
 #include <boost/program_options.hpp>
-#include "LibBCSim.hpp"
-#include "GaussPulse.hpp"
+#include "../core/LibBCSim.hpp"
+#include "../utils/GaussPulse.hpp"
 #include "examples_common.hpp"
 
 /*
@@ -155,7 +155,7 @@ void example(int argc, char** argv) {
             sim->set_scatterers(scatterers);
         }
         
-        std::vector<std::vector<std::complex<bc_float>>> sim_res;
+        std::vector<std::vector<std::complex<float>>> sim_res;
         if (enable_simulate_lines) {
             sim->simulate_lines(sim_res);
         }

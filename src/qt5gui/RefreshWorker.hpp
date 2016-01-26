@@ -38,9 +38,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QQueue>
 #include <QMutexLocker>
 #include <QImage>
-#include "cartesianator/Cartesianator.hpp"
-#include "ScanGeometry.hpp"
-#include "BCSimConvenience.hpp"
+#include "../utils/cartesianator/Cartesianator.hpp"
+#include "../utils/ScanGeometry.hpp"
+#include "../utils/BCSimConvenience.hpp"
 
 namespace refresh_worker {
 
@@ -53,7 +53,7 @@ public:
     void set_geometry(bcsim::ScanGeometry::ptr geometry) {
         m_scan_geometry = geometry;
     }
-    void set_data(const std::vector<std::vector<bc_float>>& data) {
+    void set_data(const std::vector<std::vector<float>>& data) {
         m_data = data;
     }
     void set_auto_normalize(bool status) {
@@ -72,7 +72,7 @@ public:
         m_dyn_range = dyn_range;
     }
 private:
-    std::vector<std::vector<bc_float>>  m_data;
+    std::vector<std::vector<float>>  m_data;
     bcsim::ScanGeometry::ptr            m_scan_geometry;
     bool                                m_auto_normalize;
     float                               m_normalize_const;

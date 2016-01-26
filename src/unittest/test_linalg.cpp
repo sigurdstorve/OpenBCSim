@@ -1,7 +1,7 @@
 // Must do this before including unit_test.hpp
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
-#include "vector3.hpp"
+#include "../core/vector3.hpp"
 
 using namespace bcsim;
 

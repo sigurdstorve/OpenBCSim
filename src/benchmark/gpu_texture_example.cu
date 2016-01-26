@@ -1,7 +1,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>
-#include "algorithm/cuda_helpers.h"
+#include "../core/algorithm/cuda_helpers.h"
 #include "device_launch_parameters.h"
 
 __global__ void tex_kernel(cudaTextureObject_t texture_obj, int num_samples, float* output) {

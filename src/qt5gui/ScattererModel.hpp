@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVector>
 #include <QVector3D>
 #include "SplineCurve.hpp"
-#include "LibBCSim.hpp"
+#include "../core/LibBCSim.hpp"
 
 // Interface for something capable of returning data for consumption by OpenGL
 class IScattererModel {

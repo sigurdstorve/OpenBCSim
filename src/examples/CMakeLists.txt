@@ -1,16 +1,22 @@
-if (BCSIM_USE_HDF_LAYER)
-    add_executable(BCSimDemo bcsim_demo.cpp)
-    target_link_libraries(BCSimDemo LibBCSim)
-    install(TARGETS BCSimDemo DESTINATION bin)
-endif()
+if (BCSIM_ENABLE_CUDA AND BCSIM_BUILD_UTILS)
+    # Handle Boost
+    # workaround for annoying program_options linking issue:
+    # Setting Boost_USE_STATIC_LIBS to OFF is not enough...
+    # (src http://lists.boost.org/boost-users/2009/11/54015.php)
+    add_definitions(-DBOOST_ALL_DYN_LINK)
+    set(Boost_USE_STATIC_LIBS OFF CACHE BOOL "Use static linking with Boost")
+    set(Boost_USE_MULTITHREADED ON CACHE BOOL "Use multithreaded Boost")
+    set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static Boost runtime")
+    find_package(Boost COMPONENTS program_options REQUIRED)
+    include_directories(${Boost_INCLUDE_DIRS})
 
-if (BCSIM_ENABLE_CUDA)
     # GPU algorithm example 1: fixed scatterers
     add_executable(GpuExample1 gpu_example1.cpp examples_common.hpp)
     target_link_libraries(GpuExample1
                           LibBCSim
                           BCSimCUDA
                           ${Boost_LIBRARIES}
+                          LibBCSimUtils
                           )
     install(TARGETS GpuExample1 DESTINATION bin)
     
@@ -20,6 +26,7 @@ if (BCSIM_ENABLE_CUDA)
                           LibBCSim
                           BCSimCUDA
                           ${Boost_LIBRARIES}
+                          LibBCSimUtils
                           )
     install(TARGETS GpuExample2 DESTINATION bin)
 endif()

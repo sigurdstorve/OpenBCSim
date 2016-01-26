@@ -42,7 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <qwt_plot.h>
 #include <qwt_plot_curve.h>
 #endif
-#include "GaussPulse.hpp"
+#include "../utils/GaussPulse.hpp"
 
 ExcitationSignalWidget::ExcitationSignalWidget(QWidget* parent)
     : QWidget(parent) 

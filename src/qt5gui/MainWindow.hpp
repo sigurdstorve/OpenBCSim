@@ -33,8 +33,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QLabel>
 #include <QSlider>
 #include <QDebug>
-#include "../LibBCSim.hpp"
+#include "../core/LibBCSim.hpp"
 #include "SimTimeManager.hpp"
+#include "../utils/ScanGeometry.hpp"
 
 // Forward decl.
 class GLVisualizationWidget;
