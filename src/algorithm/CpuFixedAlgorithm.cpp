@@ -82,9 +82,6 @@ void CpuFixedAlgorithm::projection_loop(const Scanline& line, std::complex<float
         
         // Avoid out of bound seg.fault
         if (closest_index < 0 || closest_index >= num_time_samples) {
-#if BCSIM_PRINT_SCATTERER_OUTSIDE_MSG
-            std::cout << "[warning] scatterer outside scan line." << std::endl;
-#endif
             continue;
         }
 
