@@ -30,8 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 #include <map>
-#include "LibBCSim.hpp"
-#include "BeamConvolver.hpp"
+#include "../LibBCSim.hpp"
+#include "../BeamConvolver.hpp"
 
 namespace bcsim {
 

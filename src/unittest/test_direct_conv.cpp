@@ -1,6 +1,6 @@
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
-#include "../SignalProcessing.hpp"
+#include "../utils/SignalProcessing.hpp"
 
 BOOST_AUTO_TEST_CASE(SanityCheck_DirectConvolution1) {
     std::vector<int> v1;

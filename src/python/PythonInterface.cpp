@@ -36,10 +36,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <string>
 #include <memory>
-#include "BCSimConfig.hpp"
-#include "BeamProfile.hpp"
-#include "to_string.hpp"
-#include "LibBCSim.hpp"
+#include "../core/BCSimConfig.hpp"
+#include "../core/BeamProfile.hpp"
+#include "../core/to_string.hpp"
+#include "../core/LibBCSim.hpp"
 
 using namespace bcsim;
 

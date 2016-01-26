@@ -2,7 +2,7 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <fstream>
-#include "algorithm/cuda_helpers.h"
+#include "../core/algorithm/cuda_helpers.h"
 #include "device_launch_parameters.h"
 
 // Sample in xy plane (at a constant z)

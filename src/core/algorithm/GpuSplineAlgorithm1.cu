@@ -33,8 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cuda.h>
 #include <device_launch_parameters.h>
 #include "cuda_helpers.h"
-#include "bspline.hpp"
-#include "LibBCSim.hpp"
+#include "../bspline.hpp"
+#include "../LibBCSim.hpp"
 #include "GpuSplineAlgorithm1.cuh"
 #include "common_utils.hpp"
 

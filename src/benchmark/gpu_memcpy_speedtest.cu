@@ -42,7 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <string>
 #include <cuda.h>
-#include "algorithm/cuda_helpers.h"
+#include "../core/algorithm/cuda_helpers.h"
 
 void measure_speed(size_t num_bytes, void* dst, void* src, cudaMemcpyKind kind, const std::string& msg) {
     EventTimerRAII gpu_timer;

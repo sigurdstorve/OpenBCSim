@@ -1,7 +1,7 @@
 // Must do this before including unit_test.hpp
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
-#include "discrete_hilbert_mask.hpp"
+#include "../core/discrete_hilbert_mask.hpp"
 
 bool check_equality(const std::vector<int>& mask, int* ref_mask) {
     for (size_t i = 0; i < mask.size(); i++) {

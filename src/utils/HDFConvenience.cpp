@@ -33,12 +33,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/multi_array.hpp>
 #include <algorithm>
 #include "HDFConvenience.hpp"
-#include "ScanSequence.hpp"
-#include "BeamProfile.hpp"
-#include "BCSimConfig.hpp"
-#include "vector3.hpp"
+#include "../core/ScanSequence.hpp"
+#include "../core/BeamProfile.hpp"
+#include "../core/BCSimConfig.hpp"
+#include "../core/vector3.hpp"
 #include "SimpleHDF.hpp"
-#include "LibBCSim.hpp"
+#include "../core/LibBCSim.hpp"
 
 namespace bcsim {
 

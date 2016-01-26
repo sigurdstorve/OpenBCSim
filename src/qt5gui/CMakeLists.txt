@@ -1,3 +1,16 @@
+# Handle HDF5 (since SimpleHDF.hpp includes H5Cpp.h - TODO: FIX)
+set(HDF5_USE_STATIC_LIBRARIES False CACHE BOOL "HDF5 use static libraries")
+find_package(HDF5 COMPONENTS C CXX REQUIRED)
+if (NOT ${HDF5_FOUND})
+    message(FATAL "Unable to locate HDF5!")
+endif()
+include_directories(${HDF5_INCLUDE_DIRS})
+add_definitions(${HDF5_DEFINITIONS})
+
+# Handle Boost
+find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
@@ -43,8 +56,6 @@ add_executable(BCSimGUI
                ExcitationSignalWidget.cpp
                SimulationParamsWidget.hpp
                SimulationParamsWidget.cpp
-               ../cartesianator/Cartesianator.hpp
-               ../cartesianator/Cartesianator.cpp
                ProbeWidget.hpp
                ProbeWidget.cpp
                SimTimeManager.hpp
@@ -52,6 +63,7 @@ add_executable(BCSimGUI
                GrayscaleTransformWidget.hpp
                GrayscaleTransformWidget.cpp
                RefreshWorker.hpp
+               ScopedCpuTimer.hpp
                )
 
 # Use the Widgets module from Qt5
@@ -59,6 +71,7 @@ target_link_libraries(BCSimGUI
                       Qt5::Widgets
                       Qt5::OpenGL
                       LibBCSim
+                      LibBCSimUtils # BCSimCUDA also?
                       )
 if (BCSIM_ENABLE_QWT)
     target_link_libraries(BCSimGUI ${QWT_LIBRARIES})

@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
 #include "SplineCurve.hpp"
-#include "LibBCSim.hpp"
+#include "../core/LibBCSim.hpp"
 
 class QOpenGLShaderProgram;
 class IScattererModel;

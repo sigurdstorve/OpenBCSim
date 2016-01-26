@@ -1,7 +1,7 @@
 #pragma once
 #include <QWidget>
-#include "ScanSequence.hpp"
-#include "ScanGeometry.hpp"
+#include "../../core/ScanSequence.hpp"
+#include "../../utils/ScanGeometry.hpp"
 #include "ScanseqWidget.hpp"
 
 // Forward decl.

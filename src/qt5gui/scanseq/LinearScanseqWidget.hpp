@@ -1,6 +1,6 @@
 #pragma once
 #include <QWidget>
-#include "ScanSequence.hpp"
+#include "../../core/ScanSequence.hpp"
 #include "ScanseqWidget.hpp"
 
 // Forward decl.

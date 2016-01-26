@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <cmath>
 #include <vector>
-#include "export_macros.hpp"
+#include "../core/export_macros.hpp"
 
 namespace bcsim {
 /*

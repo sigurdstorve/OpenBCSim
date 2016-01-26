@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #include <omp.h>
 #endif
 #include "CpuSplineAlgorithm.hpp"
-#include "bspline.hpp"
+#include "../bspline.hpp"
 #include "common_utils.hpp"
 
 namespace bcsim {

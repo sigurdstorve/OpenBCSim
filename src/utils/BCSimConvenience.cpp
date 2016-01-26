@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <stdexcept>
 #include "BCSimConvenience.hpp"
-#include "bspline.hpp"
+#include "../core/bspline.hpp"
 #include "rotation3d.hpp"
 
 namespace bcsim {

@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <memory>
 #include <vector>
-#include "ScanGeometry.hpp"
+#include "../ScanGeometry.hpp"
 
 // Geometry + Beam Space data => Sampled cartesian grid.
 // Manages its own output buffer.

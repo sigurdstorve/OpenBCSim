@@ -30,8 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <memory>
 #include <string>
-#include "export_macros.hpp"
-#include "LibBCSim.hpp"
+#include "../core/export_macros.hpp"
+#include "../core/LibBCSim.hpp"
 
 // Two layers of convenience functions:
 // 1. Load from Hdf5

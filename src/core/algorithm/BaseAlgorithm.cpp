@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdexcept>
 #include "BaseAlgorithm.hpp"
-#include "BeamConvolver.hpp"
+#include "../BeamConvolver.hpp"
 
 
 namespace bcsim {

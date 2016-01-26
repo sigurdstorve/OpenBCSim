@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <QWidget>
 #include "SplineCurve.hpp"
-#include "LibBCSim.hpp"  // for vector3
+#include "../core/LibBCSim.hpp"  // for vector3
 
 class QSlider;
 class GLScattererWidget;

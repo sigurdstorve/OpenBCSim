@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GpuBaseAlgorithm.cuh"
 #include "gpu_alg_common.cuh"
 #include "common_utils.hpp" // for compute_num_rf_samples
-#include "discrete_hilbert_mask.hpp"
+#include "../discrete_hilbert_mask.hpp"
 #include "cuda_debug_utils.h"
 #include "device_launch_parameters.h"
 

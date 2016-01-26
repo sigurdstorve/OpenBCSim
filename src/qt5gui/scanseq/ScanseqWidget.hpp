@@ -1,6 +1,6 @@
 #pragma once
 #include <QWidget>
-#include "ScanGeometry.hpp"
+#include "../../utils/ScanGeometry.hpp"
 
 class QStackedWidget;
 

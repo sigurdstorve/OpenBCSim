@@ -2,11 +2,10 @@
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 add_executable(all_tests
-               ../fft.hpp
-               ../fft.cpp
-               ../SimpleHDF.hpp
-               ../SignalProcessing.hpp
-               ../SignalProcessing.cpp
+               ../core/fft.hpp
+               ../core/fft.cpp
+               ../utils/SignalProcessing.hpp
+               ../utils/SignalProcessing.cpp
                test_linalg.cpp
                test_fft.cpp
                test_direct_conv.cpp

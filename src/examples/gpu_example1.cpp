@@ -32,8 +32,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 #include <stdexcept>
 #include <boost/program_options.hpp>
-#include "LibBCSim.hpp"
-#include "GaussPulse.hpp"
+#include "../core/LibBCSim.hpp"
+#include "../utils/GaussPulse.hpp"
 #include "examples_common.hpp"
 
 /*

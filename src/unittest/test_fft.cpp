@@ -5,7 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
-#include "fft.hpp"
+#include "../core/fft.hpp"
 
 template <typename T> 
 std::vector<std::complex<T> > make_complex(const std::vector<T>& real_values,

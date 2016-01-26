@@ -49,21 +49,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ScopedCpuTimer.hpp"
 
 #include "MainWindow.hpp"
-#include "../HDFConvenience.hpp"
-#include "../LibBCSim.hpp"
+#include "../utils/HDFConvenience.hpp"
+#include "../core/LibBCSim.hpp"
 #include "utils.hpp" // needed for generating grayscale colortable
-#include "SimpleHDF.hpp"    // for reading scatterer splines for vis.
-#include "utils.hpp"        // for FirWin()
-#include "ScanSequence.hpp"
+#include "../utils/SimpleHDF.hpp"    // for reading scatterer splines for vis.
+#include "utils.hpp"
+#include "../core/ScanSequence.hpp"
 
 #include "GLVisualizationWidget.hpp"
 #include "scanseq/ScanseqWidget.hpp"
 #include "BeamProfileWidget.hpp"
 #include "ExcitationSignalWidget.hpp"
 #include "SimulationParamsWidget.hpp"
-#include "SignalProcessing.hpp"
-#include "ScanGeometry.hpp"
-#include "BCSimConfig.hpp"
+#include "../utils/SignalProcessing.hpp"
+#include "../utils/ScanGeometry.hpp"
+#include "../core/BCSimConfig.hpp"
 #include "ProbeWidget.hpp"
 #include "SimTimeWidget.hpp"
 #include "GrayscaleTransformWidget.hpp"

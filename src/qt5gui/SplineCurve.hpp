@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include <vector>
-#include "bspline.hpp"
+#include "../core/bspline.hpp"
 
 // T1: Datatype for parameter value
 // T2: Datatype for control points

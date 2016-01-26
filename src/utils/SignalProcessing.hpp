@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include <vector>
-#include "export_macros.hpp"
+#include "../core/export_macros.hpp"
 
 // Create a Hamming window
 // TODO: Test it

@@ -6,10 +6,10 @@ option(BCSIM_ENABLE_OPENMP
        "Enable OpenMP support" ON)
 option(BCSIM_BUILD_UNITTEST
        "Build the main unit testing code" OFF)
-option(BCSIM_USE_HDF_LAYER
-       "Build HDF5 interface layer" OFF) 
+option(BCSIM_BUILD_UTILS
+       "Build misc. utilities" OFF) 
 option(BCSIM_BUILD_EXAMPLES
-       "Build C++ examples (requires HDF5 layer enabled)" OFF)
+       "Build C++ examples (requires BCSIM_BUILD_UTILS)" OFF)
 option(BCSIM_BUILD_PYTHON_INTERFACE
        "Build Python interface" OFF)
 option(BCSIM_ENABLE_NAN_CHECK
@@ -17,13 +17,13 @@ option(BCSIM_ENABLE_NAN_CHECK
 option(BCSIM_ENABLE_CUDA
        "Build the GPU algorithms" OFF)
 option(BCSIM_BUILD_QT5_GUI
-       "Build development Qt5 code" OFF)
+       "Build development Qt5 code (requires BCSIM_BUILD_UTILS)" OFF)
 option(BCSIM_BUILD_BENCHMARK_CODE
        "Build development code used for benchmarking" OFF)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
-# set flags according to configuration options
+# set compiler defines according to configuration options
 if (BCSIM_ENABLE_OPENMP)
     add_definitions(-DBCSIM_ENABLE_OPENMP)
 endif()
@@ -39,16 +39,6 @@ if (UNIX)
 endif()
 # C++11 is enabled by default on recent MSVC
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
-
-if (BCSIM_USE_HDF_LAYER)
-    set(HDF5_USE_STATIC_LIBRARIES False CACHE BOOL "HDF5 use static libraries")
-    find_package(HDF5 COMPONENTS C CXX REQUIRED)
-    if (NOT ${HDF5_FOUND})
-        message(FATAL "Unable to locate HDF5!")
-    endif()
-    include_directories(${HDF5_INCLUDE_DIRS})
-    add_definitions(${HDF5_DEFINITIONS})
-endif()
 
 if (BCSIM_ENABLE_OPENMP)
     find_package(OpenMP REQUIRED)
@@ -68,64 +58,6 @@ if (BCSIM_ENABLE_CUDA)
     # Put in CUDA_NVCC_FLAGS_RELEASE
 endif()
 
-# Handle Boost (needed by HDF convenience at least)
-# workaround for annoying program_options linking issue:
-# Setting Boost_USE_STATIC_LIBS to OFF is not enough...
-# (src http://lists.boost.org/boost-users/2009/11/54015.php)
-add_definitions(-DBOOST_ALL_DYN_LINK)
-set(Boost_USE_STATIC_LIBS OFF CACHE BOOL "Use static linking with Boost")
-set(Boost_USE_MULTITHREADED ON CACHE BOOL "Use multithreaded Boost")
-set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static Boost runtime")
-find_package(Boost COMPONENTS program_options REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-
-# Build simulator core shared library, optionally with HDF5 layer.
-set(CORE_LIBRARY_SOURCE_FILES "")
-list(APPEND CORE_LIBRARY_SOURCE_FILES
-     BCSimConfig.hpp
-     BCSimConvenience.hpp
-     BCSimConvenience.cpp
-     BeamConvolver.hpp
-     BeamConvolver.cpp
-     BeamProfile.hpp
-     BeamProfile.cpp
-     bspline.hpp
-     discrete_hilbert_mask.hpp
-     export_macros.hpp
-     fft.cpp
-     fft.hpp
-     GaussPulse.hpp
-     GaussPulse.cpp
-     LibBCSim.hpp
-     LibBCSim.cpp
-     rotation3d.hpp
-     ScanGeometry.hpp
-     ScanSequence.hpp
-     ScanSequence.cpp
-     SignalProcessing.hpp
-     SignalProcessing.cpp
-     to_string.hpp
-     to_string.cpp
-     vector3.hpp
-     algorithm/BaseAlgorithm.hpp
-     algorithm/BaseAlgorithm.cpp
-     algorithm/CpuBaseAlgorithm.hpp
-     algorithm/CpuBaseAlgorithm.cpp
-     algorithm/CpuFixedAlgorithm.hpp
-     algorithm/CpuFixedAlgorithm.cpp
-     algorithm/CpuSplineAlgorithm.hpp
-     algorithm/CpuSplineAlgorithm.cpp
-     algorithm/common_utils.hpp
-     ScopedCpuTimer.hpp
-     )
-if (BCSIM_USE_HDF_LAYER)
-    list(APPEND CORE_LIBRARY_SOURCE_FILES
-         HDFConvenience.cpp
-         HDFConvenience.hpp
-         SimpleHDF.hpp
-         )
-endif()
-
 # Need to add -fPIC on 64-bit Linux
 if (UNIX AND NOT WIN32)
     find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
@@ -139,45 +71,13 @@ if (UNIX AND NOT WIN32)
   endif ()
 endif ()
 
-# Made static in order to avoid DLL interface-related issues
-add_library(LibBCSim STATIC ${CORE_LIBRARY_SOURCE_FILES})
+add_subdirectory(core)
 
-if (BCSIM_ENABLE_CUDA)
-    if(UNIX)
-        # Tell host compiler to use -fPIC
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -std=c++11 -Xcompiler -fPIC)
-    else()
-        # C++11 is enabled by default in MSVC
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3)
-    endif()
-    cuda_add_library(BCSimCUDA
-                     algorithm/GpuBaseAlgorithm.cuh
-                     algorithm/GpuBaseAlgorithm.cu
-                     algorithm/gpu_alg_common.cuh
-                     algorithm/gpu_alg_common.cu
-                     algorithm/GpuFixedAlgorithm.cu
-                     algorithm/GpuFixedAlgorithm.cuh
-                     algorithm/GpuSplineAlgorithm1.cuh
-                     algorithm/GpuSplineAlgorithm1.cu
-                     algorithm/GpuSplineAlgorithm2.cu
-                     algorithm/GpuSplineAlgorithm2.cuh
-                     algorithm/cuda_helpers.h
-                     algorithm/cufft_helpers.h
-                     algorithm/cuda_debug_utils.h
-                     )
-    target_link_libraries(BCSimCUDA
-                          ${CUDA_LIBRARIES}
-                          ${CUDA_CUFFT_LIBRARIES}
-                          )
-    target_link_libraries(LibBCSim BCSimCUDA)
-endif()
-
-if (BCSIM_USE_HDF_LAYER)
-    target_link_libraries(LibBCSim ${HDF5_LIBRARIES})
+if (BCSIM_BUILD_UTILS)
+    add_subdirectory(utils)
 endif()
 
 if (BCSIM_BUILD_UNITTEST)
-    # To contain more unit tests to verify correct operation.
     add_subdirectory(unittest)
 endif()
 
@@ -186,51 +86,7 @@ if (BCSIM_BUILD_EXAMPLES)
 endif()
 
 if (BCSIM_BUILD_PYTHON_INTERFACE)
-    # Handle Python include & libs
-    find_package(PythonLibs REQUIRED)
-    if (NOT PYTHONLIBS_FOUND)
-        message("PYTHONLIBS NOT FOUND")
-    endif ()
-    include_directories(${PYTHON_INCLUDE_DIRS})
-    
-    # Get the NumPy include path and verify it
-    set(NumPy_INCLUDE_DIR "NOT-SET" CACHE PATH "NumPy include path")
-    if (NOT EXISTS "${NumPy_INCLUDE_DIR}/numpy/arrayobject.h")
-        message(FATAL_ERROR "Invalid NumPy include path")
-    endif()
-    include_directories(${NumPy_INCLUDE_DIR})
-    
-    # Handle Boost
-    find_package(Boost COMPONENTS python system REQUIRED)
-    include_directories(${Boost_INCLUDE_DIRS})
-    
-    add_library(pyrfsim
-                SHARED
-                PythonInterface.cpp
-                numpy_boost.hpp
-                numpy_boost_python.hpp
-                )
-    target_link_libraries(pyrfsim
-                          ${PYTHON_LIBRARIES}
-                          ${Boost_LIBRARIES}
-                          LibBCSim
-                          )
-    set_target_properties(pyrfsim PROPERTIES PREFIX "")
-    if (WIN32)
-    set_target_properties(pyrfsim PROPERTIES SUFFIX ".pyd")
-    endif()
-    # Need to add -fPIC on 64-bit Linux
-    if (UNIX AND NOT WIN32)
-        find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
-        if(CMAKE_UNAME)
-            exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
-            set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL
-                "processor type (i386 and x86_64)")
-            if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-                add_compile_options(-fPIC)
-            endif ()
-      endif ()
-    endif ()
+    add_subdirectory(python)
 endif()
 
 if (BCSIM_BUILD_QT5_GUI)
@@ -240,29 +96,4 @@ endif()
 if (BCSIM_BUILD_BENCHMARK_CODE)
     add_subdirectory(benchmark)
 endif()
-
-# Define installation of binaries and public API headers
-install(TARGETS LibBCSim DESTINATION lib)
-if (BCSIM_BUILD_PYTHON_INTERFACE)
-    # put it in "bin" because it needs many of the same DLLs
-    # as the executables.
-    install(TARGETS pyrfsim DESTINATION bin)
-endif()
-
-install(FILES BeamProfile.hpp       DESTINATION include)
-install(FILES BCSimConfig.hpp       DESTINATION include)
-install(FILES BCSimConvenience.hpp  DESTINATION include)
-install(FILES export_macros.hpp     DESTINATION include)
-if (BCSIM_USE_HDF_LAYER)
-    install(FILES HDFConvenience.hpp DESTINATION include)
-endif()
-install(FILES GaussPulse.hpp       DESTINATION include)
-install(FILES LibBCSim.hpp         DESTINATION include)
-install(FILES ScanSequence.hpp     DESTINATION include)
-install(FILES SignalProcessing.hpp DESTINATION include)
-install(FILES to_string.hpp        DESTINATION include)
-install(FILES vector3.hpp          DESTINATION include)
-install(FILES GaussPulse.hpp       DESTINATION include)
-
-
 

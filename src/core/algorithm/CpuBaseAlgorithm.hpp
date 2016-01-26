@@ -30,11 +30,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <vector>
 #include <random>
-#include "BCSimConfig.hpp"
-#include "ScanSequence.hpp"
-#include "BeamProfile.hpp"
-#include "BeamConvolver.hpp"
 #include "BaseAlgorithm.hpp"
+#include "../BCSimConfig.hpp"
+#include "../ScanSequence.hpp"
+#include "../BeamProfile.hpp"
+#include "../BeamConvolver.hpp"
 
 namespace bcsim {
 

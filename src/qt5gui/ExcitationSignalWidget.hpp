@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <QWidget>
 #include <QSize>
-#include "BCSimConfig.hpp"
+#include "../core/BCSimConfig.hpp"
 
 // Forward decl.
 class QDoubleSpinBox;

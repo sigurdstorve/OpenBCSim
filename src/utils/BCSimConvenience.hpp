@@ -29,9 +29,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include <vector>
-#include "export_macros.hpp"
-#include "BCSimConfig.hpp"
-#include "ScanSequence.hpp"
+#include "../core/export_macros.hpp"
+#include "../core/BCSimConfig.hpp"
+#include "../core/ScanSequence.hpp"
 #include "ScanGeometry.hpp"
 
 // Misc. utilities for post processing of simulated data and for creating

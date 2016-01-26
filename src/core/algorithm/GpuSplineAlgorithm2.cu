@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
-#include "bspline.hpp"
+#include "../bspline.hpp"
 #include "gpu_alg_common.cuh" // for misc. CUDA kernels
 #include "common_utils.hpp"
 #include <math_functions.h> // for copysignf()

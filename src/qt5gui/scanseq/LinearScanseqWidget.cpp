@@ -5,8 +5,8 @@
 #include <QPushButton>
 #include <QGroupBox>
 #include <QDebug>
-#include "to_string.hpp"
-#include "rotation3d.hpp"
+#include "../../core/to_string.hpp"
+#include "../../utils/rotation3d.hpp"
 
 LinearScanseqWidget::LinearScanseqWidget(QWidget* parent)
     : QWidget(parent)

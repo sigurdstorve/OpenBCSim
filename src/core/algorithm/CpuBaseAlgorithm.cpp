@@ -37,10 +37,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #include <omp.h>
 #endif
 #include "CpuBaseAlgorithm.hpp"
-#include "to_string.hpp"
-#include "LibBCSim.hpp"
-#include "SignalProcessing.hpp" // for env()
-#include "BeamConvolver.hpp"
+#include "../to_string.hpp"
+#include "../LibBCSim.hpp"
+#include "../BeamConvolver.hpp"
 #include "common_utils.hpp" // for compute_num_rf_samples
 
 namespace bcsim {

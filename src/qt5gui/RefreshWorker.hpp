@@ -38,9 +38,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QQueue>
 #include <QMutexLocker>
 #include <QImage>
-#include "cartesianator/Cartesianator.hpp"
-#include "ScanGeometry.hpp"
-#include "BCSimConvenience.hpp"
+#include "../utils/cartesianator/Cartesianator.hpp"
+#include "../utils/ScanGeometry.hpp"
+#include "../utils/BCSimConvenience.hpp"
 
 namespace refresh_worker {
 

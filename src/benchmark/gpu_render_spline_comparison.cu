@@ -33,8 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <random>
 #include <cuda.h>
 #include <device_launch_parameters.h>
-#include "algorithm/cuda_helpers.h"
-#include "bspline.hpp"
+#include "../core/algorithm/cuda_helpers.h"
+#include "../core/bspline.hpp"
 
 /* Code for benchmarking different ways of rendering spline curves on the GPU.
  * The main use is to demonstrate that the memory layout used when representing
