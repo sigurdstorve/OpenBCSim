@@ -31,8 +31,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "export_macros.hpp"
 #include "BCSimConfig.hpp"
+#include "ScanSequence.hpp"
+#include "ScanGeometry.hpp"
 
-// misc. utilities for post processing of simulated data
+// Misc. utilities for post processing of simulated data and for creating
+// scan sequences.
 namespace bcsim {
 
 // Decimate all beams in a frame radially.
@@ -54,5 +57,17 @@ void DLL_PUBLIC log_compress_frame(std::vector<std::vector<bc_float> >& image_li
 // timestamp: the time to evaluate the spline scatterers in
 // NOTE: This code is completely untested!
 Scatterers::s_ptr DLL_PUBLIC render_fixed_scatterers(SplineScatterers::s_ptr spline_scatterers, float timestamp);
+
+// Create a sector/linear scan where all lines have the same timestamp.
+// By convention, all scan sequences are created in their own local coordinate system
+// centered at origin. The standard radial direction is along the z-axis and the lateral
+// direction is along the x-axis.
+ScanSequence DLL_PUBLIC CreateScanSequence(ScanGeometry::ptr geometry, size_t num_lines, float timestamp);
+
+// Orient the lines in a ScanSequence by
+// 1. Rotate using x,y, and z rotation angles, in that order, i.e.
+//      p_rot = R*p where R = R_z*R_y*R_x
+// 2. Translate the origin.
+ScanSequence::s_ptr DLL_PUBLIC OrientScanSequence(const ScanSequence& scan_seq, const vector3& rot_angles, const vector3& origin);
 
 }   // end namespace

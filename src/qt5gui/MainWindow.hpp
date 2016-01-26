@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include "../LibBCSim.hpp"
 #include "SimTimeManager.hpp"
+#include "ScanGeometry.hpp"
 
 // Forward decl.
 class GLVisualizationWidget;

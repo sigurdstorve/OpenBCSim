@@ -33,7 +33,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "export_macros.hpp"
 #include "bcsim_defines.h"
 #include "BCSimConfig.hpp"
-#include "ScanGeometry.hpp"
 
 namespace bcsim {
 
@@ -118,18 +117,6 @@ public:
 private:
     std::vector<Scanline> scanlines;
 };
-
-// Create a sector/linear scan where all lines have the same timestamp.
-// By convention, all scan sequences are created in their own local coordinate system
-// centered at origin. The standard radial direction is along the z-axis and the lateral
-// direction is along the x-axis.
-ScanSequence DLL_PUBLIC CreateScanSequence(ScanGeometry::ptr geometry, size_t num_lines, float timestamp);
-
-// Orient the lines in a ScanSequence by
-// 1. Rotate using x,y, and z rotation angles, in that order, i.e.
-//      p_rot = R*p where R = R_z*R_y*R_x
-// 2. Translate the origin.
-ScanSequence::s_ptr DLL_PUBLIC OrientScanSequence(const ScanSequence& scan_seq, const vector3& rot_angles, const vector3& origin);
 
 }   // namespace
 
