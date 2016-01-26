@@ -41,9 +41,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SignalProcessing.hpp" // for env()
 #include "BeamConvolver.hpp"
 #include "common_utils.hpp" // for compute_num_rf_samples
-#if BCSIM_ENABLE_NAN_CHECK
-    #include <boost/math/special_functions/fpclassify.hpp>
-#endif
 
 namespace bcsim {
 
@@ -158,7 +155,9 @@ std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanli
 
 #if BCSIM_ENABLE_NAN_CHECK
     for (size_t i = 0; i < m_rf_line_num_samples; i++) {
-        if (boost::math::isnan(time_proj_signal[i]))  {
+        // NOTE: will probably not work if compile with "fast-math", so it makes
+        // most sense to do this check for debug builds.
+        if (time_proj_signal[i] != time_proj_signal[i])  {
             throw std::runtime_error("Nan in scatterer projection.");
         }
     }
