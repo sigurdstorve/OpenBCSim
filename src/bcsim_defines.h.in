@@ -1,7 +1,0 @@
-#pragma once
-
-// !!!Automatically set by CMake - do not edit!!!
-#cmakedefine01  BCSIM_ENABLE_OPENMP
-#cmakedefine01  BCSIM_ENABLE_NAN_CHECK
-#cmakedefine01  BCSIM_ENABLE_CUDA
-
