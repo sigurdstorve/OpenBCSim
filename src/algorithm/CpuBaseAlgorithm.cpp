@@ -33,11 +33,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
-#include "bcsim_defines.h"
+#ifdef BCSIM_ENABLE_OPENMP
+    #include <omp.h>
+#endif
 #include "CpuBaseAlgorithm.hpp"
 #include "to_string.hpp"
 #include "LibBCSim.hpp"
-#include "safe_omp.h"
 #include "SignalProcessing.hpp" // for env()
 #include "BeamConvolver.hpp"
 #include "common_utils.hpp" // for compute_num_rf_samples
@@ -55,11 +56,20 @@ CpuBaseAlgorithm::CpuBaseAlgorithm()
 }
 
 void CpuBaseAlgorithm::set_use_all_available_cores() {
+#ifdef BCSIM_ENABLE_OPENMP
     set_use_specific_num_cores(omp_get_max_threads());
+#else
+    set_use_specific_num_cores(1);
+#endif
 }
 
 void CpuBaseAlgorithm::set_use_specific_num_cores(int num_threads) {
-    int max_threads = omp_get_max_threads();
+    int max_threads;
+#ifdef BCSIM_ENABLE_OPENMP
+    max_threads = omp_get_max_threads();
+#else
+    max_threads = 1;
+#endif
     if (num_threads < 0) {
         throw std::runtime_error("Number of cores cannot be negative");
     } else if (num_threads > max_threads) {
@@ -131,21 +141,29 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<bc_fl
         std::cout << "Setting " << m_omp_num_threads << " OpenMP threads." << std::endl;
         std::cout << "IQ demodulation frequency is " << m_excitation.demod_freq << " Hz." << std::endl;
     }    
+#ifdef BCSIM_ENABLE_OPENMP
     omp_set_num_threads(m_omp_num_threads);
-#if BCSIM_ENABLE_OPENMP
     #pragma omp parallel for
 #endif
     for (int line_no = 0; line_no < num_scanlines; line_no++) {
-        if (m_param_verbose) {
-            std::cout << "Line " << line_no << " thread id:" << omp_get_thread_num() << "...\n";
-        }
         const auto& line = m_scan_sequence->get_scanline(line_no);
+        if (m_param_verbose) {
+            std::cout << "Line " << line_no << ":\n";
+        }
         rfLines[line_no] = simulate_line(line);
     }
 }
 
 std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
-    const int thread_idx       = omp_get_thread_num();
+#ifdef BCSIM_ENABLE_OPENMP
+    const int thread_idx = omp_get_thread_num();
+#else
+    const int thread_idx = 0;
+#endif
+
+    if (m_param_verbose) {
+        std::cout << " thread id:" << thread_idx << "...\n";
+    }
     
     // this will have length num_time_samples [which is valid before padding starts]
     auto time_proj_signal = convolvers[thread_idx]->get_zeroed_time_proj_signal();
@@ -153,7 +171,7 @@ std::vector<std::complex<bc_float>> CpuBaseAlgorithm::simulate_line(const Scanli
     // Implementation differs depending on scatterers model.
     projection_loop(line, time_proj_signal, m_rf_line_num_samples);
 
-#if BCSIM_ENABLE_NAN_CHECK
+#ifdef BCSIM_ENABLE_NAN_CHECK
     for (size_t i = 0; i < m_rf_line_num_samples; i++) {
         // NOTE: will probably not work if compile with "fast-math", so it makes
         // most sense to do this check for debug builds.

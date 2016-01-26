@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdexcept>
 #include <cmath>
-#include "bcsim_defines.h"
 #include "ScanSequence.hpp"
 #include "vector3.hpp"
 

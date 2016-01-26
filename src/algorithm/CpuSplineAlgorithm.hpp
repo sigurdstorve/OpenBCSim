@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include <vector>
-#include "bcsim_defines.h"
 #include "CpuBaseAlgorithm.hpp"
 #include "BCSimConfig.hpp"
 

@@ -28,7 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <sstream>
-#include "bcsim_defines.h"
 #include "to_string.hpp"
 
 namespace bcsim {

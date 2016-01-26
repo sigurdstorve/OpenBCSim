@@ -31,7 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <memory>
 #include "export_macros.hpp"
-#include "bcsim_defines.h"
 #include "BCSimConfig.hpp"
 
 namespace bcsim {

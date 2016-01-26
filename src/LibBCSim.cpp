@@ -29,10 +29,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdexcept>
 #include "LibBCSim.hpp"
-#include "bcsim_defines.h"
 #include "algorithm/CpuFixedAlgorithm.hpp"
 #include "algorithm/CpuSplineAlgorithm.hpp"
-#if BCSIM_ENABLE_CUDA
+#ifdef BCSIM_ENABLE_CUDA
     #include "algorithm/GpuFixedAlgorithm.cuh"
     #include "algorithm/GpuSplineAlgorithm1.cuh"
     #include "algorithm/GpuSplineAlgorithm2.cuh"
@@ -45,7 +44,7 @@ IAlgorithm::s_ptr Create(const std::string& sim_type) {
         return IAlgorithm::s_ptr(new CpuFixedAlgorithm);
     } else if (sim_type == "spline") {
         return IAlgorithm::s_ptr(new CpuSplineAlgorithm);
-#if BCSIM_ENABLE_CUDA
+#ifdef BCSIM_ENABLE_CUDA
     } else if (sim_type == "gpu_fixed") {
         return IAlgorithm::s_ptr(new GpuFixedAlgorithm);
     } else if (sim_type == "gpu_spline1") {

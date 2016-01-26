@@ -33,7 +33,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 #include "export_macros.hpp"
-#include "bcsim_defines.h"
 #include "vector3.hpp"
 
 namespace bcsim {

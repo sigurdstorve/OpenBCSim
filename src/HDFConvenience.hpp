@@ -31,7 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include <string>
 #include "export_macros.hpp"
-#include "bcsim_defines.h"
 #include "LibBCSim.hpp"
 
 // Two layers of convenience functions:

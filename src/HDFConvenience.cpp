@@ -32,7 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <boost/multi_array.hpp>
 #include <algorithm>
-#include "bcsim_defines.h"
 #include "HDFConvenience.hpp"
 #include "ScanSequence.hpp"
 #include "BeamProfile.hpp"

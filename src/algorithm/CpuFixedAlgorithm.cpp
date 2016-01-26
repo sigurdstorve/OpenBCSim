@@ -31,9 +31,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <stdexcept>
 #include <cmath>
-#include "bcsim_defines.h"
 #include "CpuFixedAlgorithm.hpp"
-#include "safe_omp.h"
+#ifdef BCSIM_ENABLE_OPENMP
+    #include <omp.h>
+#endif
 
 namespace bcsim {
 

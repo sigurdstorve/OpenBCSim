@@ -36,7 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <string>
 #include <memory>
-#include "bcsim_defines.h"
 #include "BCSimConfig.hpp"
 #include "BeamProfile.hpp"
 #include "to_string.hpp"

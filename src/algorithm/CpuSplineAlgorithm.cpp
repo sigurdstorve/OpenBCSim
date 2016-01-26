@@ -32,10 +32,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <cmath>
 #include <tuple>
-#include "bcsim_defines.h"
+#ifdef BCSIM_ENABLE_OPENMP
+    #include <omp.h>
+#endif
 #include "CpuSplineAlgorithm.hpp"
 #include "bspline.hpp"
-#include "safe_omp.h"
 #include "common_utils.hpp"
 
 namespace bcsim {
