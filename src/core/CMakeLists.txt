@@ -55,6 +55,7 @@ if (BCSIM_ENABLE_CUDA)
                      algorithm/cuda_kernels_spline2.cu
                      algorithm/cuda_kernels_spline2.cuh
                      algorithm/cuda_kernels_c_interface.h
+                     algorithm/cuda_kernels_c_interface.cu
                      )
     target_link_libraries(BCSimCUDA
                           ${CUDA_LIBRARIES}

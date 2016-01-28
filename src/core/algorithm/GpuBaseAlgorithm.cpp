@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../discrete_hilbert_mask.hpp"
 #include "cuda_debug_utils.h"
 #include "cuda_helpers.h"
+#include "cuda_kernels_c_interface.h"
 
 namespace bcsim {
 GpuBaseAlgorithm::GpuBaseAlgorithm()
@@ -189,12 +190,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
         if (m_store_kernel_details) {
             event_timer->restart();
         }
-        //TODO: UPDATE CUDA
-        /*
-        MemsetKernel<cuComplex><<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
-                                                                                                          complex_zero,
-                                                                                                          m_num_time_samples);
-        */
+        launch_MemsetKernel<cuComplex>(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, complex_zero, m_num_time_samples);
 
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());

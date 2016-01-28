@@ -59,3 +59,6 @@ struct SplineAlgKernelParams {
     float lut_e_min;                    // min. elevational extent (for lookup-table beam profile)
     float lut_e_max;                    // max. elevational extent (for lookup-table beam profile)
 };
+
+template <typename T>
+void launch_MemsetKernel(int grid_size, int block_size, cudaStream_t stream, T* ptr, T value, int num_elements);
