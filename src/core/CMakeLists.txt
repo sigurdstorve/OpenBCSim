@@ -27,6 +27,14 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/CpuSplineAlgorithm.hpp
      algorithm/CpuSplineAlgorithm.cpp
      algorithm/common_utils.hpp
+     algorithm/GpuBaseAlgorithm.hpp
+     algorithm/GpuBaseAlgorithm.cpp
+     algorithm/GpuFixedAlgorithm.cpp
+     algorithm/GpuFixedAlgorithm.hpp
+     algorithm/GpuSplineAlgorithm1.hpp
+     algorithm/GpuSplineAlgorithm1.cpp
+     algorithm/GpuSplineAlgorithm2.cpp
+     algorithm/GpuSplineAlgorithm2.hpp
      )
 
 # Made static in order to avoid DLL interface-related issues
@@ -34,14 +42,6 @@ add_library(LibBCSim STATIC ${CORE_LIBRARY_SOURCE_FILES})
 
 if (BCSIM_ENABLE_CUDA)
     cuda_add_library(BCSimCUDA
-                     algorithm/GpuBaseAlgorithm.cuh
-                     algorithm/GpuBaseAlgorithm.cu
-                     algorithm/GpuFixedAlgorithm.cu
-                     algorithm/GpuFixedAlgorithm.cuh
-                     algorithm/GpuSplineAlgorithm1.cuh
-                     algorithm/GpuSplineAlgorithm1.cu
-                     algorithm/GpuSplineAlgorithm2.cu
-                     algorithm/GpuSplineAlgorithm2.cuh
                      algorithm/cuda_helpers.h
                      algorithm/cufft_helpers.h
                      algorithm/cuda_debug_utils.h
