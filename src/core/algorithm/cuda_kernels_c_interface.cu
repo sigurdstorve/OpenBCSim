@@ -1,4 +1,6 @@
-#include "cuda_kernels_common.cuh"
+#include "cuda_kernels_c_interface.h"
+#include "cuda_kernels_common.cuh"      // for common kernels
+#include "cuda_kernels_fixed.cuh"       // for FixedAlgKernel
 
 template <typename T>
 void launch_MemsetKernel(int grid_size, int block_size, cudaStream_t stream, T* ptr, T value, int num_samples) {
@@ -17,5 +19,20 @@ void launch_ScaleSignalKernel(int grid_size, int block_size, cudaStream_t stream
     ScaleSignalKernel<<<grid_size, block_size, 0, stream>>>(signal, factor, num_samples);
 }
 
+template <bool A, bool B, bool C>
+void launch_FixedAlgKernel(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params) {
+    FixedAlgKernel<A, B, C><<<grid_size, block_size, 0, stream>>>(params);
+}
+
 // explicit function template instantiations for required datatypes
 template void launch_MemsetKernel(int grid_size, int block_size, cudaStream_t stream, cuComplex* ptr, cuComplex value, int num_samples);
+
+// fixed algorithm explicit function template instantiations - all combinations
+template void launch_FixedAlgKernel<false, false, false>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+template void launch_FixedAlgKernel<false, false,  true>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+template void launch_FixedAlgKernel<false, true,  false>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+template void launch_FixedAlgKernel<false, true,   true>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+template void launch_FixedAlgKernel<true,  false, false>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+template void launch_FixedAlgKernel<true,  false,  true>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+template void launch_FixedAlgKernel<true,  true,  false>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+template void launch_FixedAlgKernel<true,  true,   true>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);

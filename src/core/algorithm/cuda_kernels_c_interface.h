@@ -69,3 +69,6 @@ void launch_MultiplyFftKernel(int grid_size, int block_size, cudaStream_t stream
 void launch_DemodulateKernel(int grid_size, int block_size, cudaStream_t stream, cuComplex* signal, float w, int num_samples);
 
 void launch_ScaleSignalKernel(int grid_size, int block_size, cudaStream_t stream, cufftComplex* signal, float factor, int num_samples);
+
+template <bool A, bool B, bool C>
+void launch_FixedAlgKernel(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);

@@ -42,9 +42,9 @@ GpuFixedAlgorithm::GpuFixedAlgorithm()
 void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
 
-    dim3 grid_size(num_blocks, 1, 1);
-    dim3 block_size(m_param_threads_per_block, 1, 1);
-    
+    //dim3 grid_size(num_blocks, 1, 1);
+    //dim3 block_size(m_param_threads_per_block, 1, 1);
+
     // prepare struct with parameters
     FixedAlgKernelParams params;
     params.point_xs          = m_device_point_xs->data();
@@ -84,28 +84,25 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
         throw std::logic_error("unknown beam profile type");
     }
 
-    // TODO: UPDATE CUDA
-    /*
     if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        FixedAlgKernel<false, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_FixedAlgKernel<false, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        FixedAlgKernel<false, false, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_FixedAlgKernel<false, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        FixedAlgKernel<false, true, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_FixedAlgKernel<false, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        FixedAlgKernel<false, true, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_FixedAlgKernel<false, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        FixedAlgKernel<true, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_FixedAlgKernel<true, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        FixedAlgKernel<true, false, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_FixedAlgKernel<true, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        FixedAlgKernel<true, true, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_FixedAlgKernel<true, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        FixedAlgKernel<true, true, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_FixedAlgKernel<true, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else {
         throw std::logic_error("this should never happen");
     }
-    */
 }
 
 
