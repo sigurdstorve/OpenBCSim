@@ -86,3 +86,10 @@ void launch_RenderSplineKernel(int grid_size, int block_size, cudaStream_t strea
                                int cs_idx_start,
                                int cs_idx_end,
                                int NUM_SPLINES);
+
+void launch_SliceLookupTable(int grid_size0, int grid_size1, int block_size, cudaStream_t stream,
+                             float3 origin,
+                             float3 dir0,
+                             float3 dir1,
+                             float* output,
+                             cudaTextureObject_t lut_tex);

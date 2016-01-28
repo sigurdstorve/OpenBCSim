@@ -5,6 +5,13 @@
 #include "cuda_helpers.h"   // for operator-
 #include "cuda_kernels_c_interface.h"
 
+__global__ void SliceLookupTable(float3 origin,
+                                 float3 dir0,
+                                 float3 dir1,
+                                 float* output,
+                                 cudaTextureObject_t lut_tex);
+
+
 template <bool use_arc_projection, bool use_phase_delay, bool use_lut>
 __global__ void FixedAlgKernel(FixedAlgKernelParams params) {
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;

@@ -407,14 +407,11 @@ void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
         const int num_bytes = sizeof(float)*total_num_samples;
         DeviceBufferRAII<float> device_slice(static_cast<size_t>(num_bytes));
             
-        dim3 grid_size(num_samples, num_samples, 1);
-        dim3 block_size(1, 1, 1);
-        // TODO: UPDATE CUDA
-        /*
-        SliceLookupTable<<<grid_size, block_size>>>(origin, dir0, dir1,
-                                                    device_slice.data(),
-                                                    m_device_beam_profile->get());
-        */
+        //dim3 grid_size(num_samples, num_samples, 1);
+        //dim3 block_size(1, 1, 1);
+        const cudaStream_t cuda_stream = 0;
+        launch_SliceLookupTable(num_samples, num_samples, 1, cuda_stream,
+                                origin, dir0, dir1, device_slice.data(), m_device_beam_profile->get());
         cudaErrorCheck( cudaDeviceSynchronize() );
         dump_device_buffer_as_raw_file(device_slice, raw_file);
     };
