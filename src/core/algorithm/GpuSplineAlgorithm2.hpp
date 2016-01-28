@@ -27,39 +27,49 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <cuda.h>
-#include <cufft.h>
-#include <math_functions.h> // for sincosf()
-#include <cuComplex.h> // for cuCmulf()
+#pragma once
+#include "../LibBCSim.hpp"
+#include "GpuBaseAlgorithm.hpp"
 #include "cuda_helpers.h"
-#include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
-#include "gpu_alg_common.cuh"
+#include "cufft_helpers.h"
 
-__global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        cufftComplex a = time_proj_fft[global_idx];
-        cufftComplex b = filter_fft[global_idx];
-        time_proj_fft[global_idx] = make_float2(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x); 
+// NOTE: There is no support for double here!!!
+
+namespace bcsim {
+
+class GpuSplineAlgorithm2 : public GpuBaseAlgorithm {
+public:
+
+    GpuSplineAlgorithm2();
+
+    virtual ~GpuSplineAlgorithm2() {
+        // cleanup
     }
-}
+        
+    virtual void set_parameter(const std::string& key, const std::string& value) override;
+    
+    virtual void set_scatterers(Scatterers::s_ptr new_scatterers) override;
+        
+protected:
+    void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 
-__global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_samples) {
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        cufftComplex c     = signal[global_idx];
-        signal[global_idx] = make_float2(c.x*factor, c.y*factor);
-    }
-}
+    virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) override;
+    
+protected:
+    
+    // device memory for control points for all spline scatterers.
+    DeviceBufferRAII<float>::u_ptr      m_device_control_xs;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_ys;
+    DeviceBufferRAII<float>::u_ptr      m_device_control_zs;
 
-__global__ void DemodulateKernel(cuComplex* signal, float w, int num_samples) {
-    const auto global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx < num_samples) {
-        // exp(-i*w*n) = cos(w*n) - i*sin(w*n)
-        float sin_value, cos_value;
-        sincosf(w*global_idx, &sin_value, &cos_value);
-        const auto c = make_cuComplex(cos_value, -sin_value);
+    // device memory for all scatterer amplitudes - one for each scatterer spline.
+    DeviceBufferRAII<float>::u_ptr      m_device_control_as;
+    
+    // The knot vector common to all splines.
+    std::vector<float>                          m_common_knots;
+    int                                         m_num_cs;
+    int                                         m_spline_degree;
+    int                                         m_num_splines;
+};
 
-        signal[global_idx] = cuCmulf(signal[global_idx], c);
-    }
-}
+}   // end namespace

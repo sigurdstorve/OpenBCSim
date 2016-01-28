@@ -27,6 +27,15 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/CpuSplineAlgorithm.hpp
      algorithm/CpuSplineAlgorithm.cpp
      algorithm/common_utils.hpp
+     algorithm/GpuBaseAlgorithm.hpp
+     algorithm/GpuBaseAlgorithm.cpp
+     algorithm/GpuFixedAlgorithm.cpp
+     algorithm/GpuFixedAlgorithm.hpp
+     algorithm/GpuSplineAlgorithm1.hpp
+     algorithm/GpuSplineAlgorithm1.cpp
+     algorithm/GpuSplineAlgorithm2.cpp
+     algorithm/GpuSplineAlgorithm2.hpp
+     algorithm/common_definitions.h
      )
 
 # Made static in order to avoid DLL interface-related issues
@@ -34,19 +43,19 @@ add_library(LibBCSim STATIC ${CORE_LIBRARY_SOURCE_FILES})
 
 if (BCSIM_ENABLE_CUDA)
     cuda_add_library(BCSimCUDA
-                     algorithm/GpuBaseAlgorithm.cuh
-                     algorithm/GpuBaseAlgorithm.cu
-                     algorithm/gpu_alg_common.cuh
-                     algorithm/gpu_alg_common.cu
-                     algorithm/GpuFixedAlgorithm.cu
-                     algorithm/GpuFixedAlgorithm.cuh
-                     algorithm/GpuSplineAlgorithm1.cuh
-                     algorithm/GpuSplineAlgorithm1.cu
-                     algorithm/GpuSplineAlgorithm2.cu
-                     algorithm/GpuSplineAlgorithm2.cuh
                      algorithm/cuda_helpers.h
                      algorithm/cufft_helpers.h
                      algorithm/cuda_debug_utils.h
+                     algorithm/cuda_kernels_common.cu
+                     algorithm/cuda_kernels_common.cuh
+                     algorithm/cuda_kernels_fixed.cu
+                     algorithm/cuda_kernels_fixed.cuh
+                     algorithm/cuda_kernels_spline1.cu
+                     algorithm/cuda_kernels_spline1.cuh
+                     algorithm/cuda_kernels_spline2.cu
+                     algorithm/cuda_kernels_spline2.cuh
+                     algorithm/cuda_kernels_c_interface.h
+                     algorithm/cuda_kernels_c_interface.cu
                      )
     target_link_libraries(BCSimCUDA
                           ${CUDA_LIBRARIES}

@@ -26,121 +26,16 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
+#ifdef BCSIM_ENABLE_CUDA
 #include <tuple>
 #include <cuda.h>
-#include "GpuSplineAlgorithm2.cuh"
+#include "GpuSplineAlgorithm2.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
-#include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "../bspline.hpp"
-#include "gpu_alg_common.cuh" // for misc. CUDA kernels
 #include "common_utils.hpp"
-#include <math_functions.h> // for copysignf()
-
-#define MAX_SPLINE_DEGREE 4
-// the maximum number of CUDA streams that can be used when simulating RF lines
-#define MAX_NUM_CUDA_STREAMS 2
-
-
-__constant__ float eval_basis[(MAX_SPLINE_DEGREE+1)*MAX_NUM_CUDA_STREAMS];
-
-struct SplineAlgKernelParams {
-    float* control_xs;                  // pointer to device memory x components
-    float* control_ys;                  // pointer to device memory y components
-    float* control_zs;                  // pointer to device memory z components
-    float* control_as;                  // pointer to device memory amplitudes
-    float3 rad_dir;                     // radial direction unit vector
-    float3 lat_dir;                     // lateral direction unit vector
-    float3 ele_dir;                     // elevational direction unit vector
-    float3 origin;                      // beam's origin
-    float  fs_hertz;                    // temporal sampling frequency in hertz
-    int    num_time_samples;            // number of samples in time signal
-    float  sigma_lateral;               // lateral beam width (for analyical beam profile)
-    float  sigma_elevational;           // elevational beam width (for analytical beam profile)
-    float  sound_speed;                 // speed of sound in meters per second
-    int    cs_idx_start;                // start index for spline evaluation sum (inclusive)
-    int    cs_idx_end;                  // end index for spline evaluation sum (inclusive)
-    int    NUM_SPLINES;                 // number of splines in phantom (i.e. number of scatterers)
-    cuComplex* res;                     // the output buffer (complex projected amplitudes)
-    size_t eval_basis_offset_elements;  // memory offset (for different CUDA streams)
-    float  demod_freq;                  // complex demodulation frequency.
-    cudaTextureObject_t lut_tex;        // 3D texture object (for lookup-table beam profile) 
-    float lut_r_min;                    // min. radial extent (for lookup-table beam profile)
-    float lut_r_max;                    // max. radial extent (for lookup-table beam profile)                    
-    float lut_l_min;                    // min. lateral extent (for lookup-table beam profile)
-    float lut_l_max;                    // max. lateral extent (for lookup-table beam profile)
-    float lut_e_min;                    // min. elevational extent (for lookup-table beam profile)
-    float lut_e_max;                    // max. elevational extent (for lookup-table beam profile)
-};
-
-template <bool use_arc_projection, bool use_phase_delay, bool use_lut>
-__global__ void SplineAlgKernel(SplineAlgKernelParams params) {
-
-    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (global_idx >= params.NUM_SPLINES) {
-        return;
-    }
-
-    // step 1: evaluate spline
-    // to get from one control point to the next, we have
-    // to make a jump of size equal to number of splines
-    float rendered_x = 0.0f;
-    float rendered_y = 0.0f;
-    float rendered_z = 0.0f;
-    for (int i = params.cs_idx_start; i <= params.cs_idx_end; i++) {
-        size_t eval_basis_i = i + params.eval_basis_offset_elements;
-        rendered_x += params.control_xs[params.NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-params.cs_idx_start];
-        rendered_y += params.control_ys[params.NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-params.cs_idx_start];
-        rendered_z += params.control_zs[params.NUM_SPLINES*i + global_idx]*eval_basis[eval_basis_i-params.cs_idx_start];
-    }
-
-    // step 2: compute projections
-    float3 point = make_float3(rendered_x, rendered_y, rendered_z) - params.origin;
-    
-    // compute dot products
-    auto radial_dist  = dot(point, params.rad_dir);
-    const auto lateral_dist = dot(point, params.lat_dir);
-    const auto elev_dist    = dot(point, params.ele_dir);
-
-    if (use_arc_projection) {
-        // Use "arc projection" in the radial direction: use length of vector from
-        // beam's origin to the scatterer with the same sign as the projection onto
-        // the line.
-        radial_dist = copysignf(sqrtf(dot(point,point)), radial_dist);
-    }
-
-    float weight;
-    if (use_lut) {
-        // Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
-        weight = ComputeWeightLUT(params.lut_tex, radial_dist, lateral_dist, elev_dist,
-                                  params.lut_r_min, params.lut_r_max, params.lut_l_min, params.lut_l_max, params.lut_e_min, params.lut_e_max);
-    } else {
-        // Compute weight analytically
-        weight = ComputeWeightAnalytical(params.sigma_lateral, params.sigma_elevational, radial_dist, lateral_dist, elev_dist);
-    }
-
-    const int radial_index = static_cast<int>(params.fs_hertz*2.0f*radial_dist/params.sound_speed + 0.5f);
-    
-    if (radial_index >= 0 && radial_index < params.num_time_samples) {
-        if (use_phase_delay) {
-            // handle sub-sample displacement with a complex phase
-            const auto true_index = params.fs_hertz*2.0f*radial_dist/params.sound_speed;
-            const float ss_delay = (radial_index - true_index)/params.fs_hertz;
-            const float complex_phase = 6.283185307179586*params.demod_freq*ss_delay;
-
-            // exp(i*theta) = cos(theta) + i*sin(theta)
-            float sin_value, cos_value;
-            sincosf(complex_phase, &sin_value, &cos_value);
-
-            const auto w = weight*params.control_as[global_idx];
-            atomicAdd(&(params.res[radial_index].x), w*cos_value);
-            atomicAdd(&(params.res[radial_index].y), w*sin_value);
-        } else {
-            atomicAdd(&(params.res[radial_index].x), weight*params.control_as[global_idx]);
-        }
-    }
-}
+#include "common_definitions.h" // for MAX_NUM_CUDA_STREAMS and MAX_SPLINE_DEGREE
+#include "cuda_kernels_c_interface.h" // for SplineAlgKernelParams
 
 namespace bcsim {
 
@@ -172,8 +67,8 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
         host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, scanline.get_timestamp(), m_common_knots);
     }
 
-    dim3 grid_size(num_blocks, 1, 1);
-    dim3 block_size(m_param_threads_per_block, 1, 1);
+    //dim3 grid_size(num_blocks, 1, 1);
+    //dim3 block_size(m_param_threads_per_block, 1, 1);
 
     // TODO: Is it neccessary to have both m_num_splines AND m_num_scatterers? They
     // are equal...
@@ -188,12 +83,14 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     }
     if (cs_idx_end-cs_idx_start+1 != num_nonzero) throw std::logic_error("illegal number of non-zero basis functions");
 
-    cudaErrorCheck(cudaMemcpyToSymbolAsync(eval_basis,
-                                           host_basis_functions.data() + cs_idx_start,
-                                           num_nonzero*sizeof(float),
-                                           eval_basis_offset_elements*sizeof(float),
-                                           cudaMemcpyHostToDevice,
-                                           cur_stream));
+    if(!splineAlg2_updateConstantMemory(host_basis_functions.data() + cs_idx_start,
+                                        num_nonzero*sizeof(float),
+                                        eval_basis_offset_elements*sizeof(float),
+                                        cudaMemcpyHostToDevice,
+                                        cur_stream))
+    {
+        throw std::runtime_error("Failed to copy to symbol memory");
+    }
 
     // prepare a struct of arguments
     SplineAlgKernelParams params;
@@ -236,23 +133,22 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     default:
         throw std::logic_error("GpuSplineAlgorithm2: unknown beam profile type");
     }
-
     if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        SplineAlgKernel<false, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<false, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        SplineAlgKernel<false, false, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<false, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        SplineAlgKernel<false, true, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<false, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        SplineAlgKernel<false, true, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<false, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        SplineAlgKernel<true, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<true, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        SplineAlgKernel<true, false, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<true, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        SplineAlgKernel<true, true, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<true, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        SplineAlgKernel<true, true, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<true, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else {
         throw std::logic_error("this should never happen");
     }
@@ -327,3 +223,4 @@ void GpuSplineAlgorithm2::set_scatterers(Scatterers::s_ptr new_scatterers) {
 
 
 }   // end namespace
+#endif  // BCSIM_ENABLE_CUDA

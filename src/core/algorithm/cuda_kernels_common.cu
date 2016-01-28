@@ -27,39 +27,39 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
-#include "../LibBCSim.hpp"
-#include "GpuBaseAlgorithm.cuh"
+#include <cuda.h>
+#include <cufft.h>
+#include <math_functions.h> // for sincosf()
+#include <cuComplex.h> // for cuCmulf()
 #include "cuda_helpers.h"
-#include "cufft_helpers.h"
+#include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
+#include "cuda_kernels_common.cuh"
 
-// NOTE: There is no support for double here!!!
-
-namespace bcsim {
-
-class GpuFixedAlgorithm : public GpuBaseAlgorithm {
-public:
-    friend class GpuSplineAlgorithm1;
-
-    GpuFixedAlgorithm();
-
-    virtual ~GpuFixedAlgorithm() {
-        // cleanup
+__global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples) {
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx < num_samples) {
+        cufftComplex a = time_proj_fft[global_idx];
+        cufftComplex b = filter_fft[global_idx];
+        time_proj_fft[global_idx] = make_float2(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x); 
     }
-            
-    virtual void set_scatterers(Scatterers::s_ptr new_scatterers) override;
-        
-protected:
-    void copy_scatterers_to_device(FixedScatterers::s_ptr scatterers);
+}
 
-    virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) override;
-    
-protected:
-    // device memory for fixed scatterers
-    DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_ys;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_zs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_as;
-};
+__global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_samples) {
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx < num_samples) {
+        cufftComplex c     = signal[global_idx];
+        signal[global_idx] = make_float2(c.x*factor, c.y*factor);
+    }
+}
 
-}   // end namespace
+__global__ void DemodulateKernel(cuComplex* signal, float w, int num_samples) {
+    const auto global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx < num_samples) {
+        // exp(-i*w*n) = cos(w*n) - i*sin(w*n)
+        float sin_value, cos_value;
+        sincosf(w*global_idx, &sin_value, &cos_value);
+        const auto c = make_cuComplex(cos_value, -sin_value);
+
+        signal[global_idx] = cuCmulf(signal[global_idx], c);
+    }
+}

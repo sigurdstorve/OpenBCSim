@@ -26,54 +26,18 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
+#ifdef BCSIM_ENABLE_CUDA
 #include <iostream>
 #include <vector>
 #include <tuple>
 #include <cuda.h>
-#include <device_launch_parameters.h>
 #include "cuda_helpers.h"
 #include "../bspline.hpp"
 #include "../LibBCSim.hpp"
-#include "GpuSplineAlgorithm1.cuh"
+#include "GpuSplineAlgorithm1.hpp"
 #include "common_utils.hpp"
-
-#define MAX_SPLINE_DEGREE 4
-
-__constant__ float eval_basis[MAX_SPLINE_DEGREE+1];
-
-__global__ void RenderSplineKernel(const float* control_xs,
-                                   const float* control_ys,
-                                   const float* control_zs,
-                                   float* rendered_xs,
-                                   float* rendered_ys,
-                                   float* rendered_zs,
-                                   int cs_idx_start,
-                                   int cs_idx_end,
-                                   int NUM_SPLINES) {
-
-    const int idx = blockDim.x*blockIdx.x + threadIdx.x;
-    if (idx >= NUM_SPLINES) {
-        return;
-    }
-
-    // to get from one control point to the next, we have
-    // to make a jump of size equal to number of splines
-    float rendered_x = 0.0f;
-    float rendered_y = 0.0f;
-    float rendered_z = 0.0f;
-    for (int i = cs_idx_start; i <= cs_idx_end; i++) {
-        rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
-        rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
-        rendered_z += control_zs[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
-    }
-
-    // write result to memory
-    rendered_xs[idx] = rendered_x;
-    rendered_ys[idx] = rendered_y;
-    rendered_zs[idx] = rendered_z;
-}
-
+#include "common_definitions.h" // for MAX_SPLINE_DEGREE
+#include "cuda_kernels_c_interface.h"
 
 namespace bcsim {
 
@@ -197,22 +161,26 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     
     // only copy the non-zero-basis functions
     const auto src_ptr = host_basis_functions.data() + cs_idx_start;
-    cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, src_ptr, num_nonzero*sizeof(float)) );
+    if (!splineAlg1_updateConstantMemory(src_ptr, num_nonzero*sizeof(float))) {
+        throw std::runtime_error("Failed copying to symbol memory");   
+    }
     
     int num_threads = 128;
     int num_blocks = round_up_div(m_num_splines, num_threads);
-    dim3 grid_size(num_blocks, 1, 1);
-    dim3 block_size(num_threads, 1, 1);
+    //dim3 grid_size(num_blocks, 1, 1);
+    //dim3 block_size(num_threads, 1, 1);
     
-    RenderSplineKernel<<<grid_size, block_size>>>(m_control_xs->data(),
-                                                  m_control_ys->data(),
-                                                  m_control_zs->data(),
-                                                  m_fixed_alg->m_device_point_xs->data(),
-                                                  m_fixed_alg->m_device_point_ys->data(),
-                                                  m_fixed_alg->m_device_point_zs->data(),
-                                                  cs_idx_start,
-                                                  cs_idx_end,
-                                                  m_num_splines);
+    const cudaStream_t cuda_stream = 0;
+    launch_RenderSplineKernel(num_blocks, num_threads, cuda_stream,
+                              m_control_xs->data(),
+                              m_control_ys->data(),
+                              m_control_zs->data(),
+                              m_fixed_alg->m_device_point_xs->data(),
+                              m_fixed_alg->m_device_point_ys->data(),
+                              m_fixed_alg->m_device_point_zs->data(),
+                              cs_idx_start,
+                              cs_idx_end,
+                              m_num_splines);
     cudaErrorCheck( cudaDeviceSynchronize() );
     //auto ms = event_timer.stop();
     //std::cout << "GPU spline alg.1 : set_scan_sequence(): rendering spline scatterers took " << ms << " millisec.\n";
@@ -234,3 +202,4 @@ bool GpuSplineAlgorithm1::has_equal_timestamps(ScanSequence::s_ptr scan_seq, dou
 }
 
 }   // end namespace
+#endif  // BCSIM_ENABLE_CUDA

@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include "../LibBCSim.hpp"
-#include "GpuBaseAlgorithm.cuh"
+#include "GpuBaseAlgorithm.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 
@@ -37,39 +37,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-class GpuSplineAlgorithm2 : public GpuBaseAlgorithm {
+class GpuFixedAlgorithm : public GpuBaseAlgorithm {
 public:
+    friend class GpuSplineAlgorithm1;
 
-    GpuSplineAlgorithm2();
+    GpuFixedAlgorithm();
 
-    virtual ~GpuSplineAlgorithm2() {
+    virtual ~GpuFixedAlgorithm() {
         // cleanup
     }
-        
-    virtual void set_parameter(const std::string& key, const std::string& value) override;
-    
+            
     virtual void set_scatterers(Scatterers::s_ptr new_scatterers) override;
         
 protected:
-    void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
+    void copy_scatterers_to_device(FixedScatterers::s_ptr scatterers);
 
     virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) override;
     
 protected:
-    
-    // device memory for control points for all spline scatterers.
-    DeviceBufferRAII<float>::u_ptr      m_device_control_xs;
-    DeviceBufferRAII<float>::u_ptr      m_device_control_ys;
-    DeviceBufferRAII<float>::u_ptr      m_device_control_zs;
-
-    // device memory for all scatterer amplitudes - one for each scatterer spline.
-    DeviceBufferRAII<float>::u_ptr      m_device_control_as;
-    
-    // The knot vector common to all splines.
-    std::vector<float>                          m_common_knots;
-    int                                         m_num_cs;
-    int                                         m_spline_degree;
-    int                                         m_num_splines;
+    // device memory for fixed scatterers
+    DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
+    DeviceBufferRAII<float>::u_ptr      m_device_point_ys;
+    DeviceBufferRAII<float>::u_ptr      m_device_point_zs;
+    DeviceBufferRAII<float>::u_ptr      m_device_point_as;
 };
 
 }   // end namespace
