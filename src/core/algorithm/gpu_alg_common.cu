@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cuda.h>
 #include <cufft.h>
 #include <math_functions.h> // for sincosf()
+#include <cuComplex.h> // for cuCmulf()
 #include "cuda_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "gpu_alg_common.cuh"
@@ -59,6 +60,6 @@ __global__ void DemodulateKernel(cuComplex* signal, float w, int num_samples) {
         sincosf(w*global_idx, &sin_value, &cos_value);
         const auto c = make_cuComplex(cos_value, -sin_value);
 
-        signal[global_idx] = ComplexMul(signal[global_idx], c);
+        signal[global_idx] = cuCmulf(signal[global_idx], c);
     }
 }
