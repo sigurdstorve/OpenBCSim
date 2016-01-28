@@ -36,8 +36,6 @@ if (BCSIM_ENABLE_CUDA)
     cuda_add_library(BCSimCUDA
                      algorithm/GpuBaseAlgorithm.cuh
                      algorithm/GpuBaseAlgorithm.cu
-                     algorithm/gpu_alg_common.cuh
-                     algorithm/gpu_alg_common.cu
                      algorithm/GpuFixedAlgorithm.cu
                      algorithm/GpuFixedAlgorithm.cuh
                      algorithm/GpuSplineAlgorithm1.cuh
@@ -47,6 +45,14 @@ if (BCSIM_ENABLE_CUDA)
                      algorithm/cuda_helpers.h
                      algorithm/cufft_helpers.h
                      algorithm/cuda_debug_utils.h
+                     algorithm/cuda_kernels_common.cu
+                     algorithm/cuda_kernels_common.cuh
+                     algorithm/cuda_kernels_fixed.cu
+                     algorithm/cuda_kernels_fixed.cuh
+                     algorithm/cuda_kernels_spline1.cu
+                     algorithm/cuda_kernels_spline1.cuh
+                     algorithm/cuda_kernels_spline2.cu
+                     algorithm/cuda_kernels_spline2.cuh
                      )
     target_link_libraries(BCSimCUDA
                           ${CUDA_LIBRARIES}
