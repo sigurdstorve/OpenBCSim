@@ -2,6 +2,7 @@
 #include "cuda_kernels_common.cuh"      // for common kernels
 #include "cuda_kernels_fixed.cuh"       // for FixedAlgKernel
 #include "cuda_kernels_spline1.cuh"     // for fixedAlg_updateConstantMemory_internal
+#include "cuda_kernels_spline2.cuh"     // for splineAlg2_updateConstantMemory_internal
 
 template <typename T>
 void launch_MemsetKernel(int grid_size, int block_size, cudaStream_t stream, T* ptr, T value, int num_samples) {
@@ -65,4 +66,8 @@ void launch_SliceLookupTable(int grid_size0, int grid_size1, int block_size, cud
                              cudaTextureObject_t lut_tex) {
     dim3 grid_size(grid_size0, grid_size1, 1);
     SliceLookupTable<<<grid_size, block_size, 0, stream>>>(origin, dir0, dir1, output, lut_tex);
+}
+
+void splineAlg2_updateConstantMemory(float* src, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream) {
+    splineAlg2_updateConstantMemory_internal(src, count, offset, kind, stream);
 }
