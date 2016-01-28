@@ -83,11 +83,14 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     }
     if (cs_idx_end-cs_idx_start+1 != num_nonzero) throw std::logic_error("illegal number of non-zero basis functions");
 
-    splineAlg2_updateConstantMemory(host_basis_functions.data() + cs_idx_start,
-                                    num_nonzero*sizeof(float),
-                                    eval_basis_offset_elements*sizeof(float),
-                                    cudaMemcpyHostToDevice,
-                                    cur_stream);
+    if(!splineAlg2_updateConstantMemory(host_basis_functions.data() + cs_idx_start,
+                                        num_nonzero*sizeof(float),
+                                        eval_basis_offset_elements*sizeof(float),
+                                        cudaMemcpyHostToDevice,
+                                        cur_stream))
+    {
+        throw std::runtime_error("Failed to copy to symbol memory");
+    }
 
     // prepare a struct of arguments
     SplineAlgKernelParams params;

@@ -6,13 +6,9 @@
 
 __constant__ float eval_basis[(MAX_SPLINE_DEGREE+1)*MAX_NUM_CUDA_STREAMS];
 
-void splineAlg2_updateConstantMemory_internal(float* src, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream) {
+bool splineAlg2_updateConstantMemory_internal(float* src, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream) {
     const auto res = cudaMemcpyToSymbolAsync(eval_basis, src, count, offset, cudaMemcpyHostToDevice, stream);
-    if (res != cudaSuccess) {
-        printf("splineAlg2_updateConstantMemory_internal: Something went wrong!\n");
-    } else {
-        printf("splineAlg2_updateConstantMemory_internal: Copy to symbol OK!\n");
-    }
+    return (res == cudaSuccess);
 }
 
 template <bool use_arc_projection, bool use_phase_delay, bool use_lut>

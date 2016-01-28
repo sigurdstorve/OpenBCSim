@@ -68,8 +68,8 @@ void launch_SliceLookupTable(int grid_size0, int grid_size1, int block_size, cud
     SliceLookupTable<<<grid_size, block_size, 0, stream>>>(origin, dir0, dir1, output, lut_tex);
 }
 
-void splineAlg2_updateConstantMemory(float* src, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream) {
-    splineAlg2_updateConstantMemory_internal(src, count, offset, kind, stream);
+bool splineAlg2_updateConstantMemory(float* src, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream) {
+    return splineAlg2_updateConstantMemory_internal(src, count, offset, kind, stream);
 }
 
 template <bool A, bool B, bool C>
