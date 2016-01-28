@@ -82,3 +82,13 @@ __global__ void SplineAlgKernel(SplineAlgKernelParams params) {
         }
     }
 }
+
+// explicit function template instantiations
+template __global__ void SplineAlgKernel<false, false, false>(SplineAlgKernelParams params);
+template __global__ void SplineAlgKernel<false, false, true >(SplineAlgKernelParams params);
+template __global__ void SplineAlgKernel<false, true,  false>(SplineAlgKernelParams params);
+template __global__ void SplineAlgKernel<false, true,  true >(SplineAlgKernelParams params);
+template __global__ void SplineAlgKernel<true,  false, false>(SplineAlgKernelParams params);
+template __global__ void SplineAlgKernel<true,  false, true >(SplineAlgKernelParams params);
+template __global__ void SplineAlgKernel<true,  true,  false>(SplineAlgKernelParams params);
+template __global__ void SplineAlgKernel<true,  true,  true >(SplineAlgKernelParams params);

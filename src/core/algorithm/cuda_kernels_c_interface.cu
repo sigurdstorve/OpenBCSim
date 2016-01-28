@@ -71,3 +71,18 @@ void launch_SliceLookupTable(int grid_size0, int grid_size1, int block_size, cud
 void splineAlg2_updateConstantMemory(float* src, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream) {
     splineAlg2_updateConstantMemory_internal(src, count, offset, kind, stream);
 }
+
+template <bool A, bool B, bool C>
+void launch_SplineAlgKernel(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params) {
+    SplineAlgKernel<A, B, C><<<grid_size, block_size, 0, stream>>>(params);
+}
+
+// spline algorithm2 explicit function template instantiations - all combinations
+template void launch_SplineAlgKernel<false, false, false>(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+template void launch_SplineAlgKernel<false, false, true >(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+template void launch_SplineAlgKernel<false, true,  false>(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+template void launch_SplineAlgKernel<false, true,  true >(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+template void launch_SplineAlgKernel<true,  false, false>(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+template void launch_SplineAlgKernel<true,  false, true >(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+template void launch_SplineAlgKernel<true,  true,  false>(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+template void launch_SplineAlgKernel<true,  true,  true >(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);

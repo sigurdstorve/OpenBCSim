@@ -95,3 +95,6 @@ void launch_SliceLookupTable(int grid_size0, int grid_size1, int block_size, cud
                              cudaTextureObject_t lut_tex);
 
 void splineAlg2_updateConstantMemory(float* src, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream);
+
+template <bool A, bool B, bool C>
+void launch_SplineAlgKernel(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);

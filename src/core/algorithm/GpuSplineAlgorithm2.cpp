@@ -67,8 +67,8 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
         host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, scanline.get_timestamp(), m_common_knots);
     }
 
-    dim3 grid_size(num_blocks, 1, 1);
-    dim3 block_size(m_param_threads_per_block, 1, 1);
+    //dim3 grid_size(num_blocks, 1, 1);
+    //dim3 block_size(m_param_threads_per_block, 1, 1);
 
     // TODO: Is it neccessary to have both m_num_splines AND m_num_scatterers? They
     // are equal...
@@ -130,28 +130,25 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     default:
         throw std::logic_error("GpuSplineAlgorithm2: unknown beam profile type");
     }
-    // TODO: UPDATE CUDA
-    /*
     if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        SplineAlgKernel<false, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<false, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        SplineAlgKernel<false, false, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<false, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        SplineAlgKernel<false, true, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<false, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (!m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        SplineAlgKernel<false, true, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<false, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        SplineAlgKernel<true, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<true, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        SplineAlgKernel<true, false, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<true, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        SplineAlgKernel<true, true, false><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<true, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else if (m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        SplineAlgKernel<true, true, true><<<grid_size, block_size, 0, cur_stream>>>(params);
+        launch_SplineAlgKernel<true, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
     } else {
         throw std::logic_error("this should never happen");
     }
-    */
 }
 
 void GpuSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
