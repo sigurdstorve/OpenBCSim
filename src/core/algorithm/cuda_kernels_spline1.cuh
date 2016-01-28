@@ -1,5 +1,7 @@
 #pragma once
-void fixedAlg_updateConstantMemory_internal(float* src_ptr, size_t num_bytes);
+
+// Returns false on failure.
+bool fixedAlg_updateConstantMemory_internal(float* src_ptr, size_t num_bytes);
 
 __global__ void RenderSplineKernel(const float* control_xs,
                                    const float* control_ys,

@@ -161,7 +161,9 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     
     // only copy the non-zero-basis functions
     const auto src_ptr = host_basis_functions.data() + cs_idx_start;
-    fixedAlg_updateConstantMemory(src_ptr, num_nonzero*sizeof(float));
+    if (!fixedAlg_updateConstantMemory(src_ptr, num_nonzero*sizeof(float))) {
+        throw std::runtime_error("Failed copying to symbol memory");   
+    }
     
     int num_threads = 128;
     int num_blocks = round_up_div(m_num_splines, num_threads);

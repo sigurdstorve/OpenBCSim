@@ -1,5 +1,4 @@
 #include <cuda.h>
-#include <stdio.h>
 #include <cuda_runtime_api.h>
 #include "cuda_kernels_spline1.cuh"
 #include "common_definitions.h" // for MAX_SPLINE_DEGREE
@@ -38,11 +37,7 @@ __global__ void RenderSplineKernel(const float* control_xs,
     rendered_zs[idx] = rendered_z;
 }
 
-void fixedAlg_updateConstantMemory_internal(float* src_ptr, size_t num_bytes) {
+bool fixedAlg_updateConstantMemory_internal(float* src_ptr, size_t num_bytes) {
     const auto res = cudaMemcpyToSymbol(eval_basis, src_ptr, num_bytes);
-    if (res != cudaSuccess) {
-        printf("fixedAlg_updateConstantMemory_internal: Something went wrong!\n");
-    } else {
-        printf("fixedAlg_updateConstantMemory_internal: Copy to symbol OK!\n");
-    }
+    return (res == cudaSuccess);
 }

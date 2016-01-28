@@ -39,8 +39,8 @@ template void launch_FixedAlgKernel<true,  false,  true>(int grid_size, int bloc
 template void launch_FixedAlgKernel<true,  true,  false>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
 template void launch_FixedAlgKernel<true,  true,   true>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
 
-void fixedAlg_updateConstantMemory(float* src_ptr, size_t num_bytes) {
-    fixedAlg_updateConstantMemory_internal(src_ptr, num_bytes);
+bool fixedAlg_updateConstantMemory(float* src_ptr, size_t num_bytes) {
+    return fixedAlg_updateConstantMemory_internal(src_ptr, num_bytes);
 }
 
 void launch_RenderSplineKernel(int grid_size, int block_size, cudaStream_t stream,
