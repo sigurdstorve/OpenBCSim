@@ -150,16 +150,6 @@ inline __host__ __device__ float3 operator*(float3 a, float b) {
     return make_float3(a.x*b, a.y*b, a.z*b);
 }
 
-// Complex datatype
-typedef float2 Complex;
-
-__device__ __host__ inline Complex ComplexMul(Complex a, Complex b) { // cuCmulf (cuFloatComplex x, cuFloatComplex y)
-    Complex c;
-    c.x = a.x*b.x - a.y*b.y;
-    c.y = a.x*b.y + a.y*b.x;
-    return c;
-}
-
 template <typename T>
 void fill_host_vector_uniform_random(T low, T high, size_t length, T* data) {
     std::random_device rd;
