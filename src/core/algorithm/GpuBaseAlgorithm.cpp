@@ -290,7 +290,7 @@ void GpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     
     // TODO: UPDATE CUDA
     //ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
-    //MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
+    launch_MultiplyFftKernel(m_num_time_samples/128, 128, 0, m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 
