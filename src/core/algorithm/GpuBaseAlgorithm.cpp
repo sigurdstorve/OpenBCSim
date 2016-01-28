@@ -234,8 +234,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
         const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
         const float PI = static_cast<float>(4.0*std::atan(1));
         const auto normalized_angular_freq = 2*PI*norm_f_demod;
-        // TODO: UPDATE CUDA
-        //DemodulateKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr, normalized_angular_freq, m_num_time_samples);
+        launch_DemodulateKernel(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, normalized_angular_freq, m_num_time_samples);
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
             m_debug_data["kernel_demodulate_ms"].push_back(elapsed_ms);
