@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <tuple>
 #include <cuda.h>
-#include "GpuSplineAlgorithm2.cuh"
+#include "GpuSplineAlgorithm2.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages

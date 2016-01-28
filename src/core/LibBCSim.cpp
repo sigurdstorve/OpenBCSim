@@ -32,9 +32,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "algorithm/CpuFixedAlgorithm.hpp"
 #include "algorithm/CpuSplineAlgorithm.hpp"
 #ifdef BCSIM_ENABLE_CUDA
-    #include "algorithm/GpuFixedAlgorithm.cuh"
-    #include "algorithm/GpuSplineAlgorithm1.cuh"
-    #include "algorithm/GpuSplineAlgorithm2.cuh"
+    #include "algorithm/GpuFixedAlgorithm.hpp"
+    #include "algorithm/GpuSplineAlgorithm1.hpp"
+    #include "algorithm/GpuSplineAlgorithm2.hpp"
 #endif
 
 namespace bcsim {

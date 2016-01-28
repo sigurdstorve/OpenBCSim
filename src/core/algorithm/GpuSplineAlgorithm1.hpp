@@ -29,10 +29,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include "../LibBCSim.hpp"
-#include "GpuBaseAlgorithm.cuh"
+#include "GpuBaseAlgorithm.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
-#include "GpuFixedAlgorithm.cuh"
+#include "GpuFixedAlgorithm.hpp"
 
 // NOTE: There is no support for double here!!!
 // NOTE2: This is experimental code.

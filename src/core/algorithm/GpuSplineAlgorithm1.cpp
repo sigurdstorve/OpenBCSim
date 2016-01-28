@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cuda_helpers.h"
 #include "../bspline.hpp"
 #include "../LibBCSim.hpp"
-#include "GpuSplineAlgorithm1.cuh"
+#include "GpuSplineAlgorithm1.hpp"
 #include "common_utils.hpp"
 
 namespace bcsim {
