@@ -1,4 +1,7 @@
-#define MAX_SPLINE_DEGREE 4
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include "cuda_kernels_spline1.cuh"
+#include "common_definitions.h" // for MAX_SPLINE_DEGREE
 
 __constant__ float eval_basis[MAX_SPLINE_DEGREE+1];
 

@@ -26,16 +26,16 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
+#ifdef BCSIM_ENABLE_CUDA
 #include <tuple>
 #include <cuda.h>
 #include "GpuSplineAlgorithm2.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
-#include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
 #include "../bspline.hpp"
 #include "common_utils.hpp"
-#include <math_functions.h> // for copysignf()
+#include "common_definitions.h" // for MAX_NUM_CUDA_STREAMS and MAX_SPLINE_DEGREE
+#include "cuda_kernels_c_interface.h" // for SplineAlgKernelParams
 
 namespace bcsim {
 
@@ -83,12 +83,15 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     }
     if (cs_idx_end-cs_idx_start+1 != num_nonzero) throw std::logic_error("illegal number of non-zero basis functions");
 
+    // TODO: UPDATE CUDA
+    /*
     cudaErrorCheck(cudaMemcpyToSymbolAsync(eval_basis,
                                            host_basis_functions.data() + cs_idx_start,
                                            num_nonzero*sizeof(float),
                                            eval_basis_offset_elements*sizeof(float),
                                            cudaMemcpyHostToDevice,
                                            cur_stream));
+    */
 
     // prepare a struct of arguments
     SplineAlgKernelParams params;
@@ -131,7 +134,8 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     default:
         throw std::logic_error("GpuSplineAlgorithm2: unknown beam profile type");
     }
-
+    // TODO: UPDATE CUDE
+    /*
     if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
         SplineAlgKernel<false, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
     } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
@@ -151,6 +155,7 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     } else {
         throw std::logic_error("this should never happen");
     }
+    */
 }
 
 void GpuSplineAlgorithm2::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
@@ -222,3 +227,4 @@ void GpuSplineAlgorithm2::set_scatterers(Scatterers::s_ptr new_scatterers) {
 
 
 }   // end namespace
+#endif  // BCSIM_ENABLE_CUDA

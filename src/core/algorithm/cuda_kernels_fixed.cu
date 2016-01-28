@@ -1,4 +1,9 @@
-#include "cuda_kernels_internal.cuh"
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include "cuda_kernels_common.cuh"
+#include "cuda_kernels_fixed.cuh"
+#include "cuda_helpers.h"   // for operator*
+#include <math_functions.h> // for copysignf
 
 // Slice a 3D lookup table through plane defined by two unit vectors.
 // X- and y-components of grid determines the number of samples.

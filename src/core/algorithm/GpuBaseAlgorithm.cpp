@@ -26,6 +26,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#ifdef BCSIM_ENABLE_CUDA
 #include <stdexcept>
 #include <iostream>
 #include <complex>
@@ -33,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common_utils.hpp" // for compute_num_rf_samples
 #include "../discrete_hilbert_mask.hpp"
 #include "cuda_debug_utils.h"
-#include "device_launch_parameters.h"
+#include "cuda_helpers.h"
 
 namespace bcsim {
 GpuBaseAlgorithm::GpuBaseAlgorithm()
@@ -188,9 +189,13 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
         if (m_store_kernel_details) {
             event_timer->restart();
         }
+        //TODO: UPDATE CUDA
+        /*
         MemsetKernel<cuComplex><<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
                                                                                                           complex_zero,
                                                                                                           m_num_time_samples);
+        */
+
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
             m_debug_data["kernel_memset_ms"].push_back(elapsed_ms);
@@ -213,9 +218,12 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
         }
         
         // multiply with FFT of impulse response w/Hilbert transform
+        // TODO: UPDATE CUDA
+        /*
         MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
                                                                                                     m_device_excitation_fft->data(),
                                                                                                     m_num_time_samples);
+        */
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
             m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
@@ -235,7 +243,8 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
         const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
         const float PI = static_cast<float>(4.0*std::atan(1));
         const auto normalized_angular_freq = 2*PI*norm_f_demod;
-        DemodulateKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr, normalized_angular_freq, m_num_time_samples);
+        // TODO: UPDATE CUDA
+        //DemodulateKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr, normalized_angular_freq, m_num_time_samples);
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
             m_debug_data["kernel_demodulate_ms"].push_back(elapsed_ms);
@@ -289,8 +298,9 @@ void GpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     DeviceBufferRAII<complex> device_hilbert_mask(rf_line_bytes);
     cudaErrorCheck( cudaMemcpy(device_hilbert_mask.data(), mask.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
     
-    ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
-    MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
+    // TODO: UPDATE CUDA
+    //ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
+    //MultiplyFftKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 
@@ -409,9 +419,12 @@ void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
             
         dim3 grid_size(num_samples, num_samples, 1);
         dim3 block_size(1, 1, 1);
+        // TODO: UPDATE CUDA
+        /*
         SliceLookupTable<<<grid_size, block_size>>>(origin, dir0, dir1,
                                                     device_slice.data(),
                                                     m_device_beam_profile->get());
+        */
         cudaErrorCheck( cudaDeviceSynchronize() );
         dump_device_buffer_as_raw_file(device_slice, raw_file);
     };
@@ -450,3 +463,4 @@ void GpuBaseAlgorithm::create_dummy_lut_profile() {
 
 }   // end namespace
 
+#endif // BCSIM_ENABLE_CUDA

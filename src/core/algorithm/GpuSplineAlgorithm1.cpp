@@ -26,17 +26,17 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
+#ifdef BCSIM_ENABLE_CUDA
 #include <iostream>
 #include <vector>
 #include <tuple>
 #include <cuda.h>
-#include <device_launch_parameters.h>
 #include "cuda_helpers.h"
 #include "../bspline.hpp"
 #include "../LibBCSim.hpp"
 #include "GpuSplineAlgorithm1.hpp"
 #include "common_utils.hpp"
+#include "common_definitions.h" // for MAX_SPLINE_DEGREE
 
 namespace bcsim {
 
@@ -160,13 +160,16 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     
     // only copy the non-zero-basis functions
     const auto src_ptr = host_basis_functions.data() + cs_idx_start;
-    cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, src_ptr, num_nonzero*sizeof(float)) );
+    // TODO: UPDATE CUDA
+    //cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, src_ptr, num_nonzero*sizeof(float)) );
     
     int num_threads = 128;
     int num_blocks = round_up_div(m_num_splines, num_threads);
     dim3 grid_size(num_blocks, 1, 1);
     dim3 block_size(num_threads, 1, 1);
     
+    // TODO: UPDATE CUDA
+    /*
     RenderSplineKernel<<<grid_size, block_size>>>(m_control_xs->data(),
                                                   m_control_ys->data(),
                                                   m_control_zs->data(),
@@ -176,6 +179,7 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
                                                   cs_idx_start,
                                                   cs_idx_end,
                                                   m_num_splines);
+    */
     cudaErrorCheck( cudaDeviceSynchronize() );
     //auto ms = event_timer.stop();
     //std::cout << "GPU spline alg.1 : set_scan_sequence(): rendering spline scatterers took " << ms << " millisec.\n";
@@ -197,3 +201,4 @@ bool GpuSplineAlgorithm1::has_equal_timestamps(ScanSequence::s_ptr scan_seq, dou
 }
 
 }   // end namespace
+#endif  // BCSIM_ENABLE_CUDA

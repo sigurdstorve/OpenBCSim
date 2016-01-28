@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cuComplex.h> // for cuCmulf()
 #include "cuda_helpers.h"
 #include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
-#include "gpu_alg_common.cuh"
+#include "cuda_kernels_common.cuh"
 
 __global__ void MultiplyFftKernel(cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples) {
     const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;

@@ -35,6 +35,7 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/GpuSplineAlgorithm1.cpp
      algorithm/GpuSplineAlgorithm2.cpp
      algorithm/GpuSplineAlgorithm2.hpp
+     algorithm/common_definitions.h
      )
 
 # Made static in order to avoid DLL interface-related issues
@@ -53,6 +54,7 @@ if (BCSIM_ENABLE_CUDA)
                      algorithm/cuda_kernels_spline1.cuh
                      algorithm/cuda_kernels_spline2.cu
                      algorithm/cuda_kernels_spline2.cuh
+                     algorithm/cuda_kernels_c_interface.h
                      )
     target_link_libraries(BCSimCUDA
                           ${CUDA_LIBRARIES}

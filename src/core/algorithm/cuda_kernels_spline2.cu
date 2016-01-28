@@ -1,6 +1,8 @@
-#define MAX_SPLINE_DEGREE 4
-// the maximum number of CUDA streams that can be used when simulating RF lines
-#define MAX_NUM_CUDA_STREAMS 2
+#include "cuda_kernels_spline2.cuh"
+#include "cuda_helpers.h"   // for operator-
+#include "cuda_kernels_common.cuh"
+#include "common_definitions.h" // for MAX_SPLINE_DEGREE and MAX_NUM_CUDA_STREAMS
+#include <math_functions.h> // for copysignf()
 
 __constant__ float eval_basis[(MAX_SPLINE_DEGREE+1)*MAX_NUM_CUDA_STREAMS];
 

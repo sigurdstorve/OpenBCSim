@@ -26,13 +26,12 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
+#ifdef BCSIM_ENABLE_CUDA
 #include <cuda.h>
 #include "GpuFixedAlgorithm.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
-#include "device_launch_parameters.h" // for removing annoying MSVC intellisense error messages
-#include <math_functions.h> // for copysignf
+#include "cuda_kernels_c_interface.h"
 
 namespace bcsim {
 
@@ -85,6 +84,8 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
         throw std::logic_error("unknown beam profile type");
     }
 
+    // TODO: UPDATE CUDA
+    /*
     if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
         FixedAlgKernel<false, false, false><<<grid_size, block_size, 0, cur_stream>>>(params);
     } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
@@ -104,6 +105,7 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     } else {
         throw std::logic_error("this should never happen");
     }
+    */
 }
 
 
@@ -173,3 +175,4 @@ void GpuFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
 
 
 }   // end namespace
+#endif  // BCSIM_ENABLE_CUDA

@@ -28,6 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
 #include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <cuComplex.h>
+#include <cufft.h>
 
 // initialize GPU memory with value
 template <typename T>
