@@ -161,7 +161,7 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     
     // only copy the non-zero-basis functions
     const auto src_ptr = host_basis_functions.data() + cs_idx_start;
-    if (!fixedAlg_updateConstantMemory(src_ptr, num_nonzero*sizeof(float))) {
+    if (!splineAlg1_updateConstantMemory(src_ptr, num_nonzero*sizeof(float))) {
         throw std::runtime_error("Failed copying to symbol memory");   
     }
     

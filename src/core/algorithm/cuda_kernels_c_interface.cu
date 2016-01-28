@@ -1,7 +1,7 @@
 #include "cuda_kernels_c_interface.h"
 #include "cuda_kernels_common.cuh"      // for common kernels
 #include "cuda_kernels_fixed.cuh"       // for FixedAlgKernel
-#include "cuda_kernels_spline1.cuh"     // for fixedAlg_updateConstantMemory_internal
+#include "cuda_kernels_spline1.cuh"     // for splineAlg1_updateConstantMemory_internal
 #include "cuda_kernels_spline2.cuh"     // for splineAlg2_updateConstantMemory_internal
 
 template <typename T>
@@ -39,8 +39,8 @@ template void launch_FixedAlgKernel<true,  false,  true>(int grid_size, int bloc
 template void launch_FixedAlgKernel<true,  true,  false>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
 template void launch_FixedAlgKernel<true,  true,   true>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
 
-bool fixedAlg_updateConstantMemory(float* src_ptr, size_t num_bytes) {
-    return fixedAlg_updateConstantMemory_internal(src_ptr, num_bytes);
+bool splineAlg1_updateConstantMemory(float* src_ptr, size_t num_bytes) {
+    return splineAlg1_updateConstantMemory_internal(src_ptr, num_bytes);
 }
 
 void launch_RenderSplineKernel(int grid_size, int block_size, cudaStream_t stream,

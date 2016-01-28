@@ -37,7 +37,7 @@ __global__ void RenderSplineKernel(const float* control_xs,
     rendered_zs[idx] = rendered_z;
 }
 
-bool fixedAlg_updateConstantMemory_internal(float* src_ptr, size_t num_bytes) {
+bool splineAlg1_updateConstantMemory_internal(float* src_ptr, size_t num_bytes) {
     const auto res = cudaMemcpyToSymbol(eval_basis, src_ptr, num_bytes);
     return (res == cudaSuccess);
 }
