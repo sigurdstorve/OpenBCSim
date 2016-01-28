@@ -72,3 +72,6 @@ void launch_ScaleSignalKernel(int grid_size, int block_size, cudaStream_t stream
 
 template <bool A, bool B, bool C>
 void launch_FixedAlgKernel(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+
+// Upload data to constant memory [workaround the fact that constant memory cannot be allocated dynamically]
+void fixedAlg_updateConstantMemory(float* src_ptr, size_t num_bytes);

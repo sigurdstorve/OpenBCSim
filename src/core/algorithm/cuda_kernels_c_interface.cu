@@ -1,6 +1,7 @@
 #include "cuda_kernels_c_interface.h"
 #include "cuda_kernels_common.cuh"      // for common kernels
 #include "cuda_kernels_fixed.cuh"       // for FixedAlgKernel
+#include "cuda_kernels_spline1.cuh"     // for fixedAlg_updateConstantMemory_internal
 
 template <typename T>
 void launch_MemsetKernel(int grid_size, int block_size, cudaStream_t stream, T* ptr, T value, int num_samples) {
@@ -36,3 +37,7 @@ template void launch_FixedAlgKernel<true,  false, false>(int grid_size, int bloc
 template void launch_FixedAlgKernel<true,  false,  true>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
 template void launch_FixedAlgKernel<true,  true,  false>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
 template void launch_FixedAlgKernel<true,  true,   true>(int grid_size, int block_size, cudaStream_t stream, FixedAlgKernelParams params);
+
+void fixedAlg_updateConstantMemory(float* src_ptr, size_t num_bytes) {
+    fixedAlg_updateConstantMemory_internal(src_ptr, num_bytes);
+}

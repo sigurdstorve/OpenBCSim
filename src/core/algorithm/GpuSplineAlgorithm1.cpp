@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GpuSplineAlgorithm1.hpp"
 #include "common_utils.hpp"
 #include "common_definitions.h" // for MAX_SPLINE_DEGREE
+#include "cuda_kernels_c_interface.h"
 
 namespace bcsim {
 
@@ -160,8 +161,7 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     
     // only copy the non-zero-basis functions
     const auto src_ptr = host_basis_functions.data() + cs_idx_start;
-    // TODO: UPDATE CUDA
-    //cudaErrorCheck( cudaMemcpyToSymbol(eval_basis, src_ptr, num_nonzero*sizeof(float)) );
+    fixedAlg_updateConstantMemory(src_ptr, num_nonzero*sizeof(float));
     
     int num_threads = 128;
     int num_blocks = round_up_div(m_num_splines, num_threads);
