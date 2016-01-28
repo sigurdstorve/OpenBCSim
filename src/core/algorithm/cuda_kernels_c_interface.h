@@ -75,3 +75,14 @@ void launch_FixedAlgKernel(int grid_size, int block_size, cudaStream_t stream, F
 
 // Upload data to constant memory [workaround the fact that constant memory cannot be allocated dynamically]
 void fixedAlg_updateConstantMemory(float* src_ptr, size_t num_bytes);
+
+void launch_RenderSplineKernel(int grid_size, int block_size, cudaStream_t stream,
+                               const float* control_xs,
+                               const float* control_ys,
+                               const float* control_zs,
+                               float* rendered_xs,
+                               float* rendered_ys,
+                               float* rendered_zs,
+                               int cs_idx_start,
+                               int cs_idx_end,
+                               int NUM_SPLINES);

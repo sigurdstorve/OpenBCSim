@@ -41,3 +41,18 @@ template void launch_FixedAlgKernel<true,  true,   true>(int grid_size, int bloc
 void fixedAlg_updateConstantMemory(float* src_ptr, size_t num_bytes) {
     fixedAlg_updateConstantMemory_internal(src_ptr, num_bytes);
 }
+
+void launch_RenderSplineKernel(int grid_size, int block_size, cudaStream_t stream,
+                               const float* control_xs,
+                               const float* control_ys,
+                               const float* control_zs,
+                               float* rendered_xs,
+                               float* rendered_ys,
+                               float* rendered_zs,
+                               int cs_idx_start,
+                               int cs_idx_end,
+                               int NUM_SPLINES) {
+    RenderSplineKernel<<<grid_size, block_size, 0, stream>>>(control_xs, control_ys, control_zs,
+                                                             rendered_xs, rendered_ys, rendered_zs,
+                                                             cs_idx_start, cs_idx_end, NUM_SPLINES);
+}

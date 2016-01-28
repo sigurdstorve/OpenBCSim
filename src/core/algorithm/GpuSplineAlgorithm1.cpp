@@ -165,21 +165,20 @@ void GpuSplineAlgorithm1::set_scan_sequence(ScanSequence::s_ptr new_scan_sequenc
     
     int num_threads = 128;
     int num_blocks = round_up_div(m_num_splines, num_threads);
-    dim3 grid_size(num_blocks, 1, 1);
-    dim3 block_size(num_threads, 1, 1);
+    //dim3 grid_size(num_blocks, 1, 1);
+    //dim3 block_size(num_threads, 1, 1);
     
-    // TODO: UPDATE CUDA
-    /*
-    RenderSplineKernel<<<grid_size, block_size>>>(m_control_xs->data(),
-                                                  m_control_ys->data(),
-                                                  m_control_zs->data(),
-                                                  m_fixed_alg->m_device_point_xs->data(),
-                                                  m_fixed_alg->m_device_point_ys->data(),
-                                                  m_fixed_alg->m_device_point_zs->data(),
-                                                  cs_idx_start,
-                                                  cs_idx_end,
-                                                  m_num_splines);
-    */
+    const cudaStream_t cuda_stream = 0;
+    launch_RenderSplineKernel(num_blocks, num_threads, cuda_stream,
+                              m_control_xs->data(),
+                              m_control_ys->data(),
+                              m_control_zs->data(),
+                              m_fixed_alg->m_device_point_xs->data(),
+                              m_fixed_alg->m_device_point_ys->data(),
+                              m_fixed_alg->m_device_point_zs->data(),
+                              cs_idx_start,
+                              cs_idx_end,
+                              m_num_splines);
     cudaErrorCheck( cudaDeviceSynchronize() );
     //auto ms = event_timer.stop();
     //std::cout << "GPU spline alg.1 : set_scan_sequence(): rendering spline scatterers took " << ms << " millisec.\n";
