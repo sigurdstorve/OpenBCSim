@@ -214,12 +214,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
         }
         
         // multiply with FFT of impulse response w/Hilbert transform
-        // TODO: UPDATE CUDA
-        /*
-        MultiplyFftKernel<<<m_num_time_samples/threads_per_line, threads_per_line, 0, cur_stream>>>(rf_ptr,
-                                                                                                    m_device_excitation_fft->data(),
-                                                                                                    m_num_time_samples);
-        */
+        launch_MultiplyFftKernel(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, m_device_excitation_fft->data(), m_num_time_samples);
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
             m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);

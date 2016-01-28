@@ -2,6 +2,7 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <cuComplex.h>
+#include <cufft.h>
 
 // Headers for all CUDA functionality accessible from C++
 
@@ -62,3 +63,5 @@ struct SplineAlgKernelParams {
 
 template <typename T>
 void launch_MemsetKernel(int grid_size, int block_size, cudaStream_t stream, T* ptr, T value, int num_elements);
+
+void launch_MultiplyFftKernel(int grid_size, int block_size, cudaStream_t stream, cufftComplex* time_proj_fft, const cufftComplex* filter_fft, int num_samples);
