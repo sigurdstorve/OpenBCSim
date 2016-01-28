@@ -5,6 +5,11 @@
 
 __constant__ float eval_basis[MAX_SPLINE_DEGREE+1];
 
+bool splineAlg1_updateConstantMemory_internal(float* src_ptr, size_t num_bytes) {
+    const auto res = cudaMemcpyToSymbol(eval_basis, src_ptr, num_bytes);
+    return (res == cudaSuccess);
+}
+
 __global__ void RenderSplineKernel(const float* control_xs,
                                    const float* control_ys,
                                    const float* control_zs,
@@ -35,9 +40,4 @@ __global__ void RenderSplineKernel(const float* control_xs,
     rendered_xs[idx] = rendered_x;
     rendered_ys[idx] = rendered_y;
     rendered_zs[idx] = rendered_z;
-}
-
-bool splineAlg1_updateConstantMemory_internal(float* src_ptr, size_t num_bytes) {
-    const auto res = cudaMemcpyToSymbol(eval_basis, src_ptr, num_bytes);
-    return (res == cudaSuccess);
 }
