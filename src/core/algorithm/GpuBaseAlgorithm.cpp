@@ -288,9 +288,9 @@ void GpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     DeviceBufferRAII<complex> device_hilbert_mask(rf_line_bytes);
     cudaErrorCheck( cudaMemcpy(device_hilbert_mask.data(), mask.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
     
-    // TODO: UPDATE CUDA
-    //ScaleSignalKernel<<<m_num_time_samples/128, 128>>>(m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
-    launch_MultiplyFftKernel(m_num_time_samples/128, 128, 0, m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
+    cudaStream_t cuda_stream = 0;
+    launch_ScaleSignalKernel(m_num_time_samples/128, 128, cuda_stream, m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
+    launch_MultiplyFftKernel(m_num_time_samples/128, 128, cuda_stream, m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
     //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 
