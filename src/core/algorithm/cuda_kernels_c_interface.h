@@ -6,6 +6,12 @@
 
 // Headers for all CUDA functionality accessible from C++
 
+struct LUTProfileGeometry {
+    float r_min, r_max;
+    float l_min, l_max;
+    float e_min, e_max;
+};
+
 struct FixedAlgKernelParams {
     float* point_xs;            // pointer to device memory x components
     float* point_ys;            // pointer to device memory y components
