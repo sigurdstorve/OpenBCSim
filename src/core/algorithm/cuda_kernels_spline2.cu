@@ -50,8 +50,7 @@ __global__ void SplineAlgKernel(SplineAlgKernelParams params) {
     float weight;
     if (use_lut) {
         // Compute weight from lookup-table and radial_dist, lateral_dist, and elev_dist
-        weight = ComputeWeightLUT(params.lut_tex, radial_dist, lateral_dist, elev_dist,
-                                  params.lut.r_min, params.lut.r_max, params.lut.l_min, params.lut.l_max, params.lut.e_min, params.lut.e_max);
+        weight = ComputeWeightLUT(params.lut_tex, radial_dist, lateral_dist, elev_dist, params.lut);
     } else {
         // Compute weight analytically
         weight = ComputeWeightAnalytical(params.sigma_lateral, params.sigma_elevational, radial_dist, lateral_dist, elev_dist);

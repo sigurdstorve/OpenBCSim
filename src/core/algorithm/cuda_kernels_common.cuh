@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cuda_runtime_api.h>
 #include <cuComplex.h>
 #include <cufft.h>
+#include "cuda_kernels_c_interface.h"   // for struct LUTProfileGeometry
 
 // initialize GPU memory with value
 template <typename T>
@@ -57,15 +58,10 @@ __device__ __inline__ float ComputeWeightLUT(cudaTextureObject_t lut_tex,
                                              float radial_dist,
                                              float lateral_dist, 
                                              float elev_dist,
-                                             float lut_r_min,
-                                             float lut_r_max,
-                                             float lut_l_min,
-                                             float lut_l_max,
-                                             float lut_e_min,
-                                             float lut_e_max) {
-    const auto r_normalized = (radial_dist-lut_r_min)/(lut_r_max-lut_r_min);
-    const auto l_normalized = (lateral_dist-lut_l_min)/(lut_l_max-lut_l_min);
-    const auto e_normalized = (elev_dist-lut_e_min)/(lut_e_max-lut_e_min);
+                                             LUTProfileGeometry lut_geo) {
+    const auto r_normalized = (radial_dist-lut_geo.r_min)/(lut_geo.r_max-lut_geo.r_min);
+    const auto l_normalized = (lateral_dist-lut_geo.l_min)/(lut_geo.l_max-lut_geo.l_min);
+    const auto e_normalized = (elev_dist-lut_geo.e_min)/(lut_geo.e_max-lut_geo.e_min);
     return tex3D<float>(lut_tex, l_normalized, e_normalized, r_normalized);
 }
 
