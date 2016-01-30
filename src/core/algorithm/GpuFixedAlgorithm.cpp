@@ -64,12 +64,12 @@ void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanlin
     params.demod_freq        = m_excitation.demod_freq;
     params.num_scatterers    = m_num_scatterers;
     params.lut_tex           = m_device_beam_profile->get();
-    params.lut_r_min         = m_lut_r_min;
-    params.lut_r_max         = m_lut_r_max;
-    params.lut_l_min         = m_lut_l_min;
-    params.lut_l_max         = m_lut_l_max;
-    params.lut_e_min         = m_lut_e_min;
-    params.lut_e_max         = m_lut_e_max;
+    params.lut.r_min         = m_lut_r_min;
+    params.lut.r_max         = m_lut_r_max;
+    params.lut.l_min         = m_lut_l_min;
+    params.lut.l_max         = m_lut_l_max;
+    params.lut.e_min         = m_lut_e_min;
+    params.lut.e_max         = m_lut_e_max;
 
     // map beam profile type to boolean flag
     bool use_lut;
