@@ -54,12 +54,7 @@ struct SplineAlgKernelParams {
     size_t eval_basis_offset_elements;  // memory offset (for different CUDA streams)
     float  demod_freq;                  // complex demodulation frequency.
     cudaTextureObject_t lut_tex;        // 3D texture object (for lookup-table beam profile) 
-    float lut_r_min;                    // min. radial extent (for lookup-table beam profile)
-    float lut_r_max;                    // max. radial extent (for lookup-table beam profile)                    
-    float lut_l_min;                    // min. lateral extent (for lookup-table beam profile)
-    float lut_l_max;                    // max. lateral extent (for lookup-table beam profile)
-    float lut_e_min;                    // min. elevational extent (for lookup-table beam profile)
-    float lut_e_max;                    // max. elevational extent (for lookup-table beam profile)
+    LUTProfileGeometry lut;
 };
 
 template <typename T>

@@ -114,12 +114,12 @@ void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanl
     params.eval_basis_offset_elements = eval_basis_offset_elements;
     params.demod_freq                 = m_excitation.demod_freq;
     params.lut_tex                    = m_device_beam_profile->get();
-    params.lut_r_min                  = m_lut_r_min;
-    params.lut_r_max                  = m_lut_r_max;
-    params.lut_l_min                  = m_lut_l_min;
-    params.lut_l_max                  = m_lut_l_max;
-    params.lut_e_min                  = m_lut_e_min;
-    params.lut_e_max                  = m_lut_e_max;
+    params.lut.r_min                  = m_lut_r_min;
+    params.lut.r_max                  = m_lut_r_max;
+    params.lut.l_min                  = m_lut_l_min;
+    params.lut.l_max                  = m_lut_l_max;
+    params.lut.e_min                  = m_lut_e_min;
+    params.lut.e_max                  = m_lut_e_max;
 
     // map lut type to a boolean flag
     bool use_lut;
