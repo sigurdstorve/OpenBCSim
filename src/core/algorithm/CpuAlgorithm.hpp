@@ -44,7 +44,7 @@ struct PointScattererCollection {
     std::vector<SplineScatterers::s_ptr>    spline_collections;
 
     // Compute the total number of fixed scatterers.
-    size_t num_fixed_scatterers() const {
+    size_t total_num_fixed_scatterers() const {
         size_t num_scatterers = 0;
         for (const auto& scatterers : fixed_collections) {
             num_scatterers += scatterers->num_scatterers();
@@ -53,7 +53,7 @@ struct PointScattererCollection {
     }
 
     // Compute the total number of spline scatterers.
-    size_t num_spline_scatterers() const {
+    size_t total_num_spline_scatterers() const {
         size_t num_scatterers = 0;
         for (const auto& scatterers : spline_collections) {
             num_scatterers += scatterers->num_scatterers();
@@ -63,7 +63,7 @@ struct PointScattererCollection {
 
     // Compute the overall total number of scatterers (fixed and spline)
     size_t total_num_scatterers() const {
-        return num_fixed_scatterers() + num_spline_scatterers();
+        return total_num_fixed_scatterers() + total_num_spline_scatterers();
     }
 };
 

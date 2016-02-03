@@ -425,8 +425,8 @@ void CpuAlgorithm::clear_fixed_scatterers() {
 void CpuAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
     m_scatterers_collection.fixed_collections.push_back(fixed_scatterers);
     if (m_param_verbose) {
-        std::cout << "Number of fixed scatterers: " << m_scatterers_collection.num_fixed_scatterers() << std::endl;
-        std::cout << "Number of spline scatterers: " << m_scatterers_collection.num_spline_scatterers() << std::endl;
+        std::cout << "Number of fixed scatterers: " << m_scatterers_collection.total_num_fixed_scatterers() << std::endl;
+        std::cout << "Number of spline scatterers: " << m_scatterers_collection.total_num_spline_scatterers() << std::endl;
     }
 }
 
@@ -437,8 +437,8 @@ void CpuAlgorithm::clear_spline_scatterers() {
 void CpuAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
     m_scatterers_collection.spline_collections.push_back(spline_scatterers);
     if (m_param_verbose) {
-        std::cout << "Number of fixed scatterers: " << m_scatterers_collection.num_fixed_scatterers() << std::endl;
-        std::cout << "Number of spline scatterers: " << m_scatterers_collection.num_spline_scatterers() << std::endl;
+        std::cout << "Number of fixed scatterers: " << m_scatterers_collection.total_num_fixed_scatterers() << std::endl;
+        std::cout << "Number of spline scatterers: " << m_scatterers_collection.total_num_spline_scatterers() << std::endl;
     }
 }
 
