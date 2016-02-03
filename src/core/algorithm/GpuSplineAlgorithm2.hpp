@@ -33,8 +33,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 
-// NOTE: There is no support for double here!!!
-
 namespace bcsim {
 
 class GpuSplineAlgorithm2 : public GpuBaseAlgorithm {
