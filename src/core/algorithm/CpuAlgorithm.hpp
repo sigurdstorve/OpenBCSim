@@ -137,7 +137,6 @@ protected:
     // before doing the simulations.
     bool m_scan_sequence_configured;
     bool m_excitation_configured;
-    bool m_scatterers_configured;   
     
     // Number of threads to use for simulation.
     int  m_omp_num_threads;

@@ -185,7 +185,6 @@ void CpuAlgorithm::spline_projection_loop(const Scanline& line, std::complex<flo
 CpuAlgorithm::CpuAlgorithm()
         : m_scan_sequence_configured(false),
           m_excitation_configured(false),
-          m_scatterers_configured(false),
           m_omp_num_threads(1),
           m_param_sum_all_cs(false) {
     
@@ -383,8 +382,8 @@ void CpuAlgorithm::throw_if_not_configured() {
     if (m_cur_beam_profile_type == BeamProfileType::NOT_CONFIGURED){
         throw std::runtime_error("Beam profile not configured.");
     }
-    if (!m_scatterers_configured) {
-        throw std::runtime_error("Scatterers not configured.");
+    if (m_scatterers_collection.total_num_scatterers() == 0) {
+        throw std::runtime_error("no scatterers are configured");
     }
 }
 
