@@ -43,19 +43,6 @@ GpuSplineAlgorithm2::GpuSplineAlgorithm2()
 {
 }
 
-void GpuSplineAlgorithm2::set_parameter(const std::string& key, const std::string& value) {
-    if (key == "cuda_streams") {
-        const auto old_value = m_param_num_cuda_streams;
-        if (m_param_num_cuda_streams > MAX_NUM_CUDA_STREAMS) {
-            // reset to old value if new value is invalid
-            m_param_num_cuda_streams = old_value;
-            throw std::runtime_error("number of CUDA streams exceeds MAX_NUM_CUDA_STREAMS");
-        }
-    } else {
-        GpuBaseAlgorithm::set_parameter(key, value);
-    }
-}
-
 void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
             

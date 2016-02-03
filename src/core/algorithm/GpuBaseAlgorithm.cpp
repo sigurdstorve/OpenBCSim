@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cuda_debug_utils.h"
 #include "cuda_helpers.h"
 #include "cuda_kernels_c_interface.h"
+#include "common_definitions.h" // for MAX_NUM_CUDA_STREAMS and MAX_SPLINE_DEGREE
 
 namespace bcsim {
 GpuBaseAlgorithm::GpuBaseAlgorithm()
@@ -72,6 +73,12 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
         m_param_cuda_device_no = device_no;
         cudaErrorCheck(cudaSetDevice(m_param_cuda_device_no));
         save_cuda_device_properties();
+    } else if (key == "cuda_streams") {
+        const auto new_value = std::stoi(value);
+        if (new_value > MAX_NUM_CUDA_STREAMS) {
+            throw std::runtime_error("number of CUDA streams exceeds MAX_NUM_CUDA_STREAMS");
+        }
+        m_param_num_cuda_streams = new_value;
     } else if (key == "cuda_streams") {
         const auto num_streams = std::stoi(value);
         if (num_streams <= 0) {
