@@ -42,16 +42,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-void setFixedScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
-    throw std::runtime_error("TODO: update to reflect unified fixed and spline scatterers");
-    auto fixed_scatterers = loadFixedScatterersFromHdf(h5_file);
-}
-
-void setSplineScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
-    throw std::runtime_error("TODO: update to reflect unified fixed and spline scatterers");
-    auto spline_scatterers = loadSplineScatterersFromHdf(h5_file);
-}
-
 FixedScatterers::s_ptr loadFixedScatterersFromHdf(const std::string& h5_file) {
     SimpleHDF::SimpleHDF5Reader loader(h5_file);
     auto res = new FixedScatterers;
