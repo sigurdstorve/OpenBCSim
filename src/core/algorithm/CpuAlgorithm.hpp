@@ -94,10 +94,10 @@ public:
 
 protected:
     // Projection loop for a single fixed scatterer dataset.
-    void fixed_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples);
+    void projection_loop(FixedScatterers::s_ptr fixed_scatterers, const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples);
     
     // Projection loop for a single spline scatterer dataset.
-    void spline_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples);
+    void projection_loop(SplineScatterers::s_ptr spline_scatterers, const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples);
 
 protected:
     // Use as many cores as possible for simulation.

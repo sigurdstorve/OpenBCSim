@@ -46,11 +46,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-void CpuAlgorithm::fixed_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
+void CpuAlgorithm::projection_loop(FixedScatterers::s_ptr fixed_scatterers, const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
-    const int num_scatterers = m_scatterers->scatterers.size();
+    const int num_scatterers = fixed_scatterers->scatterers.size();
     for (int scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
-        const PointScatterer& scatterer = m_scatterers->scatterers[scatterer_no];
+        const PointScatterer& scatterer = fixed_scatterers->scatterers[scatterer_no];
         
         // Map the global cartesian scatterer position into the beam's local
         // coordinate system.
@@ -95,28 +95,28 @@ void CpuAlgorithm::fixed_projection_loop(const Scanline& line, std::complex<floa
     }
 }
 
-void CpuAlgorithm::spline_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
+void CpuAlgorithm::projection_loop(SplineScatterers::s_ptr spline_scatterers, const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
-    const int num_scatterers = m_scatterers->num_scatterers();
+    const int num_scatterers = spline_scatterers->num_scatterers();
     
     // The number of control points most be at least one more than the degree
-    const int num_control_points = m_scatterers->get_num_control_points();
-    if (num_control_points <= m_scatterers->spline_degree) {
+    const int num_control_points = spline_scatterers->get_num_control_points();
+    if (num_control_points <= spline_scatterers->spline_degree) {
         throw std::runtime_error("too few spline control points for given degree");
     }
     
     std::vector<float> basis_functions(num_control_points);
     
-    int mu = bspline_storve::compute_knot_interval(m_scatterers->knot_vector, line.get_timestamp());
+    int mu = bspline_storve::compute_knot_interval(spline_scatterers->knot_vector, line.get_timestamp());
 
     int lower_lim = 0;
     int upper_lim = num_control_points-1;
     if (m_param_sum_all_cs) {
         std::cout << "debug mode: summing over i = " << lower_lim << "..." << upper_lim << std::endl;
     } else {
-        std::tie(lower_lim, upper_lim) = bspline_storve::get_lower_upper_inds(m_scatterers->knot_vector,
+        std::tie(lower_lim, upper_lim) = bspline_storve::get_lower_upper_inds(spline_scatterers->knot_vector,
                                                                               line.get_timestamp(),
-                                                                              m_scatterers->spline_degree);
+                                                                              spline_scatterers->spline_degree);
         if (!sanity_check_spline_lower_upper_bound(basis_functions, lower_lim, upper_lim)) {
             throw std::runtime_error("b-spline basis bounds failed sanity check");
         }
@@ -125,9 +125,9 @@ void CpuAlgorithm::spline_projection_loop(const Scanline& line, std::complex<flo
     // Precompute all B-spline basis function for current timestep
     for (int i = 0; i < num_control_points; i++) {
         const float b = bspline_storve::bsplineBasis(i,
-                                                        m_scatterers->spline_degree,
+                                                        spline_scatterers->spline_degree,
                                                         line.get_timestamp(),
-                                                        m_scatterers->knot_vector);
+                                                        spline_scatterers->knot_vector);
         basis_functions[i] = b;
     }
     for (int scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
@@ -135,7 +135,7 @@ void CpuAlgorithm::spline_projection_loop(const Scanline& line, std::complex<flo
         // Compute position of current scatterer by evaluating spline in current timestep        
         vector3 scatterer_pos(0.0f, 0.0f, 0.0f);
         for (int i = lower_lim; i <= upper_lim; i++) {
-            scatterer_pos += m_scatterers->control_points[scatterer_no][i]*basis_functions[i];
+            scatterer_pos += spline_scatterers->control_points[scatterer_no][i]*basis_functions[i];
         }
         
         // Map the global cartesian scatterer position into the beam's local
@@ -160,7 +160,7 @@ void CpuAlgorithm::spline_projection_loop(const Scanline& line, std::complex<flo
         const float sampling_time_step = 1.0/m_excitation.sampling_frequency;
         int closest_index = (int) std::floor(r*2.0/(m_param_sound_speed*sampling_time_step)+0.5f);
         
-        float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*m_scatterers->amplitudes[scatterer_no];
+        float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*spline_scatterers->amplitudes[scatterer_no];
         
         // Avoid out of bound seg.fault
         if (closest_index < 0 || closest_index >= num_time_samples) {
@@ -314,9 +314,20 @@ std::vector<std::complex<float>> CpuAlgorithm::simulate_line(const Scanline& lin
     // this will have length num_time_samples [which is valid before padding starts]
     auto time_proj_signal = convolvers[thread_idx]->get_zeroed_time_proj_signal();
 
-    // Implementation differs depending on scatterers model.
-    projection_loop(line, time_proj_signal, m_rf_line_num_samples);
-
+    // Project all fixed scatterers
+    const auto num_fixed_collections = m_scatterers_collection.fixed_collections.size();
+    for (size_t i = 0; i < num_fixed_collections; i++) {
+        const auto fixed_scatterers = m_scatterers_collection.fixed_collections[i];
+        projection_loop(fixed_scatterers, line, time_proj_signal, m_rf_line_num_samples);
+    }
+    
+    // Project all spline scatterers
+    const auto num_spline_collections = m_scatterers_collection.spline_collections.size();
+    for (size_t i = 0; i < num_spline_collections; i++) {
+        const auto spline_scatterers = m_scatterers_collection.spline_collections[i];
+        projection_loop(spline_scatterers, line, time_proj_signal, m_rf_line_num_samples);
+    }
+    
 #ifdef BCSIM_ENABLE_NAN_CHECK
     for (size_t i = 0; i < m_rf_line_num_samples; i++) {
         // NOTE: will probably not work if compile with "fast-math", so it makes
