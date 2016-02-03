@@ -41,7 +41,6 @@ public:
     CpuFixedAlgorithm();
     
 protected:    
-    virtual void projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) override;
 };
 
 }   // namespace
