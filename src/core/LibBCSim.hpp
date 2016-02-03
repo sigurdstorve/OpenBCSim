@@ -83,8 +83,7 @@ public:
 
 // Factory function for creating simulator instances.
 // Valid types are:
-//     "fixed"       - Using fixed set of point scatterers.
-//     "spline"      - Using spline trajectories for point scatterers.
+//     "cpu"         - CPU implementation
 //     "gpu_fixed"   - GPU implementation of the fixed-scatterer algorithm
 //     "gpu_spline1" - GPU implementation of the spline-scatterer algorithm,
 //                     with the restriction that all scanlines in the scan
