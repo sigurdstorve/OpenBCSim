@@ -165,9 +165,6 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         throw std::runtime_error("No beam profile is configured");
     }
 
-    std::cout << "m_num_fixed_scatterers = " << m_num_fixed_scatterers << std::endl;
-    std::cout << "m_num_spline_scatterers = " << m_num_spline_scatterers << std::endl;
-
     // precompute the number of blocks needed to project all scatterers and check that
     // it is not more than what is supported by the device.
     // TODO: It is probably better to compute this when setting scatterers..
@@ -179,8 +176,6 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
     if (num_blocks_spline > m_cur_device_prop.maxGridSize[0]) {
         throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
     }
-    std::cout << "num_blocks_fixed = " << num_blocks_fixed << std::endl;
-    std::cout << "num_blocks_spline = " << num_blocks_spline << std::endl;
     
     // no delay compenasation is needed when returning the projections only
     size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
