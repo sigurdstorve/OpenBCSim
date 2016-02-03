@@ -45,14 +45,6 @@ public:
         // cleanup
     }
             
-    virtual void set_scatterers(Scatterers::s_ptr new_scatterers) override;
-        
-protected:
-    void copy_scatterers_to_device(FixedScatterers::s_ptr scatterers);
-
-    virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) override;
-    
-protected:
 };
 
 }   // end namespace
