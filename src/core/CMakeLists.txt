@@ -20,8 +20,8 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      vector3.hpp
      algorithm/BaseAlgorithm.hpp
      algorithm/BaseAlgorithm.cpp
-     algorithm/CpuBaseAlgorithm.hpp
-     algorithm/CpuBaseAlgorithm.cpp
+     algorithm/CpuAlgorithm.hpp
+     algorithm/CpuAlgorithm.cpp
      algorithm/common_utils.hpp
      algorithm/GpuBaseAlgorithm.hpp
      algorithm/GpuBaseAlgorithm.cpp

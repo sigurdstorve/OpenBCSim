@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef BCSIM_ENABLE_OPENMP
     #include <omp.h>
 #endif
-#include "CpuBaseAlgorithm.hpp"
+#include "CpuAlgorithm.hpp"
 #include "../to_string.hpp"
 #include "../LibBCSim.hpp"
 #include "../BeamConvolver.hpp"
@@ -46,7 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-void CpuBaseAlgorithm::fixed_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
+void CpuAlgorithm::fixed_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->scatterers.size();
     for (int scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
@@ -95,7 +95,7 @@ void CpuBaseAlgorithm::fixed_projection_loop(const Scanline& line, std::complex<
     }
 }
 
-void CpuBaseAlgorithm::spline_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
+void CpuAlgorithm::spline_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->num_scatterers();
     
@@ -182,7 +182,7 @@ void CpuBaseAlgorithm::spline_projection_loop(const Scanline& line, std::complex
 }
 
 
-CpuBaseAlgorithm::CpuBaseAlgorithm()
+CpuAlgorithm::CpuAlgorithm()
         : m_scan_sequence_configured(false),
           m_excitation_configured(false),
           m_scatterers_configured(false),
@@ -193,7 +193,7 @@ CpuBaseAlgorithm::CpuBaseAlgorithm()
     set_use_all_available_cores();
 }
 
-void CpuBaseAlgorithm::set_use_all_available_cores() {
+void CpuAlgorithm::set_use_all_available_cores() {
 #ifdef BCSIM_ENABLE_OPENMP
     set_use_specific_num_cores(omp_get_max_threads());
 #else
@@ -201,7 +201,7 @@ void CpuBaseAlgorithm::set_use_all_available_cores() {
 #endif
 }
 
-void CpuBaseAlgorithm::set_use_specific_num_cores(int num_threads) {
+void CpuAlgorithm::set_use_specific_num_cores(int num_threads) {
     int max_threads;
 #ifdef BCSIM_ENABLE_OPENMP
     max_threads = omp_get_max_threads();
@@ -222,7 +222,7 @@ void CpuBaseAlgorithm::set_use_specific_num_cores(int num_threads) {
     configure_convolvers_if_possible();
 }
 
-void CpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
+void CpuAlgorithm::set_parameter(const std::string& key, const std::string& value) {
     if (key == "sound_speed") {
         BaseAlgorithm::set_parameter(key, value);
         // convolvers must be updated after sound speed has changed.
@@ -252,7 +252,7 @@ void CpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
     }
 }
 
-void CpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+void CpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     if (!new_scan_sequence->is_valid()) {
         throw std::runtime_error("scan sequence is invalid");
     }
@@ -271,13 +271,13 @@ void CpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
 }
 
 
-void CpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
+void CpuAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     m_excitation = new_excitation;
     m_excitation_configured = true;
     configure_convolvers_if_possible();
 }   
 
-void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float>> > & rfLines) {
+void CpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float>> > & rfLines) {
     throw_if_not_configured();
     const auto num_scanlines = m_scan_sequence->get_num_lines();
     rfLines.resize(num_scanlines);
@@ -301,7 +301,7 @@ void CpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
     }
 }
 
-std::vector<std::complex<float>> CpuBaseAlgorithm::simulate_line(const Scanline& line) {
+std::vector<std::complex<float>> CpuAlgorithm::simulate_line(const Scanline& line) {
 #ifdef BCSIM_ENABLE_OPENMP
     const int thread_idx = omp_get_thread_num();
 #else
@@ -358,7 +358,7 @@ std::vector<std::complex<float>> CpuBaseAlgorithm::simulate_line(const Scanline&
     return res;
 }
 
-void CpuBaseAlgorithm::configure_convolvers_if_possible() {
+void CpuAlgorithm::configure_convolvers_if_possible() {
     if (m_scan_sequence_configured && m_excitation_configured) {
         convolvers.clear();
         std::cout << "Recreating convolvers\n";
@@ -373,7 +373,7 @@ void CpuBaseAlgorithm::configure_convolvers_if_possible() {
     }
 }
 
-void CpuBaseAlgorithm::throw_if_not_configured() {
+void CpuAlgorithm::throw_if_not_configured() {
     if (!m_scan_sequence_configured) {
         throw std::runtime_error("Scan sequence not configured.");
     }
@@ -388,39 +388,39 @@ void CpuBaseAlgorithm::throw_if_not_configured() {
     }
 }
 
-void CpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
+void CpuAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
     std::cout << "Setting analytical beam profile for CPU algorithm" << std::endl;
 
     const auto temp = std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile);
-    if (!temp) throw std::runtime_error("CpuBaseAlgorithm: failed to cast beam profile");
+    if (!temp) throw std::runtime_error("CpuAlgorithm: failed to cast beam profile");
     m_cur_beam_profile_type = BeamProfileType::ANALYTICAL;
 
     m_beam_profile = beam_profile;
 }
 
-void CpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
+void CpuAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     std::cout << "Setting LUT beam profile for CPU algorithm" << std::endl;
 
     const auto temp = std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile);
-    if (!temp) throw std::runtime_error("CpuBaseAlgorithm: failed to cast beam profile");
+    if (!temp) throw std::runtime_error("CpuAlgorithm: failed to cast beam profile");
     m_cur_beam_profile_type = BeamProfileType::LOOKUP;
 
     m_beam_profile = beam_profile;
 }
 
-void CpuBaseAlgorithm::clear_fixed_scatterers() {
+void CpuAlgorithm::clear_fixed_scatterers() {
     m_scatterers_collection.fixed_collections.clear();
 }
 
-void CpuBaseAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
+void CpuAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
     m_scatterers_collection.fixed_collections.push_back(fixed_scatterers);
 }
 
-void CpuBaseAlgorithm::clear_spline_scatterers() {
+void CpuAlgorithm::clear_spline_scatterers() {
     m_scatterers_collection.spline_collections.clear();
 }
 
-void CpuBaseAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
+void CpuAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
     m_scatterers_collection.spline_collections.push_back(spline_scatterers);
 }
 

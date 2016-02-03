@@ -67,10 +67,10 @@ struct PointScattererCollection {
     }
 };
 
-// Implementation common functionality for the CPU-based algorithms.
-class CpuBaseAlgorithm : public BaseAlgorithm {
+// Concrete CPU simulator implementation.
+class CpuAlgorithm : public BaseAlgorithm {
 public:
-    CpuBaseAlgorithm();
+    CpuAlgorithm();
         
     virtual void set_parameter(const std::string& key, const std::string& value)                    override;
     
