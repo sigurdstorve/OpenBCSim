@@ -66,9 +66,8 @@ public:
     // This will recreate the simulator by calling initializeSimulator()
     void loadScatterers(const QString h5_file);
 
-    // Create and configure the simulator object
-    // type: "fixed" or "spline"
-    void initializeSimulator(const std::string& type);
+    // Create and configure a CPU simulator object
+    void initializeCpuSimulator();
 
     // Define the excitation signal using data from hdf5 file
     void setExcitation(const QString h5_file);

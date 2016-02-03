@@ -382,7 +382,7 @@ void MainWindow::onSetSimulatorNoise() {
 }
 
 void MainWindow::loadScatterers(const QString h5_file) {
-    initializeSimulator("cpu");
+    initializeCpuSimulator();
 
     if (h5_file == "") {
         qDebug() << "Invalid scatterer file. Skipping";
@@ -455,9 +455,9 @@ void MainWindow::setExcitation(const QString h5_file) {
     }
 }
 
-void MainWindow::initializeSimulator(const std::string& type) {
+void MainWindow::initializeCpuSimulator() {
     try {
-        m_sim = bcsim::IAlgorithm::s_ptr(bcsim::Create(type));
+        m_sim = bcsim::IAlgorithm::s_ptr(bcsim::Create("cpu"));
         m_num_simulated_frames = 0;
     } catch (const std::runtime_error& e) {
         qDebug() << "Caught exception: " << e.what();
