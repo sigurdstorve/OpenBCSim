@@ -9,8 +9,8 @@ import matplotlib.cm as cm
 from scipy.signal import gausspulse
 import numpy as np
 
-# Create and configure simulator
-sim = RfSimulator("fixed")
+# Create and configure CPU simulator
+sim = RfSimulator("cpu")
 sim.set_parameter("verbose", "1")
 sim.set_print_debug(True)
 
@@ -24,7 +24,7 @@ num_scatterers = 16
 scatterers_data = np.zeros((num_scatterers, 4), dtype="float32")
 scatterers_data[:,2] = np.linspace(0.01, 0.16, num_scatterers)
 scatterers_data[:,3] = np.ones((num_scatterers,))
-sim.set_fixed_scatterers(scatterers_data)
+sim.add_fixed_scatterers(scatterers_data)
 
 # Define excitation signal
 fs = 50e6
