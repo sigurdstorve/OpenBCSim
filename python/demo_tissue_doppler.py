@@ -70,9 +70,8 @@ if __name__ == "__main__":
     num_cs = control_points.shape[1]
     print "Loaded spline phantom with %d control points" % num_cs
     
-    # create and configure fixed tracker - use type 1 since
-    # all lines in a frame will have the same timestamp
-    sim = RfSimulator("gpu_spline1")
+    # create and configure
+    sim = RfSimulator("gpu")
     sim.set_parameter("verbose", "0")
     sim.set_print_debug(False)
     sim.set_parameter("sound_speed", "%f" % c0)
@@ -90,7 +89,7 @@ if __name__ == "__main__":
     sim.set_analytical_beam_profile(args.sigma_lateral, args.sigma_elevational)
 
     # set spline scatterers
-    sim.set_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
+    sim.add_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
     
     # simulate one packet
     iq_frames = []
