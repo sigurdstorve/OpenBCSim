@@ -607,8 +607,7 @@ void GpuBaseAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& sc
 void GpuBaseAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
     m_can_change_cuda_device = false;
     
-    m_num_splines = scatterers->num_scatterers();
-    if (m_num_splines <= 0) {
+    if (m_num_spline_scatterers = 0) {
         throw std::runtime_error("No scatterers");
     }
     m_spline_degree = scatterers->spline_degree;
@@ -618,14 +617,14 @@ void GpuBaseAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatter
         throw std::runtime_error("maximum spline degree supported is " + std::to_string(MAX_SPLINE_DEGREE));
     }
 
-    std::cout << "Num spline scatterers: " << m_num_splines << std::endl;
+    std::cout << "Num spline scatterers: " << m_num_spline_scatterers << std::endl;
     std::cout << "Allocating memory on host for reorganizing spline data\n";
 
 
     // device memory to hold x, y, z components of all spline control points and amplitudes of all splines.
-    const size_t total_num_cs = m_num_splines*m_num_cs;
+    const size_t total_num_cs = m_num_spline_scatterers*m_num_cs;
     const size_t cs_num_bytes = total_num_cs*sizeof(float);
-    const size_t amplitudes_num_bytes = m_num_splines*sizeof(float);
+    const size_t amplitudes_num_bytes = m_num_spline_scatterers*sizeof(float);
     m_device_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
     m_device_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
     m_device_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
@@ -635,12 +634,12 @@ void GpuBaseAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatter
     std::vector<float> host_control_xs(total_num_cs);
     std::vector<float> host_control_ys(total_num_cs);
     std::vector<float> host_control_zs(total_num_cs);
-    std::vector<float> host_control_as(m_num_splines); // only one amplitude for each scatterer.
+    std::vector<float> host_control_as(m_num_spline_scatterers); // only one amplitude for each scatterer.
 
-    for (size_t spline_no = 0; spline_no < m_num_splines; spline_no++) {
+    for (size_t spline_no = 0; spline_no < m_num_spline_scatterers; spline_no++) {
         host_control_as[spline_no] = scatterers->amplitudes[spline_no];
         for (size_t i = 0; i < m_num_cs; i++) {
-            const size_t offset = spline_no + i*m_num_splines;
+            const size_t offset = spline_no + i*m_num_spline_scatterers;
             host_control_xs[offset] = scatterers->control_points[spline_no][i].x;
             host_control_ys[offset] = scatterers->control_points[spline_no][i].y;
             host_control_zs[offset] = scatterers->control_points[spline_no][i].z;
@@ -709,7 +708,7 @@ void GpuBaseAlgorithm::spline_projection_kernel(int stream_no, const Scanline& s
     params.sound_speed                = m_param_sound_speed;
     params.cs_idx_start               = cs_idx_start;
     params.cs_idx_end                 = cs_idx_end;
-    params.NUM_SPLINES                = m_num_splines;
+    params.NUM_SPLINES                = m_num_spline_scatterers;
     params.res                        = m_device_time_proj[stream_no]->data();
     params.eval_basis_offset_elements = eval_basis_offset_elements;
     params.demod_freq                 = m_excitation.demod_freq;

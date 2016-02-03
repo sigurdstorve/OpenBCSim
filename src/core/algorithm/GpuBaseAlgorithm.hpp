@@ -162,7 +162,6 @@ protected:
     std::vector<float>                  m_common_knots;
     int                                 m_num_cs;
     int                                 m_spline_degree;
-    int                                 m_num_splines;
 };
     
 }   // end namespace
