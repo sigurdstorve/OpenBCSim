@@ -52,21 +52,6 @@ void setSplineScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_fil
     auto spline_scatterers = loadSplineScatterersFromHdf(h5_file);
 }
 
-void setScanSequenceFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
-    auto scan_seq = ScanSequence::s_ptr(loadScanSequenceFromHdf(h5_file).release());
-    sim->set_scan_sequence(scan_seq);
-}
-
-void setExcitationFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
-    auto excitation = loadExcitationFromHdf(h5_file);
-    sim->set_excitation(excitation);
-}
-
-void setBeamProfileFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
-    auto lut_beamprofile = loadBeamProfileFromHdf(h5_file);
-    sim->set_lookup_profile(lut_beamprofile);
-}
-
 FixedScatterers::s_ptr loadFixedScatterersFromHdf(const std::string& h5_file) {
     SimpleHDF::SimpleHDF5Reader loader(h5_file);
     auto res = new FixedScatterers;

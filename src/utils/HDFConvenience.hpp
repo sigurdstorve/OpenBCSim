@@ -45,19 +45,14 @@ FixedScatterers::s_ptr DLL_PUBLIC loadFixedScatterersFromHdf(const std::string& 
 // Specific loader for spline scatterers
 SplineScatterers::s_ptr DLL_PUBLIC loadSplineScatterersFromHdf(const std::string& h5_file);
 
+// Load a scan sequence.
 ScanSequence::u_ptr DLL_PUBLIC loadScanSequenceFromHdf(const std::string& h5_file);
 
-void DLL_PUBLIC setScanSequenceFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
-
+// Load an excitation signal.
 ExcitationSignal DLL_PUBLIC loadExcitationFromHdf(const std::string& h5_file);
 
-void DLL_PUBLIC setExcitationFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
-
-// LUT beam profile
+// Load a LUT beam profile.
 IBeamProfile::s_ptr loadBeamProfileFromHdf(const std::string& h5_file);
-
-// LUT beam profile
-void DLL_PUBLIC setBeamProfileFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
 
 }   // namespace
 

@@ -736,7 +736,7 @@ void MainWindow::onLoadBeamProfileLUT() {
         qDebug() << "No lookup-table file selected. Ignoring.";
         return;
     }
-    bcsim::setBeamProfileFromHdf(m_sim, h5_file.toUtf8().constData());
+    m_sim->set_lookup_profile(bcsim::loadBeamProfileFromHdf(h5_file.toUtf8().constData()));
 }
 
 void MainWindow::onLoadSimulatedData() {
