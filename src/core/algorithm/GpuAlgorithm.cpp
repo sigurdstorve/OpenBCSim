@@ -164,18 +164,24 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
     if (m_cur_beam_profile_type == BeamProfileType::NOT_CONFIGURED) {
         throw std::runtime_error("No beam profile is configured");
     }
-    
-    // compute the number of blocks needed to project all scatterers and check that
-    // it is not more than what is supported by the device.
-    
-    // TODO: UPDATE
-    /*
-    int num_blocks = round_up_div(m_num_scatterers, m_param_threads_per_block);
-    if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
-        throw std::runtime_error("required number of x-blocks is larger than device supports");
-    }
-    */
 
+    std::cout << "m_num_fixed_scatterers = " << m_num_fixed_scatterers << std::endl;
+    std::cout << "m_num_spline_scatterers = " << m_num_spline_scatterers << std::endl;
+
+    // precompute the number of blocks needed to project all scatterers and check that
+    // it is not more than what is supported by the device.
+    // TODO: It is probably better to compute this when setting scatterers..
+    const int num_blocks_fixed = round_up_div(m_num_fixed_scatterers, m_param_threads_per_block);
+    if (num_blocks_fixed > m_cur_device_prop.maxGridSize[0]) {
+        throw std::runtime_error("required number of x-blocks is larger than device supports (fixed scatterers)");
+    }
+    const int num_blocks_spline = round_up_div(m_num_spline_scatterers, m_param_threads_per_block);
+    if (num_blocks_spline > m_cur_device_prop.maxGridSize[0]) {
+        throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
+    }
+    std::cout << "num_blocks_fixed = " << num_blocks_fixed << std::endl;
+    std::cout << "num_blocks_spline = " << num_blocks_spline << std::endl;
+    
     // no delay compenasation is needed when returning the projections only
     size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
     const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
@@ -211,12 +217,25 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
             m_debug_data["kernel_memset_ms"].push_back(elapsed_ms);
             event_timer->restart();
         }
+        
+        // project fixed scatterers
+        if (m_num_fixed_scatterers > 0) {
+            fixed_projection_kernel(stream_no, scanline, num_blocks_fixed);
+            if (m_store_kernel_details) {
+                const auto elapsed_ms = static_cast<double>(event_timer->stop());
+                m_debug_data["fixed_projection_kernel_ms"].push_back(elapsed_ms);
+                event_timer->restart();
+            }
+        }
 
-        //projection_kernel(stream_no, scanline, num_blocks); // TODO: UPDATE
-        if (m_store_kernel_details) {
-            const auto elapsed_ms = static_cast<double>(event_timer->stop());
-            m_debug_data["kernel_projection_ms"].push_back(elapsed_ms);
-            event_timer->restart();
+        // project spline scatterers
+        if (m_num_spline_scatterers > 0) {
+            spline_projection_kernel(stream_no, scanline, num_blocks_spline);
+            if (m_store_kernel_details) {
+                const auto elapsed_ms = static_cast<double>(event_timer->stop());
+                m_debug_data["spline_projection_kernel_ms"].push_back(elapsed_ms);
+                event_timer->restart();
+            }
         }
 
         // in-place forward FFT
