@@ -217,7 +217,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
             m_debug_data["kernel_memset_ms"].push_back(elapsed_ms);
             event_timer->restart();
         }
-        
+
         // project fixed scatterers
         if (m_num_fixed_scatterers > 0) {
             fixed_projection_kernel(stream_no, scanline, num_blocks_fixed);
@@ -488,7 +488,6 @@ void GpuAlgorithm::clear_fixed_scatterers() {
 void GpuAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
     // TODO: Remove temporary limitation that old fixed scatterers are replaced.
     copy_scatterers_to_device(fixed_scatterers);
-    m_num_fixed_scatterers = fixed_scatterers->num_scatterers();
 }
 
 void GpuAlgorithm::clear_spline_scatterers() {
@@ -498,7 +497,6 @@ void GpuAlgorithm::clear_spline_scatterers() {
 void GpuAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
     // TODO: Remove temporary limitation that old spline scatterers are replaced.
     copy_scatterers_to_device(spline_scatterers);
-    m_num_spline_scatterers = spline_scatterers->num_scatterers();
 }
 
 void GpuAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
@@ -552,6 +550,8 @@ void GpuAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) 
         host_temp.data()[i] = scatterers->scatterers[i].amplitude;
     }
     cudaErrorCheck( cudaMemcpy(m_device_point_as->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+
+    m_num_fixed_scatterers = num_scatterers;
 }
 
 void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
@@ -622,8 +622,9 @@ void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanli
 
 void GpuAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
     m_can_change_cuda_device = false;
+    m_num_spline_scatterers = scatterers->num_scatterers();
     
-    if (m_num_spline_scatterers = 0) {
+    if (m_num_spline_scatterers == 0) {
         throw std::runtime_error("No scatterers");
     }
     m_spline_degree = scatterers->spline_degree;
