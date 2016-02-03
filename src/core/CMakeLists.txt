@@ -23,8 +23,8 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/CpuAlgorithm.hpp
      algorithm/CpuAlgorithm.cpp
      algorithm/common_utils.hpp
-     algorithm/GpuBaseAlgorithm.hpp
-     algorithm/GpuBaseAlgorithm.cpp
+     algorithm/GpuAlgorithm.hpp
+     algorithm/GpuAlgorithm.cpp
      algorithm/common_definitions.h
      )
 

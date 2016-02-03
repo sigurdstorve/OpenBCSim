@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "LibBCSim.hpp"
 #include "algorithm/CpuAlgorithm.hpp"
 #ifdef BCSIM_ENABLE_CUDA
-    #include "algorithm/GpuBaseAlgorithm.hpp"
+    #include "algorithm/GpuAlgorithm.hpp"
 #endif
 
 namespace bcsim {
@@ -41,7 +41,7 @@ IAlgorithm::s_ptr Create(const std::string& sim_type) {
         return IAlgorithm::s_ptr(new CpuAlgorithm);
 #ifdef BCSIM_ENABLE_CUDA
     } else if (sim_type == "gpu") {
-        return IAlgorithm::s_ptr(new GpuBaseAlgorithm);
+        return IAlgorithm::s_ptr(new GpuAlgorithm);
 #endif
     } else {
         throw std::runtime_error("Illegal algorithm type: " + sim_type);

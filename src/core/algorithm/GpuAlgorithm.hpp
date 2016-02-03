@@ -42,9 +42,9 @@ inline float3 to_float3(const bcsim::vector3& v) {
     return make_float3(v.x, v.y, v.z);
 }
 
-class GpuBaseAlgorithm : public BaseAlgorithm {
+class GpuAlgorithm : public BaseAlgorithm {
 public:
-    GpuBaseAlgorithm();
+    GpuAlgorithm();
     
     virtual void set_parameter(const std::string& key, const std::string& value)        override;
 

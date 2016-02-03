@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <complex>
 #include <tuple> // for std::tie
-#include "GpuBaseAlgorithm.hpp"
+#include "GpuAlgorithm.hpp"
 #include "common_utils.hpp" // for compute_num_rf_samples
 #include "../discrete_hilbert_mask.hpp"
 #include "cuda_debug_utils.h"
@@ -43,7 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../bspline.hpp"
 
 namespace bcsim {
-GpuBaseAlgorithm::GpuBaseAlgorithm()
+GpuAlgorithm::GpuAlgorithm()
     : m_param_cuda_device_no(0),
       m_can_change_cuda_device(true),
       m_param_num_cuda_streams(2),
@@ -60,13 +60,13 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
     create_dummy_lut_profile();
 }
 
-int GpuBaseAlgorithm::get_num_cuda_devices() const {
+int GpuAlgorithm::get_num_cuda_devices() const {
     int device_count;
     cudaErrorCheck( cudaGetDeviceCount(&device_count) );
     return device_count;
 }
 
-void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& value) {
+void GpuAlgorithm::set_parameter(const std::string& key, const std::string& value) {
     if (key == "gpu_device") {
         if (!m_can_change_cuda_device) {
             throw std::runtime_error("cannot change CUDA device now");            
@@ -112,7 +112,7 @@ void GpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
     }
 }
 
-void GpuBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
+void GpuAlgorithm::create_cuda_stream_wrappers(int num_streams) {
     m_stream_wrappers.clear();
     for (int i = 0; i < num_streams; i++) {
         m_stream_wrappers.push_back(std::move(CudaStreamRAII::u_ptr(new CudaStreamRAII)));
@@ -120,7 +120,7 @@ void GpuBaseAlgorithm::create_cuda_stream_wrappers(int num_streams) {
     m_can_change_cuda_device = false;
 }
 
-void GpuBaseAlgorithm::save_cuda_device_properties() {
+void GpuAlgorithm::save_cuda_device_properties() {
     const auto num_devices = get_num_cuda_devices();
     if (m_param_cuda_device_no < 0 || m_param_cuda_device_no >= num_devices) {
         throw std::runtime_error("illegal CUDA device number");
@@ -148,7 +148,7 @@ void GpuBaseAlgorithm::save_cuda_device_properties() {
     }
 }
 
-void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > >&  /*out*/ rf_lines) {
+void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > >&  /*out*/ rf_lines) {
     m_can_change_cuda_device = false;
     
     if (m_stream_wrappers.size() == 0) {
@@ -280,7 +280,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
     }
 }
 
-void GpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
+void GpuAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     m_can_change_cuda_device = false;
     
     m_excitation = new_excitation;
@@ -312,7 +312,7 @@ void GpuBaseAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
 }
 
 
-void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
+void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     m_can_change_cuda_device = false;
     
     m_scan_seq = new_scan_sequence;
@@ -350,20 +350,20 @@ void GpuBaseAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) 
     m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
-void GpuBaseAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
+void GpuAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
     std::cout << "Setting analytical beam profile for GPU algorithm" << std::endl;
     const auto analytical_profile = std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile);
-    if (!analytical_profile) throw std::runtime_error("GpuBaseAlgorithm: failed to cast beam profile");
+    if (!analytical_profile) throw std::runtime_error("GpuAlgorithm: failed to cast beam profile");
     m_cur_beam_profile_type = BeamProfileType::ANALYTICAL;
 
     m_analytical_sigma_lat = analytical_profile->getSigmaLateral();
     m_analytical_sigma_ele = analytical_profile->getSigmaElevational();
 }
 
-void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
+void GpuAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     std::cout << "Setting LUT profile for GPU algorithm" << std::endl;
     const auto lut_beam_profile = std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile);
-    if (!lut_beam_profile) throw std::runtime_error("GpuBaseAlgorithm: failed to cast beam profile");
+    if (!lut_beam_profile) throw std::runtime_error("GpuAlgorithm: failed to cast beam profile");
     m_cur_beam_profile_type = BeamProfileType::LOOKUP;
 
     int num_samples_rad = lut_beam_profile->getNumSamplesRadial();
@@ -417,7 +417,7 @@ void GpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
 
 }
 
-void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
+void GpuAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
     const auto write_raw = [&](float3 origin, float3 dir0, float3 dir1, std::string raw_file) {
         const int num_samples = 1024;
         const int total_num_samples = num_samples*num_samples;
@@ -459,33 +459,33 @@ void GpuBaseAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
 
 }
 
-void GpuBaseAlgorithm::create_dummy_lut_profile() {
+void GpuAlgorithm::create_dummy_lut_profile() {
     const size_t n = 16;
     std::vector<float> dummy_samples(n*n*n, 0.0f);
     m_device_beam_profile = DeviceBeamProfileRAII::u_ptr(new DeviceBeamProfileRAII(DeviceBeamProfileRAII::TableExtent3D(n, n, n), dummy_samples));
 }
 
-void GpuBaseAlgorithm::clear_fixed_scatterers() {
+void GpuAlgorithm::clear_fixed_scatterers() {
     m_num_fixed_scatterers = 0;
 }
 
-void GpuBaseAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
+void GpuAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
     // TODO: Remove temporary limitation that old fixed scatterers are replaced.
     copy_scatterers_to_device(fixed_scatterers);
     m_num_fixed_scatterers = fixed_scatterers->num_scatterers();
 }
 
-void GpuBaseAlgorithm::clear_spline_scatterers() {
+void GpuAlgorithm::clear_spline_scatterers() {
     m_num_spline_scatterers = 0;
 }
 
-void GpuBaseAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
+void GpuAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
     // TODO: Remove temporary limitation that old spline scatterers are replaced.
     copy_scatterers_to_device(spline_scatterers);
     m_num_spline_scatterers = spline_scatterers->num_scatterers();
 }
 
-void GpuBaseAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
+void GpuAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
     m_can_change_cuda_device = false;
     
     const size_t num_scatterers = scatterers->num_scatterers();
@@ -538,7 +538,7 @@ void GpuBaseAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scattere
     cudaErrorCheck( cudaMemcpy(m_device_point_as->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
 }
 
-void GpuBaseAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
+void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
 
     //dim3 grid_size(num_blocks, 1, 1);
@@ -604,7 +604,7 @@ void GpuBaseAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& sc
     }
 }
 
-void GpuBaseAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
+void GpuAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
     m_can_change_cuda_device = false;
     
     if (m_num_spline_scatterers = 0) {
@@ -658,7 +658,7 @@ void GpuBaseAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatter
     m_common_knots = scatterers->knot_vector;
 }
 
-void GpuBaseAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
+void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
             
     // evaluate the basis functions and upload to constant memory.
