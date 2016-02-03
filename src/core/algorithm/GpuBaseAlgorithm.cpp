@@ -466,8 +466,8 @@ void GpuBaseAlgorithm::clear_fixed_scatterers() {
 void GpuBaseAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
     // TODO: Remove temporary limitation that old fixed scatterers are replaced.
     m_can_change_cuda_device = false;
-    m_num_scatterers = fixed_scatterers->num_scatterers();
-    copy_scatterers_to_device();
+    m_num_scatterers = fixed_scatterers->num_scatterers(); // TODO
+    copy_scatterers_to_device(fixed_scatterers);
     m_fixed_scatterers_valid = true;
 }
 
@@ -475,8 +475,11 @@ void GpuBaseAlgorithm::clear_spline_scatterers() {
     m_spline_scatterers_valid = false;
 }
 
-void GpuBaseAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr) {
+void GpuBaseAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
     // TODO: Remove temporary limitation that old spline scatterers are replaced.
+    m_can_change_cuda_device = false;
+    m_num_scatterers = spline_scatterers->num_scatterers(); // TODO
+    copy_scatterers_to_device(spline_scatterers);
     m_spline_scatterers_valid = true;
 }
 
@@ -597,6 +600,61 @@ void GpuBaseAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& sc
     } else {
         throw std::logic_error("this should never happen");
     }
+}
+
+void GpuBaseAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
+    m_can_change_cuda_device = false;
+    
+    m_num_splines = scatterers->num_scatterers();
+    if (m_num_splines <= 0) {
+        throw std::runtime_error("No scatterers");
+    }
+    m_spline_degree = scatterers->spline_degree;
+    m_num_cs = scatterers->get_num_control_points();
+
+    if (m_spline_degree > MAX_SPLINE_DEGREE) {
+        throw std::runtime_error("maximum spline degree supported is " + std::to_string(MAX_SPLINE_DEGREE));
+    }
+
+    std::cout << "Num spline scatterers: " << m_num_splines << std::endl;
+    std::cout << "Allocating memory on host for reorganizing spline data\n";
+
+
+    // device memory to hold x, y, z components of all spline control points and amplitudes of all splines.
+    const size_t total_num_cs = m_num_splines*m_num_cs;
+    const size_t cs_num_bytes = total_num_cs*sizeof(float);
+    const size_t amplitudes_num_bytes = m_num_splines*sizeof(float);
+    m_device_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
+    m_device_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
+    m_device_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
+    m_device_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(amplitudes_num_bytes));
+        
+    // store the control points with correct memory layout of the host
+    std::vector<float> host_control_xs(total_num_cs);
+    std::vector<float> host_control_ys(total_num_cs);
+    std::vector<float> host_control_zs(total_num_cs);
+    std::vector<float> host_control_as(m_num_splines); // only one amplitude for each scatterer.
+
+    for (size_t spline_no = 0; spline_no < m_num_splines; spline_no++) {
+        host_control_as[spline_no] = scatterers->amplitudes[spline_no];
+        for (size_t i = 0; i < m_num_cs; i++) {
+            const size_t offset = spline_no + i*m_num_splines;
+            host_control_xs[offset] = scatterers->control_points[spline_no][i].x;
+            host_control_ys[offset] = scatterers->control_points[spline_no][i].y;
+            host_control_zs[offset] = scatterers->control_points[spline_no][i].z;
+        }
+    }
+    
+    // copy control points to GPU memory.
+    cudaErrorCheck( cudaMemcpy(m_device_control_xs->data(), host_control_xs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    cudaErrorCheck( cudaMemcpy(m_device_control_ys->data(), host_control_ys.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    cudaErrorCheck( cudaMemcpy(m_device_control_zs->data(), host_control_zs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
+    
+    // copy amplitudes to GPU memory.
+    cudaErrorCheck( cudaMemcpy(m_device_control_as->data(), host_control_as.data(), amplitudes_num_bytes, cudaMemcpyHostToDevice) );
+
+    // Store the knot vector.
+    m_common_knots = scatterers->knot_vector;
 }
 
 

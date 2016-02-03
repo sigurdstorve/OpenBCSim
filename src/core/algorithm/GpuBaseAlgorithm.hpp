@@ -87,6 +87,8 @@ protected:
     
     void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks);
 
+    void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
+
 protected:
     typedef cufftComplex complex;
     
