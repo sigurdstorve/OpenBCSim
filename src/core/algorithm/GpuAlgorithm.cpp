@@ -46,7 +46,7 @@ namespace bcsim {
 GpuAlgorithm::GpuAlgorithm()
     : m_param_cuda_device_no(0),
       m_can_change_cuda_device(true),
-      m_param_num_cuda_streams(2),
+      m_param_num_cuda_streams(2), // TODO: What if this value is bigger than max num streams...
       m_num_time_samples(8192),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
@@ -80,15 +80,12 @@ void GpuAlgorithm::set_parameter(const std::string& key, const std::string& valu
         cudaErrorCheck(cudaSetDevice(m_param_cuda_device_no));
         save_cuda_device_properties();
     } else if (key == "cuda_streams") {
-        const auto new_value = std::stoi(value);
-        if (new_value > MAX_NUM_CUDA_STREAMS) {
+        const auto num_streams = std::stoi(value);
+        if (num_streams > MAX_NUM_CUDA_STREAMS) {
             throw std::runtime_error("number of CUDA streams exceeds MAX_NUM_CUDA_STREAMS");
         }
-        m_param_num_cuda_streams = new_value;
-    } else if (key == "cuda_streams") {
-        const auto num_streams = std::stoi(value);
         if (num_streams <= 0) {
-            throw std::runtime_error("invalid number of CUDA streams");
+            throw std::runtime_error("number of CUDA streams must be more than zero");
         }
         m_param_num_cuda_streams = num_streams;
     } else if (key == "threads_per_block") {
