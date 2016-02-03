@@ -43,10 +43,10 @@ if __name__ == "__main__":
     # Create and configure
     if args.use_gpu:
         print "Using GPU"
-        sim = RfSimulator("gpu_spline2")
+        sim = RfSimulator("gpu")
     else:
         print "Using CPU"
-        sim = RfSimulator("spline")
+        sim = RfSimulator("cpu")
         sim.set_parameter("num_cpu_cores", "all")
     sim.set_parameter("verbose", "0")
     sim.set_print_debug(False)
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         knot_vector    = np.array(f["knot_vector"].value, dtype="float32")
         spline_degree  = int(f["spline_degree"].value)
         
-    sim.set_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
+    sim.add_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
     print "Number of scatterers: %d" % control_points.shape[0]
     
     # Define excitation signal
