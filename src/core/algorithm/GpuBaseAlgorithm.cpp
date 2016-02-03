@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <iostream>
 #include <complex>
+#include <tuple> // for std::tie
 #include "GpuBaseAlgorithm.hpp"
 #include "common_utils.hpp" // for compute_num_rf_samples
 #include "../discrete_hilbert_mask.hpp"
