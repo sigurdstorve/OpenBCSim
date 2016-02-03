@@ -142,6 +142,7 @@ MainWindow::MainWindow() {
     v_layout->addWidget(m_time_widget);
 
     createMenus();
+    /*
     auto scatterers_file = m_settings->value("default_scatterers").toString();
     if (!QFileInfo(scatterers_file).exists()) {
         scatterers_file = QFileDialog::getOpenFileName(this, tr("Invalid default file. Select h5 scatterer dataset"), "", tr("h5 files (*.h5)"));
@@ -151,6 +152,8 @@ MainWindow::MainWindow() {
         }
     }
     loadScatterers(scatterers_file.toUtf8().constData());
+    */
+    onCreateNewSimulator();
 
     m_label = new QLabel("No simulation data");
     h_layout->addWidget(m_label);
@@ -209,7 +212,7 @@ void MainWindow::createMenus() {
     auto about_menu = menuBar->addMenu(tr("&About"));
     
     // Create all actions in "File" menu
-    auto loadScatterersAct = new QAction(tr("Load scatterers [fixed or spline]"), this);
+    auto loadScatterersAct = new QAction(tr("Load scatterers"), this);
     connect(loadScatterersAct, SIGNAL(triggered()), this, SLOT(onLoadScatterers()));
     fileMenu->addAction(loadScatterersAct);
 
@@ -217,13 +220,9 @@ void MainWindow::createMenus() {
     connect(loadExcitationAct, SIGNAL(triggered()), this, SLOT(onLoadExcitation()));
     fileMenu->addAction(loadExcitationAct);
 
-    auto gpu_algorithm_act = new QAction(tr("Create a GPU simulator"), this);
-    connect(gpu_algorithm_act, SIGNAL(triggered()), this, SLOT(onCreateGpuSimulator()));
-    fileMenu->addAction(gpu_algorithm_act);
-
-    auto gpu_load_scatterers_act = new QAction(tr("Load new scatterers for GPU"), this);
-    connect(gpu_load_scatterers_act, SIGNAL(triggered()), this, SLOT(onGpuLoadScatterers()));
-    fileMenu->addAction(gpu_load_scatterers_act);
+    auto new_simulator_act = new QAction(tr("Create a new simulator"), this);
+    connect(new_simulator_act, SIGNAL(triggered()), this, SLOT(onCreateNewSimulator()));
+    fileMenu->addAction(new_simulator_act);
     
     auto refresh_settings_act = new QAction(tr("Refresh settings"), this);
     connect(refresh_settings_act, SIGNAL(triggered()), this, SLOT(onLoadIniSettings()));
@@ -325,45 +324,21 @@ void MainWindow::onLoadExcitation() {
     setExcitation(h5_file);
 }
 
-void MainWindow::onCreateGpuSimulator() {
+void MainWindow::onCreateNewSimulator() {
     QStringList items;
-    items << "gpu_fixed" << "gpu_spline1" << "gpu_spline2";
+    items << "cpu" << "gpu";
     bool ok;
-    QString item = QInputDialog::getItem(this, tr("Select GPU algorithm type"),
+    QString sim_type = QInputDialog::getItem(this, tr("Select algorithm type"),
                                          tr("Type:"), items, 0, false, &ok);
-    if (ok && !item.isEmpty()) {
+    if (ok) {
         try {
-            m_sim = bcsim::IAlgorithm::s_ptr(bcsim::Create(item.toUtf8().constData()));
+            qDebug() << "Creating simulator of type: " << sim_type;
+            createNewSimulator(sim_type);
         } catch (const std::runtime_error& e) {
-            qDebug() << "Caught exception: " << e.what();
+            qDebug() << "onCreateNewSimulator(): caught exception: " << e.what();
             onExit();
         }
-        // This must currently be done before defining the scanseq.
-        onGpuLoadScatterers();
-
-        // GPU-specific hack.
-        m_sim->set_parameter("sound_speed", "1540.0");
-        
-        // configure excitation
-        m_sim->set_excitation(m_current_excitation);
-        m_sim->set_parameter("radial_decimation", std::to_string(m_settings->value("radial_decimation", 15).toInt()));
-        
-        // configure scanseq and excitation
-        int num_lines;
-        auto scan_geometry = m_scanseq_widget->get_geometry(num_lines);
-        newScansequence(scan_geometry, num_lines);
-        
-        // configure Gaussian beam profile
-        const auto sigma_lateral     = m_beamprofile_widget->get_lateral_sigma();
-        const auto sigma_elevational = m_beamprofile_widget->get_elevational_sigma();
-        m_sim->set_analytical_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(sigma_lateral, sigma_elevational)));
-
-        updateOpenGlVisualization();
     }
-}
-
-void MainWindow::onGpuLoadScatterers() {
-    throw std::runtime_error("TODO: UPDATE");
 }
 
 void MainWindow::onSimulate() {
@@ -381,13 +356,46 @@ void MainWindow::onSetSimulatorNoise() {
     m_sim->set_parameter("noise_amplitude", std::to_string(noise_amplitude));
 }
 
-void MainWindow::loadScatterers(const QString h5_file) {
-    initializeCpuSimulator();
+void MainWindow::createNewSimulator(const QString sim_type) {
+    m_sim = bcsim::Create(sim_type.toUtf8().constData());
+    if (sim_type == "cpu") {
+        const int num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
+        m_sim->set_parameter("num_cpu_cores", std::to_string(num_cores));
+    }
+    
+    // ask user for a scatterer dataset.
+    onLoadScatterers();
+    m_sim->set_parameter("verbose", "0");
+    m_sim->set_parameter("sound_speed", "1540.0");
+    m_sim->set_parameter("radial_decimation", std::to_string(m_settings->value("radial_decimation", 15).toInt()));
 
+    // force-emit from all widgets to ensure a fully configured simulator.
+    m_excitation_signal_widget->force_emit();
+
+    // configure scanseq
+    int num_lines;
+    auto scan_geometry = m_scanseq_widget->get_geometry(num_lines);
+    newScansequence(scan_geometry, num_lines);
+        
+    // use Gaussian beam profile by default
+    const auto sigma_lateral     = m_beamprofile_widget->get_lateral_sigma();
+    const auto sigma_elevational = m_beamprofile_widget->get_elevational_sigma();
+    m_sim->set_analytical_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(sigma_lateral, sigma_elevational)));
+
+    updateOpenGlVisualization();
+    m_num_simulated_frames = 0;
+    qDebug() << "Created simulator";
+
+}
+
+void MainWindow::loadScatterers(const QString h5_file) {
     if (h5_file == "") {
         qDebug() << "Invalid scatterer file. Skipping";
         return;
     }
+
+    m_sim->clear_fixed_scatterers();
+    m_sim->clear_spline_scatterers();
 
     // load fixed scatterers (if found)
     try {
@@ -447,38 +455,11 @@ void MainWindow::setExcitation(const QString h5_file) {
     throw std::runtime_error("this function should not be used");
     try {
         auto new_excitation = bcsim::loadExcitationFromHdf(h5_file.toUtf8().constData());
-        m_current_excitation = new_excitation;
         m_sim->set_excitation(new_excitation);
         qDebug() << "Configured excitation";
     } catch (const std::runtime_error& e) {
         qDebug() << "Caught exception: " << e.what();
     }
-}
-
-void MainWindow::initializeCpuSimulator() {
-    try {
-        m_sim = bcsim::IAlgorithm::s_ptr(bcsim::Create("cpu"));
-        m_num_simulated_frames = 0;
-    } catch (const std::runtime_error& e) {
-        qDebug() << "Caught exception: " << e.what();
-        onExit();
-    }
-    m_sim->set_parameter("verbose", "0");
-    const int num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
-    m_sim->set_parameter("num_cpu_cores", std::to_string(num_cores));
-    m_sim->set_parameter("sound_speed", "1540.0");
-
-    const int radial_decimation = m_settings->value("radial_decimation", 15).toInt();
-    m_sim->set_parameter("radial_decimation", std::to_string(radial_decimation));
-
-    // For now hardcoded to use analytic Gaussian beam profile
-    //auto beam_profile = m_beamprofile_widget->getValue();
-    auto beam_profile = bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(0.5e-3f, 1.0e-3f));
-    m_sim->set_analytical_profile(beam_profile);
-
-    qDebug() << "Created simulator";
-    // force-emit from all widgets to ensure a fully configured simulator.
-    m_excitation_signal_widget->force_emit();
 }
 
 void MainWindow::doSimulation() {
@@ -635,7 +616,6 @@ void MainWindow::initializeSplineVisualization(const QString& h5_file) {
 }
 
 void MainWindow::onNewExcitation(bcsim::ExcitationSignal new_excitation) {
-    m_current_excitation = new_excitation;
     m_sim->set_excitation(new_excitation);
     qDebug() << "Configured excitation signal";
 }
