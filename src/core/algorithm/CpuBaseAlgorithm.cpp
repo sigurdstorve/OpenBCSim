@@ -260,5 +260,21 @@ void CpuBaseAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     m_beam_profile = beam_profile;
 }
 
+void CpuBaseAlgorithm::clear_fixed_scatterers() {
+    m_scatterers_collection.fixed_collections.clear();
+}
+
+void CpuBaseAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
+    m_scatterers_collection.fixed_collections.push_back(fixed_scatterers);
+}
+
+void CpuBaseAlgorithm::clear_spline_scatterers() {
+    m_scatterers_collection.spline_collections.clear();
+}
+
+void CpuBaseAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
+    m_scatterers_collection.spline_collections.push_back(spline_scatterers);
+}
+
 }   // namespace
 

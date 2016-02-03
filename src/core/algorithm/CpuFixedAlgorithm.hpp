@@ -40,14 +40,8 @@ class CpuFixedAlgorithm : public CpuBaseAlgorithm {
 public:
     CpuFixedAlgorithm();
     
-    virtual void set_scatterers(Scatterers::s_ptr new_scatterers) override;
-
 protected:    
     virtual void projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) override;
-
-private:
-    FixedScatterers::s_ptr     m_scatterers;
-
 };
 
 }   // namespace

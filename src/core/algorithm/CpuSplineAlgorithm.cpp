@@ -45,19 +45,6 @@ CpuSplineAlgorithm::CpuSplineAlgorithm()
         : CpuBaseAlgorithm(),
           m_param_sum_all_cs(false) { }
      
-void CpuSplineAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
-    m_scatterers = std::dynamic_pointer_cast<SplineScatterers>(new_scatterers);
-
-    if (m_scatterers == nullptr) {
-        throw std::runtime_error("Cast to SplineScatterers failed");
-    }
-
-    if (m_param_verbose) {
-        std::cout << "Number of spline scatterers: " << m_scatterers->num_scatterers() << std::endl;
-    }
-    m_scatterers_configured = true;
-}
-
 void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->num_scatterers();

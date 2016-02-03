@@ -38,22 +38,59 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
+// A collection or zero or more fixed and spline scatterer sets.
+struct PointScattererCollection {
+    std::vector<FixedScatterers::s_ptr>     fixed_collections;
+    std::vector<SplineScatterers::s_ptr>    spline_collections;
+
+    // Compute the total number of fixed scatterers.
+    size_t num_fixed_scatterers() const {
+        size_t num_scatterers = 0;
+        for (const auto& scatterers : fixed_collections) {
+            num_scatterers += scatterers->num_scatterers();
+        }
+        return num_scatterers;
+    }
+
+    // Compute the total number of spline scatterers.
+    size_t num_spline_scatterers() const {
+        size_t num_scatterers = 0;
+        for (const auto& scatterers : spline_collections) {
+            num_scatterers += scatterers->num_scatterers();
+        }
+        return num_scatterers;
+    }
+
+    // Compute the overall total number of scatterers (fixed and spline)
+    size_t total_num_scatterers() const {
+        return num_fixed_scatterers() + num_spline_scatterers();
+    }
+};
+
 // Implementation common functionality for the CPU-based algorithms.
 class CpuBaseAlgorithm : public BaseAlgorithm {
 public:
     CpuBaseAlgorithm();
         
-    virtual void set_parameter(const std::string& key, const std::string& value)        override;
+    virtual void set_parameter(const std::string& key, const std::string& value)                    override;
     
-    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               override;
+    virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)                           override;
 
-    virtual void set_excitation(const ExcitationSignal& new_excitation)                 override;
+    virtual void set_excitation(const ExcitationSignal& new_excitation)                             override;
 
-    virtual void simulate_lines(std::vector<std::vector<std::complex<float>> >&  /*out*/ rf_lines) override;
+    virtual void simulate_lines(std::vector<std::vector<std::complex<float>> >&  /*out*/ rf_lines)  override;
 
-    virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile) override;
+    virtual void set_analytical_profile(IBeamProfile::s_ptr beam_profile)                           override;
 
-    virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override;
+    virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile)                               override;
+
+    virtual void clear_fixed_scatterers()                                                           override;
+
+    virtual void add_fixed_scatterers(FixedScatterers::s_ptr)                                       override;
+
+    virtual void clear_spline_scatterers()                                                          override;
+
+    virtual void add_spline_scatterers(SplineScatterers::s_ptr)                                     override;
 
 protected:
     // Use as many cores as possible for simulation.
@@ -86,6 +123,8 @@ protected:
     ExcitationSignal                         m_excitation;
     // Pointer to one FFT-convolver for each thread.
     std::vector<IBeamConvolver::ptr>         convolvers;
+    
+    PointScattererCollection                m_scatterers_collection;
     
     // The number of time samples in each RF line in the scan sequence.
     size_t                                  m_rf_line_num_samples;

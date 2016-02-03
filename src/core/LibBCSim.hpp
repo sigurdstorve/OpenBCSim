@@ -49,8 +49,17 @@ public:
     // Set misc. parameters. Available keys depends on the algorithm.
     virtual void set_parameter(const std::string&, const std::string& value)            = 0;
     
-    // Configure the scatterers used when simulating.
-    virtual void set_scatterers(Scatterers::s_ptr new_scatterers)                       = 0;
+    // Clear all fixed point scatterers.
+    virtual void clear_fixed_scatterers()                                               = 0;
+
+    // Add a new set of fixed point scatterers.
+    virtual void add_fixed_scatterers(FixedScatterers::s_ptr)                           = 0;
+
+    // Clear all spline scatterers.
+    virtual void clear_spline_scatterers()                                              = 0;
+
+    // Add a new set of spline point scatterers.
+    virtual void add_spline_scatterers(SplineScatterers::s_ptr)                         = 0;
 
     // Set scan sequence to use when simulating all RF lines.
     virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               = 0;

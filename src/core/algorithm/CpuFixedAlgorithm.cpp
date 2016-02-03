@@ -41,17 +41,6 @@ namespace bcsim {
 CpuFixedAlgorithm::CpuFixedAlgorithm()
     : CpuBaseAlgorithm() { }
 
-void CpuFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
-    m_scatterers = std::dynamic_pointer_cast<FixedScatterers>(new_scatterers);
-    
-    if (m_scatterers == nullptr) {
-        throw std::runtime_error("Cast to FixedScatterers failed");
-    }
-    
-    if (m_param_verbose) std::cout << "Number of fixed scatterers: " << m_scatterers->num_scatterers() << std::endl;
-    m_scatterers_configured = true;
-}
-
 void CpuFixedAlgorithm::projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
     const int num_scatterers = m_scatterers->scatterers.size();
