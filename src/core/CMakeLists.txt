@@ -22,10 +22,6 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/BaseAlgorithm.cpp
      algorithm/CpuBaseAlgorithm.hpp
      algorithm/CpuBaseAlgorithm.cpp
-     algorithm/CpuFixedAlgorithm.hpp
-     algorithm/CpuFixedAlgorithm.cpp
-     algorithm/CpuSplineAlgorithm.hpp
-     algorithm/CpuSplineAlgorithm.cpp
      algorithm/common_utils.hpp
      algorithm/GpuBaseAlgorithm.hpp
      algorithm/GpuBaseAlgorithm.cpp
