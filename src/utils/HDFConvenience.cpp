@@ -101,13 +101,13 @@ IAlgorithm::s_ptr CreateSimulator(const std::string& scatterer_file,
 }
 
 void setFixedScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
+    throw std::runtime_error("TODO: update to reflect unified fixed and spline scatterers");
     auto fixed_scatterers = loadFixedScatterersFromHdf(h5_file);
-    sim->set_scatterers(fixed_scatterers);
 }
 
 void setSplineScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
+    throw std::runtime_error("TODO: update to reflect unified fixed and spline scatterers");
     auto spline_scatterers = loadSplineScatterersFromHdf(h5_file);
-    sim->set_scatterers(spline_scatterers);
 }
 
 void setScanSequenceFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
