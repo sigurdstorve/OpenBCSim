@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument("--store_kernel_debug", help="Store kernel timing info", action="store_true")
     args = parser.parse_args()
 
-sim = RfSimulator("gpu_fixed")
+sim = RfSimulator("gpu")
 sim.set_parameter("gpu_device", "%d"%args.device_no)
 sim.set_parameter("radial_decimation", "30")
 sim.set_parameter("verbose", "0")
@@ -39,13 +39,13 @@ scatterers_data[:,0] = np.random.uniform(low=x0, high=x1, size=(args.num_scatter
 scatterers_data[:,1] = np.random.uniform(low=y0, high=y1, size=(args.num_scatterers,))
 scatterers_data[:,2] = np.random.uniform(low=z0, high=z1, size=(args.num_scatterers,))
 scatterers_data[:,3] = np.random.uniform(low=0.0, high=1.0, size=(args.num_scatterers,))
-sim.set_fixed_scatterers(scatterers_data)
+sim.add_fixed_scatterers(scatterers_data)
 
 # configure simulation parameters
 sim.set_parameter("sound_speed", "1540.0")
 
 # configure the RF excitation
-fs = 100e6
+fs = 50e6
 ts = 1.0/fs
 fc = 2.5e6
 tc = 1.0/fc
