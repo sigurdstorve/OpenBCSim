@@ -42,37 +42,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-std::string AutodetectScatteresType(const std::string& h5_file) {
-    SimpleHDF::SimpleHDF5Reader loader(h5_file);
-    bool loaded_fixed = true;
-    bool loaded_spline = true;
-    try {
-        auto data  = loader.readMultiArray<float, 2>("data");
-    } catch (...) {
-        loaded_fixed = false;
-    }
-    try {
-        auto control_points = loader.readMultiArray<float, 3>("control_points");
-        auto amplitudes     = loader.readMultiArray<float, 1>("amplitudes");
-        int spline_degree   = loader.readScalar<int>("spline_degree");
-        auto knots          = loader.readMultiArray<float, 1>("knot_vector");
-    } catch (...) {
-        loaded_spline = false;
-    }
-
-    // Sanity check
-    if (!loaded_fixed && !loaded_spline) {
-        throw std::runtime_error("Unable to load fixed or spline data");
-    }
-    if (loaded_fixed && loaded_spline) {
-        throw std::runtime_error("Dataset contained both fixed and spline data");
-    }
-    std::string type;
-    if (loaded_fixed) type = "fixed";
-    if (loaded_spline) type = "spline";
-    return type;
-}
-
 void setFixedScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
     throw std::runtime_error("TODO: update to reflect unified fixed and spline scatterers");
     auto fixed_scatterers = loadFixedScatterersFromHdf(h5_file);
@@ -98,7 +67,7 @@ void setBeamProfileFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
     sim->set_lookup_profile(lut_beamprofile);
 }
 
-Scatterers::s_ptr loadFixedScatterersFromHdf(const std::string& h5_file) {
+FixedScatterers::s_ptr loadFixedScatterersFromHdf(const std::string& h5_file) {
     SimpleHDF::SimpleHDF5Reader loader(h5_file);
     auto res = new FixedScatterers;
     try {
@@ -117,12 +86,12 @@ Scatterers::s_ptr loadFixedScatterersFromHdf(const std::string& h5_file) {
             res->scatterers[i]  = scatterer;
         }
     } catch (...) {
-        throw std::runtime_error("Failed to set fixed scatterers dataset");
+        throw std::runtime_error("failed to load fixed scatterers");
     }
-    return Scatterers::s_ptr(res);
+    return FixedScatterers::s_ptr(res);
 }
 
-Scatterers::s_ptr loadSplineScatterersFromHdf(const std::string& h5_file) {
+SplineScatterers::s_ptr loadSplineScatterersFromHdf(const std::string& h5_file) {
     SimpleHDF::SimpleHDF5Reader loader(h5_file);
     auto res = new SplineScatterers;
 
@@ -156,9 +125,9 @@ Scatterers::s_ptr loadSplineScatterersFromHdf(const std::string& h5_file) {
             }
         }
     } catch (...) {
-        throw std::runtime_error("Failed to configure spline scatterer dataset");
+        throw std::runtime_error("failed to load spline scatterers");
     }
-    return Scatterers::s_ptr(res);
+    return SplineScatterers::s_ptr(res);
 }
 
 ScanSequence::u_ptr loadScanSequenceFromHdf(const std::string& h5_file) {

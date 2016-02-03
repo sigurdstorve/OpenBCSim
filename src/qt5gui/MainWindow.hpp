@@ -166,7 +166,6 @@ private:
 
     // Invariant: should at all times mirror the configuration of the simulator object.
     bcsim::ExcitationSignal          m_current_excitation;
-    bcsim::Scatterers::s_ptr     m_current_scatterers;  
 
     // Timer playback
     QTimer*                         m_playback_timer;

@@ -363,27 +363,7 @@ void MainWindow::onCreateGpuSimulator() {
 }
 
 void MainWindow::onGpuLoadScatterers() {
-    auto h5_file = QFileDialog::getOpenFileName(this, tr("Load h5 scatterer dataset"), "", tr("h5 files (*.h5)"));
-    if (h5_file == "") {
-        qDebug() << "Invalid scatterer file. Skipping";
-        return;
-    }
-    auto temp = std::string(h5_file.toUtf8().constData());
-    auto scatterers_type = bcsim::AutodetectScatteresType(temp);
-    if (scatterers_type == "fixed") {
-        bcsim::setFixedScatterersFromHdf(m_sim, temp);
-
-        // Handle visualization in OpenGL
-        initializeFixedVisualization(h5_file);
-
-    } else if (scatterers_type == "spline") {
-        bcsim::setSplineScatterersFromHdf(m_sim, temp);
-
-        // Handle visualization in OpenGL
-        initializeSplineVisualization(h5_file);
-    } else {
-        throw std::runtime_error("Invalid autodetected scatterer type");
-    }
+    throw std::runtime_error("TODO: UPDATE");
 }
 
 void MainWindow::onSimulate() {
@@ -402,46 +382,43 @@ void MainWindow::onSetSimulatorNoise() {
 }
 
 void MainWindow::loadScatterers(const QString h5_file) {
-    const std::string h5_file_str = h5_file.toUtf8().constData();
-    auto type = bcsim::AutodetectScatteresType(h5_file_str);
-    
-    if (type == "fixed") {
-        initializeSimulator("fixed");
-        try {
-            m_current_scatterers = bcsim::loadFixedScatterersFromHdf(h5_file_str);
-            m_sim->set_scatterers(m_current_scatterers);
-        } catch(const std::runtime_error& e) {
-            qDebug() << "Caught exception: " << e.what();
-        }
+    initializeSimulator("cpu");
 
-        // Handle visualization in OpenGL
-        initializeFixedVisualization(h5_file);
-    } else if (type == "spline") {
-        initializeSimulator("spline");
-        try {
-            m_current_scatterers = bcsim::loadSplineScatterersFromHdf(h5_file_str);
-            m_sim->set_scatterers(m_current_scatterers);
-
-            auto temp = std::dynamic_pointer_cast<bcsim::SplineScatterers>(m_current_scatterers);
-            
-            // update simulation time limits
-            const auto min_time = temp->knot_vector.front();
-            const auto max_time = temp->knot_vector.back() - 1e-6f; // "end-hack"
-            m_sim_time_manager->set_min_time(min_time);
-            m_sim_time_manager->set_max_time(max_time);
-            m_sim_time_manager->reset();
-            qDebug() << "Spline scatterers time interval is [" << min_time << ", " << max_time << "]";
-
-        } catch(const std::runtime_error& e) {
-            qDebug() << "Caught exception: " << e.what();
-        }
-
-        // Handle visualization in OpenGL
-        initializeSplineVisualization(h5_file);
+    if (h5_file == "") {
+        qDebug() << "Invalid scatterer file. Skipping";
+        return;
     }
-    qDebug() << "Configured scatterers";
 
-    updateOpenGlVisualization();
+    // load fixed scatterers (if found)
+    try {
+        auto fixed_scatterers = bcsim::loadFixedScatterersFromHdf(h5_file.toUtf8().constData());
+        m_sim->add_fixed_scatterers(fixed_scatterers);
+    } catch (std::runtime_error& /*e*/) {
+        qDebug() << "Could not read fixed scatterers from file";
+    }
+
+    // load spline scatterers (if found)
+    try {
+        auto spline_scatterers = bcsim::loadSplineScatterersFromHdf(h5_file.toUtf8().constData());
+        m_sim->add_spline_scatterers(spline_scatterers);
+
+        // update simulation time limits
+        const auto& knots = spline_scatterers->knot_vector;
+        const auto min_time = knots.front();
+        const auto max_time = knots.back() - 1e-6f; // "end-hack"
+        m_sim_time_manager->set_min_time(min_time);
+        m_sim_time_manager->set_max_time(max_time);
+        m_sim_time_manager->reset();
+        qDebug() << "Spline scatterers time interval is [" << min_time << ", " << max_time << "]";
+
+    } catch (std::runtime_error& e) {
+        qDebug() << "Could not read spline scatterers from file";
+    }
+
+    // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
+    //initializeSplineVisualization(h5_file);
+    //initializeFixedVisualization(h5_file);
+    //updateOpenGlVisualization();
 }
 
 void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines) {
@@ -711,6 +688,8 @@ void MainWindow::onTimer() {
 }
 
 void MainWindow::onAboutScatterers() {
+    throw std::runtime_error("TODO: UPDATE");
+    /*
     QString info = "Phantom consists of " + QString::number(m_current_scatterers->num_scatterers());
     auto spline_scatterers = std::dynamic_pointer_cast<bcsim::SplineScatterers>(m_current_scatterers);
     auto fixed_scatterers = std::dynamic_pointer_cast<bcsim::FixedScatterers>(m_current_scatterers);
@@ -724,6 +703,7 @@ void MainWindow::onAboutScatterers() {
         throw std::runtime_error("onAboutScatterers(): all casts failed");
     }
     QMessageBox::information(this, "Current scatterers", info); 
+    */
 }
 
 void MainWindow::onGetXyExtent() {

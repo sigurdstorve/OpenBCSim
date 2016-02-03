@@ -39,20 +39,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-// Will auto-detect if the scatterers dataset is a spline or fixed dataset.
-// Returns "fixed" or "spline".
-// Throws on error.
-std::string DLL_PUBLIC AutodetectScatteresType(const std::string& h5_file);
-
 // Specific loader for fixed scatterers
-Scatterers::s_ptr DLL_PUBLIC loadFixedScatterersFromHdf(const std::string& h5_file);
+FixedScatterers::s_ptr DLL_PUBLIC loadFixedScatterersFromHdf(const std::string& h5_file);
 
 // Specific loader for spline scatterers
-Scatterers::s_ptr DLL_PUBLIC loadSplineScatterersFromHdf(const std::string& h5_file);
-
-void DLL_PUBLIC setFixedScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
-
-void DLL_PUBLIC setSplineScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
+SplineScatterers::s_ptr DLL_PUBLIC loadSplineScatterersFromHdf(const std::string& h5_file);
 
 ScanSequence::u_ptr DLL_PUBLIC loadScanSequenceFromHdf(const std::string& h5_file);
 
