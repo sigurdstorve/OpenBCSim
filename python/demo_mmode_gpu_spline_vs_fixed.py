@@ -75,6 +75,7 @@ def run_fixed_simulation(sim_fixed, origin, direction, lateral_dir, line_length,
     start_time = time()
     for cur_timestamp,cur_scatterers in zip(timestamps,fixed_scatterers):
         timestamps = np.array([cur_timestamp], dtype="float32")
+        sim_fixed.clear_fixed_scatterers()
         sim_fixed.add_fixed_scatterers(cur_scatterers)
         sim_fixed.set_scan_sequence(origins, directions, line_length, lateral_dirs, timestamps)
         res.append( sim_fixed.simulate_lines() )
