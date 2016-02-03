@@ -46,7 +46,9 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_num_time_samples(8192),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
-      m_store_kernel_details(false)
+      m_store_kernel_details(false),
+      m_fixed_scatterers_valid(false),  // TODO: remove limitation
+      m_spline_scatterers_valid(false)  // TODO: remove limitation
 {
     // ensure that CUDA device properties is stored
     save_cuda_device_properties();
@@ -454,6 +456,78 @@ void GpuBaseAlgorithm::create_dummy_lut_profile() {
     std::vector<float> dummy_samples(n*n*n, 0.0f);
     m_device_beam_profile = DeviceBeamProfileRAII::u_ptr(new DeviceBeamProfileRAII(DeviceBeamProfileRAII::TableExtent3D(n, n, n), dummy_samples));
 }
+
+void GpuBaseAlgorithm::clear_fixed_scatterers() {
+    m_fixed_scatterers_valid = false;
+}
+
+void GpuBaseAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr) {
+    // TODO: Remove temporary limitation that old fixed scatterers are replaced.
+    m_fixed_scatterers_valid = true;
+}
+
+void GpuBaseAlgorithm::clear_spline_scatterers() {
+    m_spline_scatterers_valid = false;
+}
+
+void GpuBaseAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr) {
+    // TODO: Remove temporary limitation that old spline scatterers are replaced.
+    m_spline_scatterers_valid = true;
+}
+
+void GpuFixedAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
+    m_can_change_cuda_device = false;
+    
+    const size_t num_scatterers = scatterers->num_scatterers();
+    size_t points_common_bytes = num_scatterers*sizeof(float);
+
+    // temporary host memory for scatterer points
+    HostPinnedBufferRAII<float> host_temp(points_common_bytes);
+
+    // no point in reallocating if we already have allocated memory and the number of bytes
+    // is the same.
+    bool reallocate_device_mem = true;
+    if (m_device_point_xs && m_device_point_ys && m_device_point_zs && m_device_point_as) {
+        if (   (m_device_point_xs->get_num_bytes() == points_common_bytes)
+            && (m_device_point_ys->get_num_bytes() == points_common_bytes)
+            && (m_device_point_zs->get_num_bytes() == points_common_bytes)
+            && (m_device_point_as->get_num_bytes() == points_common_bytes))
+        {
+            reallocate_device_mem = false;
+        }
+    }
+    if (reallocate_device_mem) {
+        m_device_point_xs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_ys = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_zs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+        m_device_point_as = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
+    }
+
+    // x values
+    for (size_t i = 0; i < num_scatterers; i++) {
+        host_temp.data()[i] = scatterers->scatterers[i].pos.x;
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_point_xs->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+
+    // y values
+    for (size_t i = 0; i < num_scatterers; i++) {
+        host_temp.data()[i] = scatterers->scatterers[i].pos.y;
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_point_ys->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+
+    // z values
+    for (size_t i = 0; i < num_scatterers; i++) {
+        host_temp.data()[i] = scatterers->scatterers[i].pos.z;
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_point_zs->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+
+    // a values
+    for (size_t i = 0; i < num_scatterers; i++) {
+        host_temp.data()[i] = scatterers->scatterers[i].amplitude;
+    }
+    cudaErrorCheck( cudaMemcpy(m_device_point_as->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+}
+
 
 }   // end namespace
 

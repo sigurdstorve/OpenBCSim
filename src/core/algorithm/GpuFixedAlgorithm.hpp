@@ -53,11 +53,6 @@ protected:
     virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) override;
     
 protected:
-    // device memory for fixed scatterers
-    DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_ys;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_zs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_as;
 };
 
 }   // end namespace

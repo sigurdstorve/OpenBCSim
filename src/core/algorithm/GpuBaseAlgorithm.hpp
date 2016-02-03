@@ -59,6 +59,14 @@ public:
 
     virtual void set_lookup_profile(IBeamProfile::s_ptr beam_profile) override;
 
+    virtual void clear_fixed_scatterers()                                                           override;
+
+    virtual void add_fixed_scatterers(FixedScatterers::s_ptr)                                       override;
+
+    virtual void clear_spline_scatterers()                                                          override;
+
+    virtual void add_spline_scatterers(SplineScatterers::s_ptr)                                     override;
+
 protected:
     // Debug functionality: slice the 3D texture and write as RAW file to disk.    
     void dump_orthogonal_lut_slices(const std::string& raw_path);
@@ -128,6 +136,18 @@ protected:
     float   m_lut_l_max;
     float   m_lut_e_min;
     float   m_lut_e_max;
+
+    // TEMPORARY: WILL BE REMOVED WHEN SUPPORT FOR ARBITRARY NUMER OF SCATTERER COLLECTIONS
+    // HAS BEEN IMPLEMENTED (FIXED AND SPLINE)
+    bool    m_spline_scatterers_valid;
+    bool    m_fixed_scatterers_valid;
+
+    // device memory for fixed scatterers
+    DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
+    DeviceBufferRAII<float>::u_ptr      m_device_point_ys;
+    DeviceBufferRAII<float>::u_ptr      m_device_point_zs;
+    DeviceBufferRAII<float>::u_ptr      m_device_point_as;
+
 };
     
 }   // end namespace
