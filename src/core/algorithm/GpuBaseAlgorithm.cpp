@@ -51,8 +51,8 @@ GpuBaseAlgorithm::GpuBaseAlgorithm()
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
       m_store_kernel_details(false),
-      m_fixed_scatterers_valid(false),  // TODO: remove limitation
-      m_spline_scatterers_valid(false)  // TODO: remove limitation
+      m_num_fixed_scatterers(0),  // TODO: remove
+      m_num_spline_scatterers(0)  // TODO: remove
 {
     // ensure that CUDA device properties is stored
     save_cuda_device_properties();
@@ -462,27 +462,23 @@ void GpuBaseAlgorithm::create_dummy_lut_profile() {
 }
 
 void GpuBaseAlgorithm::clear_fixed_scatterers() {
-    m_fixed_scatterers_valid = false;
+    m_num_fixed_scatterers = 0;
 }
 
 void GpuBaseAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
     // TODO: Remove temporary limitation that old fixed scatterers are replaced.
-    m_can_change_cuda_device = false;
-    m_num_scatterers = fixed_scatterers->num_scatterers(); // TODO
     copy_scatterers_to_device(fixed_scatterers);
-    m_fixed_scatterers_valid = true;
+    m_num_fixed_scatterers = fixed_scatterers->num_scatterers();
 }
 
 void GpuBaseAlgorithm::clear_spline_scatterers() {
-    m_spline_scatterers_valid = false;
+    m_num_spline_scatterers = 0;
 }
 
 void GpuBaseAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
     // TODO: Remove temporary limitation that old spline scatterers are replaced.
-    m_can_change_cuda_device = false;
-    m_num_scatterers = spline_scatterers->num_scatterers(); // TODO
     copy_scatterers_to_device(spline_scatterers);
-    m_spline_scatterers_valid = true;
+    m_num_spline_scatterers = spline_scatterers->num_scatterers();
 }
 
 void GpuBaseAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {

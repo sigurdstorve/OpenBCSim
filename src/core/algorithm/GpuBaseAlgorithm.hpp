@@ -147,8 +147,8 @@ protected:
 
     // TEMPORARY: WILL BE REMOVED WHEN SUPPORT FOR ARBITRARY NUMER OF SCATTERER COLLECTIONS
     // HAS BEEN IMPLEMENTED (FIXED AND SPLINE)
-    bool    m_spline_scatterers_valid;
-    bool    m_fixed_scatterers_valid;
+    size_t    m_num_spline_scatterers;
+    size_t    m_num_fixed_scatterers;
 
     // device memory for fixed scatterers
     DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
