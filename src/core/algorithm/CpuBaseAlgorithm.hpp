@@ -120,9 +120,6 @@ protected:
     // Sampling frequency is the same as for the excitation signal. TODO: Not so with decimation...
     std::vector<std::complex<float>> simulate_line(const Scanline& line);
 
-    // Main projection loop must be implemented in subclass.
-    virtual void projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) = 0;
-
 protected:
     // Geometry of all lines to be simulated in a frame.
     ScanSequence::s_ptr                      m_scan_sequence;
