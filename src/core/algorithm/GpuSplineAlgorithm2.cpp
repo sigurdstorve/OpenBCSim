@@ -32,7 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GpuSplineAlgorithm2.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
-#include "../bspline.hpp"
 #include "common_utils.hpp"
 #include "common_definitions.h" // for MAX_NUM_CUDA_STREAMS and MAX_SPLINE_DEGREE
 #include "cuda_kernels_c_interface.h" // for SplineAlgKernelParams
@@ -43,103 +42,6 @@ GpuSplineAlgorithm2::GpuSplineAlgorithm2()
 {
 }
 
-void GpuSplineAlgorithm2::projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
-    auto cur_stream = m_stream_wrappers[stream_no]->get();
-            
-    // evaluate the basis functions and upload to constant memory.
-    const auto num_nonzero = m_spline_degree+1;
-    size_t eval_basis_offset_elements = num_nonzero*stream_no;
-    std::vector<float> host_basis_functions(m_num_cs);
-    for (int i = 0; i < m_num_cs; i++) {
-        host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, scanline.get_timestamp(), m_common_knots);
-    }
-
-    //dim3 grid_size(num_blocks, 1, 1);
-    //dim3 block_size(m_param_threads_per_block, 1, 1);
-
-    // TODO: Is it neccessary to have both m_num_splines AND m_num_scatterers? They
-    // are equal...
-
-    // compute sum limits (inclusive)
-    int cs_idx_start, cs_idx_end;
-    std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(m_common_knots,
-                                                                              scanline.get_timestamp(),
-                                                                              m_spline_degree);
-    if (!sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end)) {
-        throw std::runtime_error("b-spline basis bounds failed sanity check");
-    }
-    if (cs_idx_end-cs_idx_start+1 != num_nonzero) throw std::logic_error("illegal number of non-zero basis functions");
-
-    if(!splineAlg2_updateConstantMemory(host_basis_functions.data() + cs_idx_start,
-                                        num_nonzero*sizeof(float),
-                                        eval_basis_offset_elements*sizeof(float),
-                                        cudaMemcpyHostToDevice,
-                                        cur_stream))
-    {
-        throw std::runtime_error("Failed to copy to symbol memory");
-    }
-
-    // prepare a struct of arguments
-    SplineAlgKernelParams params;
-    params.control_xs                 = m_device_control_xs->data();
-    params.control_ys                 = m_device_control_ys->data();
-    params.control_zs                 = m_device_control_zs->data();
-    params.control_as                 = m_device_control_as->data();
-    params.rad_dir                    = to_float3(scanline.get_direction());
-    params.lat_dir                    = to_float3(scanline.get_lateral_dir());
-    params.ele_dir                    = to_float3(scanline.get_elevational_dir());
-    params.origin                     = to_float3(scanline.get_origin());
-    params.fs_hertz                   = m_excitation.sampling_frequency;
-    params.num_time_samples           = static_cast<int>(m_num_time_samples);
-    params.sigma_lateral              = m_analytical_sigma_lat;
-    params.sigma_elevational          = m_analytical_sigma_ele;
-    params.sound_speed                = m_param_sound_speed;
-    params.cs_idx_start               = cs_idx_start;
-    params.cs_idx_end                 = cs_idx_end;
-    params.NUM_SPLINES                = m_num_splines;
-    params.res                        = m_device_time_proj[stream_no]->data();
-    params.eval_basis_offset_elements = eval_basis_offset_elements;
-    params.demod_freq                 = m_excitation.demod_freq;
-    params.lut_tex                    = m_device_beam_profile->get();
-    params.lut.r_min                  = m_lut_r_min;
-    params.lut.r_max                  = m_lut_r_max;
-    params.lut.l_min                  = m_lut_l_min;
-    params.lut.l_max                  = m_lut_l_max;
-    params.lut.e_min                  = m_lut_e_min;
-    params.lut.e_max                  = m_lut_e_max;
-
-    // map lut type to a boolean flag
-    bool use_lut;
-    switch (m_cur_beam_profile_type) {
-    case BeamProfileType::ANALYTICAL:
-        use_lut = false;
-        break;
-    case BeamProfileType::LOOKUP:
-        use_lut = true;
-        break;
-    default:
-        throw std::logic_error("GpuSplineAlgorithm2: unknown beam profile type");
-    }
-    if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        launch_SplineAlgKernel<false, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        launch_SplineAlgKernel<false, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (!m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        launch_SplineAlgKernel<false, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (!m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        launch_SplineAlgKernel<false, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        launch_SplineAlgKernel<true, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        launch_SplineAlgKernel<true, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        launch_SplineAlgKernel<true, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        launch_SplineAlgKernel<true, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else {
-        throw std::logic_error("this should never happen");
-    }
-}
 
 
 
