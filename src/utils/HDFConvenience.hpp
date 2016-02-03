@@ -39,16 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-// Create a simulator object from a single HDF5 containing all required data.
-IAlgorithm::s_ptr DLL_PUBLIC CreateSimulator(const std::string& config_file,
-                                             std::string sim_type="");
-
-// Create a simulator object from HDF5 data files.
-IAlgorithm::s_ptr DLL_PUBLIC CreateSimulator(const std::string& scattererFile,
-                                             const std::string& scanseqFile,
-                                             const std::string& excitationFile,
-                                             std::string sim_type="");
-
 // Will auto-detect if the scatterers dataset is a spline or fixed dataset.
 // Returns "fixed" or "spline".
 // Throws on error.

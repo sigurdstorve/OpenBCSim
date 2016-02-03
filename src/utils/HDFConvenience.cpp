@@ -73,33 +73,6 @@ std::string AutodetectScatteresType(const std::string& h5_file) {
     return type;
 }
 
-IAlgorithm::s_ptr CreateSimulator(const std::string& config_file,
-                                  std::string sim_type) {
-    return CreateSimulator(config_file, config_file, config_file, sim_type);
-}
-
-IAlgorithm::s_ptr CreateSimulator(const std::string& scatterer_file,
-                                  const std::string& scanseq_file,
-                                  const std::string& excitation_file,
-                                  std::string sim_type) {
-    if (sim_type == "") {
-        sim_type = AutodetectScatteresType(scatterer_file);
-    }
-    auto res = Create(sim_type);
-    // TODO: read "sound_speed" from HDF5 file instead of
-    // using hard-coded value for speed of sound.
-    res->set_parameter("sound_speed", "1540.0");
-    if (sim_type == "fixed") {
-        setFixedScatterersFromHdf(res, scatterer_file);
-    } else if (sim_type == "spline") {
-        setSplineScatterersFromHdf(res, scatterer_file);
-    }
-    setScanSequenceFromHdf(res,    scanseq_file);
-    setExcitationFromHdf(res,      excitation_file);
-    
-    return res;
-}
-
 void setFixedScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file) {
     throw std::runtime_error("TODO: update to reflect unified fixed and spline scatterers");
     auto fixed_scatterers = loadFixedScatterersFromHdf(h5_file);
