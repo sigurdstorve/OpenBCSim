@@ -20,21 +20,11 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      vector3.hpp
      algorithm/BaseAlgorithm.hpp
      algorithm/BaseAlgorithm.cpp
-     algorithm/CpuBaseAlgorithm.hpp
-     algorithm/CpuBaseAlgorithm.cpp
-     algorithm/CpuFixedAlgorithm.hpp
-     algorithm/CpuFixedAlgorithm.cpp
-     algorithm/CpuSplineAlgorithm.hpp
-     algorithm/CpuSplineAlgorithm.cpp
+     algorithm/CpuAlgorithm.hpp
+     algorithm/CpuAlgorithm.cpp
      algorithm/common_utils.hpp
-     algorithm/GpuBaseAlgorithm.hpp
-     algorithm/GpuBaseAlgorithm.cpp
-     algorithm/GpuFixedAlgorithm.cpp
-     algorithm/GpuFixedAlgorithm.hpp
-     algorithm/GpuSplineAlgorithm1.hpp
-     algorithm/GpuSplineAlgorithm1.cpp
-     algorithm/GpuSplineAlgorithm2.cpp
-     algorithm/GpuSplineAlgorithm2.hpp
+     algorithm/GpuAlgorithm.hpp
+     algorithm/GpuAlgorithm.cpp
      algorithm/common_definitions.h
      )
 

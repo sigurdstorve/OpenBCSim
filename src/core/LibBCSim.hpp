@@ -49,8 +49,17 @@ public:
     // Set misc. parameters. Available keys depends on the algorithm.
     virtual void set_parameter(const std::string&, const std::string& value)            = 0;
     
-    // Configure the scatterers used when simulating.
-    virtual void set_scatterers(Scatterers::s_ptr new_scatterers)                       = 0;
+    // Clear all fixed point scatterers.
+    virtual void clear_fixed_scatterers()                                               = 0;
+
+    // Add a new set of fixed point scatterers.
+    virtual void add_fixed_scatterers(FixedScatterers::s_ptr)                           = 0;
+
+    // Clear all spline scatterers.
+    virtual void clear_spline_scatterers()                                              = 0;
+
+    // Add a new set of spline point scatterers.
+    virtual void add_spline_scatterers(SplineScatterers::s_ptr)                         = 0;
 
     // Set scan sequence to use when simulating all RF lines.
     virtual void set_scan_sequence(ScanSequence::s_ptr new_scan_sequence)               = 0;
@@ -74,15 +83,8 @@ public:
 
 // Factory function for creating simulator instances.
 // Valid types are:
-//     "fixed"       - Using fixed set of point scatterers.
-//     "spline"      - Using spline trajectories for point scatterers.
-//     "gpu_fixed"   - GPU implementation of the fixed-scatterer algorithm
-//     "gpu_spline1" - GPU implementation of the spline-scatterer algorithm,
-//                     with the restriction that all scanlines in the scan
-//                     sequence must have the same timestamp.
-//     "gpu_spline2" - General GPU implmentation of the spline algorithm,
-//                     where all splines are rendered in the projection
-//                     kernel (supports different timestamps in scanseq)
+//     "cpu"   - CPU implementation
+//     "gpu"   - GPU implementation
 IAlgorithm::s_ptr DLL_PUBLIC Create(const std::string& sim_type);
 
 }   // namespace

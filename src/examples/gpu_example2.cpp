@@ -157,8 +157,8 @@ void example(int argc, char** argv) {
         }
     }
 
-    auto scatterers = bcsim::Scatterers::s_ptr(spline_scatterers);
-    sim->set_scatterers(scatterers);
+    auto scatterers = bcsim::SplineScatterers::s_ptr(spline_scatterers);
+    sim->add_spline_scatterers(scatterers);
     std::cout << "Created scatterers\n";
     
     auto start = std::chrono::high_resolution_clock::now();

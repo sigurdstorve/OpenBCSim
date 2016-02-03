@@ -62,13 +62,11 @@ public:
     // Create the menus
     void createMenus();
 
-    // Update the scatterers with file contents.
-    // This will recreate the simulator by calling initializeSimulator()
+    // Configure current simulator with new scatterers. Will clear the existsing.
     void loadScatterers(const QString h5_file);
 
-    // Create and configure the simulator object
-    // type: "fixed" or "spline"
-    void initializeSimulator(const std::string& type);
+    // Create a new simulator
+    void createNewSimulator(const QString sim_type);
 
     // Define the excitation signal using data from hdf5 file
     void setExcitation(const QString h5_file);
@@ -79,6 +77,7 @@ public:
 private slots:
     void newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines);
     
+    // Configure current simulator with new scatterers.
     // Ask user for a h5 file with scatterers.
     void onLoadScatterers();
 
@@ -88,11 +87,8 @@ private slots:
     // Simulate using current config
     void onSimulate();
 
-    // Experimental: create a new instance of the GPU simulator
-    void onCreateGpuSimulator();
-
-    // Experimental: configure a GPU simulator with new fixed scatterers
-    void onGpuLoadScatterers();
+    // Create a new simulator instance. Will ask user for CPU or GPU impl.
+    void onCreateNewSimulator();
 
     void onExit() {
         exit(0);
@@ -162,11 +158,6 @@ private:
 
     // The current scan geometry.
     bcsim::ScanGeometry::ptr         m_scan_geometry;
-
-
-    // Invariant: should at all times mirror the configuration of the simulator object.
-    bcsim::ExcitationSignal          m_current_excitation;
-    bcsim::Scatterers::s_ptr     m_current_scatterers;  
 
     // Timer playback
     QTimer*                         m_playback_timer;

@@ -127,7 +127,7 @@ void example(int argc, char** argv) {
     // create random scatterers - confined to box with amplitudes in [-1.0, 1.0]
     auto fixed_scatterers = new bcsim::FixedScatterers;
     fixed_scatterers->scatterers.resize(num_scatterers);
-    auto scatterers = bcsim::Scatterers::s_ptr(fixed_scatterers);
+    auto scatterers = bcsim::FixedScatterers::s_ptr(fixed_scatterers);
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> x_dist(-0.03f, 0.03f);
@@ -138,7 +138,7 @@ void example(int argc, char** argv) {
         fixed_scatterers->scatterers[i].amplitude = a_dist(gen);
         fixed_scatterers->scatterers[i].pos = bcsim::vector3(x_dist(gen), y_dist(gen), z_dist(gen));
     }
-    sim->set_scatterers(scatterers);
+    sim->add_fixed_scatterers(scatterers);
     std::cout << "Created scatterers\n";
     
     auto start = std::chrono::high_resolution_clock::now();
@@ -152,7 +152,8 @@ void example(int argc, char** argv) {
         // scatterers are available at no additional computational cost on
         // the CPU side.
         if (enable_set_scatterers) {
-            sim->set_scatterers(scatterers);
+            sim->clear_fixed_scatterers();
+            sim->add_fixed_scatterers(scatterers);
         }
         
         std::vector<std::vector<std::complex<float>>> sim_res;

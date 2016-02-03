@@ -34,8 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cufft_helpers.h"
 #include "GpuFixedAlgorithm.hpp"
 
-// NOTE: There is no support for double here!!!
-// NOTE2: This is experimental code.
+// NOTE: This is experimental code.
 
 namespace bcsim {
 

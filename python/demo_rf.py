@@ -31,14 +31,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 if args.no_gpu:
-    sim = RfSimulator("fixed")
+    sim = RfSimulator("cpu")
 else:
-    sim = RfSimulator("gpu_fixed")
+    sim = RfSimulator("gpu")
     sim.set_parameter("gpu_device", "%d"%args.device_no)
 
 with h5py.File(args.h5_file, "r") as f:
     scatterers_data = f["data"].value
-sim.set_fixed_scatterers(scatterers_data)
+sim.add_fixed_scatterers(scatterers_data)
 print "The number of scatterers is %d" % scatterers_data.shape[0]
 
 # configure simulation parameters
@@ -54,7 +54,7 @@ sim.set_parameter("use_arc_projection", "off")
 sim.set_parameter("radial_decimation", "1")
 
 # configure the RF excitation : zero demodulation freq
-fs = 100e6
+fs = 60e6
 ts = 1.0/fs
 fc = 2.1e6
 tc = 1.0/fc

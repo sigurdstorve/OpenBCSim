@@ -24,7 +24,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
         
     # create and configure simulator
-    sim = RfSimulator("gpu_fixed")
+    sim = RfSimulator("gpu")
     sim.set_parameter("verbose", "0")
     sim.set_print_debug(False)
     sim.set_parameter("sound_speed", "1540.0")
@@ -71,7 +71,8 @@ if __name__ == "__main__":
         data[:, 1] = np.random.uniform(low=args.x0, high=args.x1, size=(num_scatterers,))
         data[:, 2] = np.random.uniform(low=0.0, high=args.line_length+1e-2, size=(num_scatterers,))
         data[:, 3] = np.random.uniform(low=-1.0, high=1.0, size=(num_scatterers,))
-        sim.set_fixed_scatterers(data)
+        sim.clear_fixed_scatterers()
+        sim.add_fixed_scatterers(data)
         
         # do the simulation
         start_time = time()

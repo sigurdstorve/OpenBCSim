@@ -47,9 +47,9 @@ public:
     BaseAlgorithm();
     
     // Handle common parameters for all algorithm implementations.
-    virtual void set_parameter(const std::string& key, const std::string& value) override;
+    virtual void set_parameter(const std::string& key, const std::string& value)    override;
 
-    virtual std::vector<double> get_debug_data(const std::string& identifier) const override;
+    virtual std::vector<double> get_debug_data(const std::string& identifier)       const override;
 
 protected:
     float       m_param_sound_speed;

@@ -39,44 +39,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
-// Create a simulator object from a single HDF5 containing all required data.
-IAlgorithm::s_ptr DLL_PUBLIC CreateSimulator(const std::string& config_file,
-                                             std::string sim_type="");
-
-// Create a simulator object from HDF5 data files.
-IAlgorithm::s_ptr DLL_PUBLIC CreateSimulator(const std::string& scattererFile,
-                                             const std::string& scanseqFile,
-                                             const std::string& excitationFile,
-                                             std::string sim_type="");
-
-// Will auto-detect if the scatterers dataset is a spline or fixed dataset.
-// Returns "fixed" or "spline".
-// Throws on error.
-std::string DLL_PUBLIC AutodetectScatteresType(const std::string& h5_file);
-
 // Specific loader for fixed scatterers
-Scatterers::s_ptr DLL_PUBLIC loadFixedScatterersFromHdf(const std::string& h5_file);
+FixedScatterers::s_ptr DLL_PUBLIC loadFixedScatterersFromHdf(const std::string& h5_file);
 
 // Specific loader for spline scatterers
-Scatterers::s_ptr DLL_PUBLIC loadSplineScatterersFromHdf(const std::string& h5_file);
+SplineScatterers::s_ptr DLL_PUBLIC loadSplineScatterersFromHdf(const std::string& h5_file);
 
-void DLL_PUBLIC setFixedScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
-
-void DLL_PUBLIC setSplineScatterersFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
-
+// Load a scan sequence.
 ScanSequence::u_ptr DLL_PUBLIC loadScanSequenceFromHdf(const std::string& h5_file);
 
-void DLL_PUBLIC setScanSequenceFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
-
+// Load an excitation signal.
 ExcitationSignal DLL_PUBLIC loadExcitationFromHdf(const std::string& h5_file);
 
-void DLL_PUBLIC setExcitationFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
-
-// LUT beam profile
+// Load a LUT beam profile.
 IBeamProfile::s_ptr loadBeamProfileFromHdf(const std::string& h5_file);
-
-// LUT beam profile
-void DLL_PUBLIC setBeamProfileFromHdf(IAlgorithm::s_ptr sim, const std::string& h5_file);
 
 }   // namespace
 

@@ -75,7 +75,8 @@ def run_fixed_simulation(sim_fixed, origin, direction, lateral_dir, line_length,
     start_time = time()
     for cur_timestamp,cur_scatterers in zip(timestamps,fixed_scatterers):
         timestamps = np.array([cur_timestamp], dtype="float32")
-        sim_fixed.set_fixed_scatterers(cur_scatterers)
+        sim_fixed.clear_fixed_scatterers()
+        sim_fixed.add_fixed_scatterers(cur_scatterers)
         sim_fixed.set_scan_sequence(origins, directions, line_length, lateral_dirs, timestamps)
         res.append( sim_fixed.simulate_lines() )
     end_time = time()
@@ -139,9 +140,9 @@ if __name__ == "__main__":
     # precompute fixed-scatterer datasets
     fixed_scatterers = create_fixed_datasets(args, control_points, amplitudes, spline_degree, knot_vector, timestamps)
     
-    # create two simulator instances - one spline and one fixed
-    sim_fixed  = RfSimulator("gpu_fixed")
-    sim_spline = RfSimulator("gpu_spline2")
+    # create two simulator instances - one for spline-only and one fixed-only
+    sim_fixed  = RfSimulator("gpu")
+    sim_spline = RfSimulator("gpu")
     sim_fixed.set_parameter("verbose", "0");            sim_spline.set_parameter("verbose", "0")
     sim_fixed.set_print_debug(False);                   sim_spline.set_print_debug(False)
     sim_fixed.set_parameter("sound_speed", "%f" % c0);  sim_spline.set_parameter("sound_speed", "%f" % c0)
@@ -172,7 +173,7 @@ if __name__ == "__main__":
     sim_spline.set_analytical_beam_profile(args.sigma_lateral, args.sigma_elevational)
     
     # configure spline simulator
-    sim_spline.set_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
+    sim_spline.add_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
     sim_spline.set_scan_sequence(origins, directions, args.line_length, lateral_dirs, timestamps)
 
     # fixed
