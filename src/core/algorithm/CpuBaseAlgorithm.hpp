@@ -145,6 +145,10 @@ protected:
 
     // Current active beam profile.
     IBeamProfile::s_ptr             m_beam_profile;         // TEMPORARY
+
+    // Debug parameter: If true, sum over all B-spline basis functions instead of
+    // only those with non-zero basis functions. Result should be the same.
+    bool                       m_param_sum_all_cs;
 };
 
 }   // end namespace

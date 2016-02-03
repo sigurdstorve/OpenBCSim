@@ -43,7 +43,7 @@ namespace bcsim {
 
 CpuSplineAlgorithm::CpuSplineAlgorithm()
         : CpuBaseAlgorithm(),
-          m_param_sum_all_cs(false) { }
+           { }
      
 void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
 
@@ -128,20 +128,6 @@ void CpuSplineAlgorithm::projection_loop(const Scanline& line, std::complex<floa
         } else {
             time_proj_signal[closest_index] += std::complex<float>(scaled_ampl, 0.0f);
         }
-    }
-}
-
-void CpuSplineAlgorithm::set_parameter(const std::string& key, const std::string& value) {
-    if (key == "sum_all_cs") {
-        if ((value == "on") || (value == "true")) {
-            m_param_sum_all_cs = true;
-        } else if ((value == "off") || (value == "false")) {
-            m_param_sum_all_cs = false;
-        } else {
-            throw std::runtime_error("invalid value for " + key);
-        }
-    } else {
-        CpuBaseAlgorithm::set_parameter(key, value);
     }
 }
 

@@ -48,7 +48,8 @@ CpuBaseAlgorithm::CpuBaseAlgorithm()
         : m_scan_sequence_configured(false),
           m_excitation_configured(false),
           m_scatterers_configured(false),
-          m_omp_num_threads(1) {
+          m_omp_num_threads(1),
+          m_param_sum_all_cs(false) {
     
     // use all cores by default
     set_use_all_available_cores();
@@ -96,6 +97,15 @@ void CpuBaseAlgorithm::set_parameter(const std::string& key, const std::string& 
             const auto num_cores = static_cast<int>(std::stoi(value));
             set_use_specific_num_cores(num_cores);
         }
+    } else if (key == "sum_all_cs") {
+        if ((value == "on") || (value == "true")) {
+            m_param_sum_all_cs = true;
+        } else if ((value == "off") || (value == "false")) {
+            m_param_sum_all_cs = false;
+        } else {
+            throw std::runtime_error("invalid value for " + key);
+        }
+
     } else if (key == "noise_amplitude") { 
         BaseAlgorithm::set_parameter(key, value);
         m_normal_dist = std::normal_distribution<float>(0.0f, m_param_noise_amplitude);
