@@ -44,6 +44,55 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bcsim {
 
+void CpuBaseAlgorithm::fixed_projection_loop(const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples) {
+
+    const int num_scatterers = m_scatterers->scatterers.size();
+    for (int scatterer_no = 0; scatterer_no < num_scatterers; scatterer_no++) {
+        const PointScatterer& scatterer = m_scatterers->scatterers[scatterer_no];
+        
+        // Map the global cartesian scatterer position into the beam's local
+        // coordinate system.
+        vector3 temp = scatterer.pos - line.get_origin();
+        float r = temp.dot(line.get_direction());       // radial component
+        float l = temp.dot(line.get_lateral_dir());     // lateral component
+        float e = temp.dot(line.get_elevational_dir()); // elevational component
+        
+        // Use "arc projection" in the radial direction: use length of vector from
+        // beam's origin to the scatterer with the same sign as the projection onto
+        // the line.
+        if (m_param_use_arc_projection) {
+#ifdef __GNUC__
+            r = std::copysign(temp.norm(), r);
+#else
+            r = _copysignf(temp.norm(), r);
+#endif            
+        }
+        
+        // Add scaled amplitude to closest index
+        int closest_index = (int) std::floor(r*2.0*m_excitation.sampling_frequency/(m_param_sound_speed)+0.5f);
+
+        float scaled_ampl = m_beam_profile->sampleProfile(r,l,e)*scatterer.amplitude;
+        
+        // Avoid out of bound seg.fault
+        if (closest_index < 0 || closest_index >= num_time_samples) {
+            continue;
+        }
+
+
+        if (m_enable_phase_delay) {
+            // handle sub-sample displacement with a complex phase
+            const auto true_index = r*2.0*m_excitation.sampling_frequency/(m_param_sound_speed);
+            const float ss_delay = (closest_index - true_index)/m_excitation.sampling_frequency;
+            const float complex_phase = 6.283185307179586*m_excitation.demod_freq*ss_delay;
+
+            // phase-delay
+            time_proj_signal[closest_index] += scaled_ampl*std::exp(std::complex<float>(0.0f, complex_phase));
+        } else {
+            time_proj_signal[closest_index] += std::complex<float>(scaled_ampl, 0.0f);
+        }
+    }
+}
+
 CpuBaseAlgorithm::CpuBaseAlgorithm()
         : m_scan_sequence_configured(false),
           m_excitation_configured(false),
