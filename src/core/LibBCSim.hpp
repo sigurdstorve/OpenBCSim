@@ -83,14 +83,8 @@ public:
 
 // Factory function for creating simulator instances.
 // Valid types are:
-//     "cpu"         - CPU implementation
-//     "gpu_fixed"   - GPU implementation of the fixed-scatterer algorithm
-//     "gpu_spline1" - GPU implementation of the spline-scatterer algorithm,
-//                     with the restriction that all scanlines in the scan
-//                     sequence must have the same timestamp.
-//     "gpu_spline2" - General GPU implmentation of the spline algorithm,
-//                     where all splines are rendered in the projection
-//                     kernel (supports different timestamps in scanseq)
+//     "cpu"   - CPU implementation
+//     "gpu"   - GPU implementation
 IAlgorithm::s_ptr DLL_PUBLIC Create(const std::string& sim_type);
 
 }   // namespace

@@ -733,7 +733,7 @@ void GpuBaseAlgorithm::spline_projection_kernel(int stream_no, const Scanline& s
         use_lut = true;
         break;
     default:
-        throw std::logic_error("GpuSplineAlgorithm2: unknown beam profile type");
+        throw std::logic_error("spline_projection_kernel(): unknown beam profile type");
     }
     if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
         launch_SplineAlgKernel<false, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);

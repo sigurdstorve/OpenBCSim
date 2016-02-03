@@ -25,12 +25,6 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/common_utils.hpp
      algorithm/GpuBaseAlgorithm.hpp
      algorithm/GpuBaseAlgorithm.cpp
-     algorithm/GpuFixedAlgorithm.cpp
-     algorithm/GpuFixedAlgorithm.hpp
-     algorithm/GpuSplineAlgorithm1.hpp
-     algorithm/GpuSplineAlgorithm1.cpp
-     algorithm/GpuSplineAlgorithm2.cpp
-     algorithm/GpuSplineAlgorithm2.hpp
      algorithm/common_definitions.h
      )
 
