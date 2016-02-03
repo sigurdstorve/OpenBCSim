@@ -70,7 +70,11 @@ public:
         m_rf_simulator->set_parameter(key, value);
     }
     
-    void set_fixed_scatterers(numpy_boost<float, 2> data) {
+    void clear_fixed_scatterers() {
+        m_rf_simulator->clear_fixed_scatterers();
+    }
+
+    void add_fixed_scatterers(numpy_boost<float, 2> data) {
         auto dimensions = get_dimensions(data);
         size_t numScatterers = dimensions[0];
         size_t numColumns = dimensions[1];
@@ -86,10 +90,14 @@ public:
             ps.amplitude = data[row][3];
             new_scatterers->scatterers.push_back(ps);
         }
-        m_rf_simulator->set_scatterers(new_scatterers);
+        m_rf_simulator->add_fixed_scatterers(new_scatterers);
     }
 
-    void set_spline_scatterers(int spline_degree,
+    void clear_spline_scatterers() {
+        m_rf_simulator->clear_spline_scatterers();
+    }
+
+    void add_spline_scatterers(int spline_degree,
                                numpy_boost<float, 1> knot_vector,
                                numpy_boost<float, 3> control_points,
                                numpy_boost<float, 1> amplitudes) {
@@ -150,7 +158,7 @@ public:
             }
         }
 
-        m_rf_simulator->set_scatterers(new_scatterers);
+        m_rf_simulator->add_spline_scatterers(new_scatterers);
     }
 
     void set_scan_sequence(numpy_boost<float, 2> origins,
@@ -319,8 +327,10 @@ BOOST_PYTHON_MODULE(pyrfsim) {
     class_<RfSimulatorWrapper>("RfSimulator", init<std::string>())
         .def("set_print_debug",             &RfSimulatorWrapper::set_print_debug)
         .def("set_parameter",               &RfSimulatorWrapper::set_parameter)
-        .def("set_fixed_scatterers",        &RfSimulatorWrapper::set_fixed_scatterers)
-        .def("set_spline_scatterers",       &RfSimulatorWrapper::set_spline_scatterers)
+        .def("clear_fixed_scatterers",      &RfSimulatorWrapper::clear_fixed_scatterers)
+        .def("add_fixed_scatterers",        &RfSimulatorWrapper::add_fixed_scatterers)
+        .def("clear_spline_scatterers",     &RfSimulatorWrapper::clear_spline_scatterers)
+        .def("add_spline_scatterers",       &RfSimulatorWrapper::add_spline_scatterers)
         .def("set_scan_sequence",           &RfSimulatorWrapper::set_scan_sequence)
         .def("set_excitation",              &RfSimulatorWrapper::set_excitation)
         .def("set_analytical_beam_profile", &RfSimulatorWrapper::set_analytical_beam_profile)
