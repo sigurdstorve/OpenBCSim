@@ -170,10 +170,14 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
     
     // compute the number of blocks needed to project all scatterers and check that
     // it is not more than what is supported by the device.
+    
+    // TODO: UPDATE
+    /*
     int num_blocks = round_up_div(m_num_scatterers, m_param_threads_per_block);
     if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
         throw std::runtime_error("required number of x-blocks is larger than device supports");
     }
+    */
 
     // no delay compenasation is needed when returning the projections only
     size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
@@ -557,7 +561,7 @@ void GpuBaseAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& sc
     params.sound_speed       = m_param_sound_speed;
     params.res               = m_device_time_proj[stream_no]->data();
     params.demod_freq        = m_excitation.demod_freq;
-    params.num_scatterers    = m_num_scatterers;
+    params.num_scatterers    = m_num_fixed_scatterers;
     params.lut_tex           = m_device_beam_profile->get();
     params.lut.r_min         = m_lut_r_min;
     params.lut.r_max         = m_lut_r_max;
@@ -668,9 +672,6 @@ void GpuBaseAlgorithm::spline_projection_kernel(int stream_no, const Scanline& s
 
     //dim3 grid_size(num_blocks, 1, 1);
     //dim3 block_size(m_param_threads_per_block, 1, 1);
-
-    // TODO: Is it neccessary to have both m_num_splines AND m_num_scatterers? They
-    // are equal...
 
     // compute sum limits (inclusive)
     int cs_idx_start, cs_idx_end;

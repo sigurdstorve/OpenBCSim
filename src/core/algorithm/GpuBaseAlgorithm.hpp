@@ -96,9 +96,6 @@ protected:
     ScanSequence::s_ptr                                 m_scan_seq;
     ExcitationSignal                                    m_excitation;
 
-    // always times equal to the number of scatterers in device memory
-    size_t                                              m_num_scatterers;
-
     // number of samples in the time-projection lines [should be a power of two]
     size_t                                              m_num_time_samples;
 
@@ -144,6 +141,8 @@ protected:
 
     // TEMPORARY: WILL BE REMOVED WHEN SUPPORT FOR ARBITRARY NUMER OF SCATTERER COLLECTIONS
     // HAS BEEN IMPLEMENTED (FIXED AND SPLINE)
+
+    // always times equal to the number of scatterers in device memory
     size_t    m_num_spline_scatterers;
     size_t    m_num_fixed_scatterers;
 
