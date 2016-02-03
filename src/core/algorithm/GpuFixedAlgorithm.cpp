@@ -27,7 +27,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #ifdef BCSIM_ENABLE_CUDA
-#include <cuda.h>
 #include "GpuFixedAlgorithm.hpp"
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
@@ -39,84 +38,7 @@ GpuFixedAlgorithm::GpuFixedAlgorithm()
 {
 }
 
-void GpuFixedAlgorithm::projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
-    auto cur_stream = m_stream_wrappers[stream_no]->get();
 
-    //dim3 grid_size(num_blocks, 1, 1);
-    //dim3 block_size(m_param_threads_per_block, 1, 1);
-
-    // prepare struct with parameters
-    FixedAlgKernelParams params;
-    params.point_xs          = m_device_point_xs->data();
-    params.point_ys          = m_device_point_ys->data();
-    params.point_zs          = m_device_point_zs->data();
-    params.point_as          = m_device_point_as->data();
-    params.rad_dir           = to_float3(scanline.get_direction());
-    params.lat_dir           = to_float3(scanline.get_lateral_dir());
-    params.ele_dir           = to_float3(scanline.get_elevational_dir());
-    params.origin            = to_float3(scanline.get_origin());
-    params.fs_hertz          = m_excitation.sampling_frequency;
-    params.num_time_samples  = m_num_time_samples;
-    params.sigma_lateral     = m_analytical_sigma_lat;
-    params.sigma_elevational = m_analytical_sigma_ele;
-    params.sound_speed       = m_param_sound_speed;
-    params.res               = m_device_time_proj[stream_no]->data();
-    params.demod_freq        = m_excitation.demod_freq;
-    params.num_scatterers    = m_num_scatterers;
-    params.lut_tex           = m_device_beam_profile->get();
-    params.lut.r_min         = m_lut_r_min;
-    params.lut.r_max         = m_lut_r_max;
-    params.lut.l_min         = m_lut_l_min;
-    params.lut.l_max         = m_lut_l_max;
-    params.lut.e_min         = m_lut_e_min;
-    params.lut.e_max         = m_lut_e_max;
-
-    // map beam profile type to boolean flag
-    bool use_lut;
-    switch(m_cur_beam_profile_type) {
-    case BeamProfileType::ANALYTICAL:
-        use_lut = false;
-        break;
-    case BeamProfileType::LOOKUP:
-        use_lut = true;
-        break;
-    default:
-        throw std::logic_error("unknown beam profile type");
-    }
-
-    if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        launch_FixedAlgKernel<false, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        launch_FixedAlgKernel<false, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (!m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        launch_FixedAlgKernel<false, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (!m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        launch_FixedAlgKernel<false, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
-        launch_FixedAlgKernel<true, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
-        launch_FixedAlgKernel<true, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
-        launch_FixedAlgKernel<true, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else if (m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
-        launch_FixedAlgKernel<true, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
-    } else {
-        throw std::logic_error("this should never happen");
-    }
-}
-
-
-
-void GpuFixedAlgorithm::set_scatterers(Scatterers::s_ptr new_scatterers) {
-    m_can_change_cuda_device = false;
-    m_num_scatterers = new_scatterers->num_scatterers();
-        
-    auto fixed_scatterers = std::dynamic_pointer_cast<FixedScatterers>(new_scatterers);
-    if (!fixed_scatterers) {
-        throw std::runtime_error("Cast failed");
-    }
-    copy_scatterers_to_device(fixed_scatterers);
-}
 
 
 }   // end namespace

@@ -27,6 +27,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #ifdef BCSIM_ENABLE_CUDA
+#include <cuda.h>
 #include <stdexcept>
 #include <iostream>
 #include <complex>
@@ -35,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../discrete_hilbert_mask.hpp"
 #include "cuda_debug_utils.h"
 #include "cuda_helpers.h"
+#include "cufft_helpers.h"
 #include "cuda_kernels_c_interface.h"
 #include "common_definitions.h" // for MAX_NUM_CUDA_STREAMS and MAX_SPLINE_DEGREE
 
@@ -461,8 +463,11 @@ void GpuBaseAlgorithm::clear_fixed_scatterers() {
     m_fixed_scatterers_valid = false;
 }
 
-void GpuBaseAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr) {
+void GpuBaseAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
     // TODO: Remove temporary limitation that old fixed scatterers are replaced.
+    m_can_change_cuda_device = false;
+    m_num_scatterers = fixed_scatterers->num_scatterers();
+    copy_scatterers_to_device();
     m_fixed_scatterers_valid = true;
 }
 
@@ -475,7 +480,7 @@ void GpuBaseAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr) {
     m_spline_scatterers_valid = true;
 }
 
-void GpuFixedAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
+void GpuBaseAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
     m_can_change_cuda_device = false;
     
     const size_t num_scatterers = scatterers->num_scatterers();
@@ -526,6 +531,72 @@ void GpuFixedAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatter
         host_temp.data()[i] = scatterers->scatterers[i].amplitude;
     }
     cudaErrorCheck( cudaMemcpy(m_device_point_as->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
+}
+
+void GpuBaseAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
+    auto cur_stream = m_stream_wrappers[stream_no]->get();
+
+    //dim3 grid_size(num_blocks, 1, 1);
+    //dim3 block_size(m_param_threads_per_block, 1, 1);
+
+    // prepare struct with parameters
+    FixedAlgKernelParams params;
+    params.point_xs          = m_device_point_xs->data();
+    params.point_ys          = m_device_point_ys->data();
+    params.point_zs          = m_device_point_zs->data();
+    params.point_as          = m_device_point_as->data();
+    params.rad_dir           = to_float3(scanline.get_direction());
+    params.lat_dir           = to_float3(scanline.get_lateral_dir());
+    params.ele_dir           = to_float3(scanline.get_elevational_dir());
+    params.origin            = to_float3(scanline.get_origin());
+    params.fs_hertz          = m_excitation.sampling_frequency;
+    params.num_time_samples  = m_num_time_samples;
+    params.sigma_lateral     = m_analytical_sigma_lat;
+    params.sigma_elevational = m_analytical_sigma_ele;
+    params.sound_speed       = m_param_sound_speed;
+    params.res               = m_device_time_proj[stream_no]->data();
+    params.demod_freq        = m_excitation.demod_freq;
+    params.num_scatterers    = m_num_scatterers;
+    params.lut_tex           = m_device_beam_profile->get();
+    params.lut.r_min         = m_lut_r_min;
+    params.lut.r_max         = m_lut_r_max;
+    params.lut.l_min         = m_lut_l_min;
+    params.lut.l_max         = m_lut_l_max;
+    params.lut.e_min         = m_lut_e_min;
+    params.lut.e_max         = m_lut_e_max;
+
+    // map beam profile type to boolean flag
+    bool use_lut;
+    switch(m_cur_beam_profile_type) {
+    case BeamProfileType::ANALYTICAL:
+        use_lut = false;
+        break;
+    case BeamProfileType::LOOKUP:
+        use_lut = true;
+        break;
+    default:
+        throw std::logic_error("unknown beam profile type");
+    }
+
+    if (!m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
+        launch_FixedAlgKernel<false, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
+    } else if (!m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
+        launch_FixedAlgKernel<false, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
+    } else if (!m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
+        launch_FixedAlgKernel<false, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
+    } else if (!m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
+        launch_FixedAlgKernel<false, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
+    } else if (m_param_use_arc_projection && !m_enable_phase_delay && !use_lut) {
+        launch_FixedAlgKernel<true, false, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
+    } else if (m_param_use_arc_projection && !m_enable_phase_delay && use_lut) {
+        launch_FixedAlgKernel<true, false, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
+    } else if (m_param_use_arc_projection && m_enable_phase_delay && !use_lut) {
+        launch_FixedAlgKernel<true, true, false>(num_blocks, m_param_threads_per_block, cur_stream, params);
+    } else if (m_param_use_arc_projection && m_enable_phase_delay && use_lut) {
+        launch_FixedAlgKernel<true, true, true>(num_blocks, m_param_threads_per_block, cur_stream, params);
+    } else {
+        throw std::logic_error("this should never happen");
+    }
 }
 
 

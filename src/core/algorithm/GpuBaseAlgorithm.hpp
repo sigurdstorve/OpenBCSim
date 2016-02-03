@@ -83,6 +83,10 @@ protected:
     // to ensure that calls to device beam profile RAII wrapper does not cause segfault.
     void create_dummy_lut_profile();
 
+    void copy_scatterers_to_device(FixedScatterers::s_ptr scatterers);
+    
+    void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks);
+
 protected:
     typedef cufftComplex complex;
     
