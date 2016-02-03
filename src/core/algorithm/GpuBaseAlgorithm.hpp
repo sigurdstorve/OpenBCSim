@@ -76,10 +76,7 @@ protected:
     int get_num_cuda_devices() const;
     
     void save_cuda_device_properties();
-    
-    // must be implemented in subclass
-    virtual void projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) = 0;
-    
+        
     // to ensure that calls to device beam profile RAII wrapper does not cause segfault.
     void create_dummy_lut_profile();
 

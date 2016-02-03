@@ -211,7 +211,7 @@ void GpuBaseAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float
             event_timer->restart();
         }
 
-        projection_kernel(stream_no, scanline, num_blocks);
+        //projection_kernel(stream_no, scanline, num_blocks); // TODO: UPDATE
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
             m_debug_data["kernel_projection_ms"].push_back(elapsed_ms);

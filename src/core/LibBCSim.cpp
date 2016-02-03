@@ -41,6 +41,7 @@ IAlgorithm::s_ptr Create(const std::string& sim_type) {
         return IAlgorithm::s_ptr(new CpuAlgorithm);
 #ifdef BCSIM_ENABLE_CUDA
     } else if (sim_type == "gpu") {
+        return IAlgorithm::s_ptr(new GpuBaseAlgorithm);
 #endif
     } else {
         throw std::runtime_error("Illegal algorithm type: " + sim_type);
