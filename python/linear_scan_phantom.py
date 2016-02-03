@@ -29,17 +29,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 if args.use_gpu:
-    sim = RfSimulator("gpu_fixed")
+    sim = RfSimulator("gpu")
     sim.set_parameter("gpu_device", "%d"%args.device_no)
 else:
-    sim = RfSimulator("fixed")
+    sim = RfSimulator("cpu")
 
 
 sim.set_parameter("verbose", "0")
 
 with h5py.File(args.h5_file, "r") as f:
     scatterers_data = f["data"].value
-sim.set_fixed_scatterers(scatterers_data)
+sim.add_fixed_scatterers(scatterers_data)
 print "The number of scatterers is %d" % scatterers_data.shape[0]
 
 # configure simulation parameters
