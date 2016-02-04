@@ -235,6 +235,19 @@ def create_simple_phantom():
     args.z0 = 0.005
     args.z1 = 0.12
     create_phantom(args)
+
+def create_tissue_flow_phantom():
+    from tissue_with_flow import create_phantom
+    args = Args()
+    args.h5_file = os.path.join(out_dir, "tissue_with_flow.h5")
+    args.num_tissue_scatterers = 1000000
+    args.num_flow_scatterers = 200000
+    args.box_dim = 0.03
+    args.radius = 0.008
+    args.x_length = 8e-2
+    args.num_cs = 6
+    args.flow_ampl_factor = 0.2
+    create_phantom(args)
     
 if __name__ == '__main__':
     verify_correct_path()
@@ -248,6 +261,7 @@ if __name__ == '__main__':
     create_harmonic_box_phantom()
     create_2d_cyst_phantom()
     create_simple_phantom()
+    create_tissue_flow_phantom()
     print 'NOTE: This is the last script and may take a while to finish...'
     create_artery_phantom()
     
