@@ -127,6 +127,10 @@ private slots:
 
     void onLoadSimulatedData();
 
+    void onSaveIqBufferAs();
+
+    void onResetIqBuffer();
+
 private:
     void initializeSplineVisualization(const QString& h5_file);
 
@@ -166,6 +170,12 @@ private:
     GrayscaleTransformWidget*       m_grayscale_widget;
     
     refresh_worker::RefreshWorker*  m_refresh_worker;
+
+    // Related to IQ-buffering
+    std::vector<std::vector<std::vector<std::complex<float>>>> m_iq_buffer;
+    QAction*                        m_save_iq_act;
+    QAction*                        m_save_iq_buffer_as_act;
+    QAction*                        m_reset_iq_buffer_act;
 };
 
 
