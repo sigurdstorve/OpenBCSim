@@ -187,8 +187,6 @@ QVector3D DynamicProbeWidget::get_origin(float time) const {
         qDebug() << "DynamicProbeWidget: interpolation constant is " << k;
         return k*p2 + (1-k)*p1;
     }
-
-    return QVector3D(); /// Dummy
 };
 
 QVector3D DynamicProbeWidget::get_rot_angles(float /*time*/) const {
