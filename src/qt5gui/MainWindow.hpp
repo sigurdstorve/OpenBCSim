@@ -114,10 +114,6 @@ private slots:
 
     void onGetXyExtent();
 
-    void onToggleSaveImage(bool status) {
-        m_save_images = status;
-    }
-
     void updateOpenGlVisualization();
 
     void onSetSimTme();
@@ -131,6 +127,10 @@ private slots:
 
     void onLoadSimulatedData();
 
+    void onSaveIqBufferAs();
+
+    void onResetIqBuffer();
+
 private:
     void initializeSplineVisualization(const QString& h5_file);
 
@@ -141,7 +141,9 @@ private:
     bcsim::IAlgorithm::s_ptr        m_sim;
     // Running count of number of frames simulated since the simulator was created.
     size_t                          m_num_simulated_frames;
-    bool                            m_save_images;
+    
+    // True/false checkable menu actions
+    QAction*                        m_save_image_act;
 
     // The OpenGL based visualization widget
     GLVisualizationWidget*          m_gl_vis_widget;
@@ -168,6 +170,12 @@ private:
     GrayscaleTransformWidget*       m_grayscale_widget;
     
     refresh_worker::RefreshWorker*  m_refresh_worker;
+
+    // Related to IQ-buffering
+    std::vector<std::vector<std::vector<std::complex<float>>>> m_iq_buffer;
+    QAction*                        m_save_iq_act;
+    QAction*                        m_save_iq_buffer_as_act;
+    QAction*                        m_reset_iq_buffer_act;
 };
 
 

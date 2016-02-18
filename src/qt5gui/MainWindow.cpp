@@ -166,7 +166,6 @@ MainWindow::MainWindow() {
     int num_lines;
     auto geometry = m_scanseq_widget->get_geometry(num_lines);
     newScansequence(geometry, num_lines);
-    m_save_images = false;
 
     // refresh thread setup
     qRegisterMetaType<refresh_worker::WorkTask::ptr>();
@@ -176,7 +175,7 @@ MainWindow::MainWindow() {
         work_result->image.setColorTable(GrayColortable());
         
         m_label->setPixmap(QPixmap::fromImage(work_result->image));
-        if (m_save_images) {
+        if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
             const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
             m_num_simulated_frames++;
@@ -245,11 +244,23 @@ void MainWindow::createMenus() {
     connect(simulateAct, SIGNAL(triggered()), this, SLOT(onSimulate()));
     simulateMenu->addAction(simulateAct);
 
-    auto toggle_save_image_act = new QAction(tr("Save images"), this);
-    toggle_save_image_act->setCheckable(true);
-    toggle_save_image_act->setChecked(m_save_images);
-    connect(toggle_save_image_act, SIGNAL(triggered(bool)), this, SLOT(onToggleSaveImage(bool)));
-    simulateMenu->addAction(toggle_save_image_act);
+    m_save_image_act = new QAction(tr("Save images"), this);
+    m_save_image_act->setCheckable(true);
+    m_save_image_act->setChecked(false);
+    simulateMenu->addAction(m_save_image_act);
+
+    m_save_iq_act = new QAction(tr("Save IQ data"), this);
+    m_save_iq_act->setCheckable(true);
+    m_save_iq_act->setChecked(false);
+    simulateMenu->addAction(m_save_iq_act);
+
+    m_save_iq_buffer_as_act = new QAction(tr("Save IQ buffer as"), this);
+    connect(m_save_iq_buffer_as_act, SIGNAL(triggered()), this, SLOT(onSaveIqBufferAs()));
+    simulateMenu->addAction(m_save_iq_buffer_as_act);
+
+    m_reset_iq_buffer_act = new QAction(tr("Reset IQ buffer"), this);
+    connect(m_reset_iq_buffer_act, SIGNAL(triggered()), this, SLOT(onResetIqBuffer()));
+    simulateMenu->addAction(m_reset_iq_buffer_act);
 
     auto save_cartesian_limits_act = new QAction(tr("Save xy extent"), this);
     connect(save_cartesian_limits_act, &QAction::triggered, [&]() {
@@ -481,6 +492,10 @@ void MainWindow::doSimulation() {
                 sim_milliseconds.push_back(millisec);
             });
             m_sim->simulate_lines(rf_lines_complex);
+        }
+
+        if (m_save_iq_act->isChecked()) {
+            m_iq_buffer.push_back(rf_lines_complex);
         }
 
         // Transform complex IQ samples to real-valued envelope.
@@ -828,3 +843,64 @@ void MainWindow::onSetSimulatorParameter() {
     }
     m_sim->set_parameter(key.toUtf8().constData(), value.toUtf8().constData());
 }
+
+void MainWindow::onSaveIqBufferAs() {
+    const auto num_frames = m_iq_buffer.size();
+    qDebug() << "Buffer contains IQ data for " << num_frames << " frames.";
+
+    if (num_frames == 0) {
+        qDebug() << "No frames in buffer. Skipping";
+        return;
+    }
+
+    auto h5_file = QFileDialog::getSaveFileName(this, "Save IQ buffer as HDF5", ".", "HDF5 files (*.h5)");
+    if (h5_file == "") {
+        qDebug() << "Ignoring IQ buffer save";
+        return;
+    }
+
+    // all frames must have same dimensions
+    const auto& frame = m_iq_buffer[0];
+    const auto num_lines   = frame.size();
+    const auto num_samples = frame[0].size();
+    qDebug() << "Each frame has " << num_lines << " lines of " << num_samples << " samples.";
+    
+    boost::array<size_t, 3> dims;
+    dims[0] = num_frames;
+    dims[1] = num_lines;
+    dims[2] = num_samples;
+
+    boost::multi_array<float, 3> iq_real;
+    boost::multi_array<float, 3> iq_imag;
+    iq_real.resize(dims);
+    iq_imag.resize(dims);
+
+    qDebug() << "Converting data";
+    for (size_t frame_no = 0; frame_no < num_frames; frame_no++) {
+        for (size_t line_no = 0; line_no < num_lines; line_no++) {
+            for (size_t sample_no = 0; sample_no < num_samples; sample_no++) {
+                iq_real[frame_no][line_no][sample_no] = m_iq_buffer[frame_no][line_no][sample_no].real();
+                iq_imag[frame_no][line_no][sample_no] = m_iq_buffer[frame_no][line_no][sample_no].imag();
+            }
+        }
+    }
+
+    auto file = H5::H5File(h5_file.toUtf8().constData(), H5F_ACC_TRUNC);
+    size_t dspace_dims[] = {num_frames, num_lines, num_samples};
+    H5::DataSpace dspace(3, dspace_dims);
+    
+    qDebug() << "Writing real part";
+    auto dset_real = file.createDataSet("iq_real", H5::PredType::NATIVE_FLOAT, dspace);
+    dset_real.write(iq_real.data(), H5::PredType::NATIVE_FLOAT);
+    
+    qDebug() << "Writing imaginary part";
+    auto dset_imag = file.createDataSet("iq_imag", H5::PredType::NATIVE_FLOAT, dspace);
+    dset_imag.write(iq_imag.data(), H5::PredType::NATIVE_FLOAT);
+    
+    onResetIqBuffer();
+}
+
+void MainWindow::onResetIqBuffer() {
+    m_iq_buffer.clear();
+}
+
