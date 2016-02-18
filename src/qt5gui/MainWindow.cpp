@@ -178,11 +178,11 @@ MainWindow::MainWindow() {
         m_label->setPixmap(QPixmap::fromImage(work_result->image));
         if (m_save_images) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
-            const auto img_path = m_settings->value("png_output_folder", "d:/temp").toString();
+            const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
             m_num_simulated_frames++;
-            const QString filename =  img_path + QString("/frame%1.png").arg(m_num_simulated_frames, 6, 10, QChar('0'));
+            const QString filename =  img_path + QString("/frame%1.bmp").arg(m_num_simulated_frames, 6, 10, QChar('0'));
             qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Writing image to" << filename;
-            work_result->image.save(filename);
+            work_result->image.save(filename, 0, 100);
         }
         // store updated normalization constant if enabled.
         auto temp = m_grayscale_widget->get_values();
@@ -253,7 +253,7 @@ void MainWindow::createMenus() {
 
     auto save_cartesian_limits_act = new QAction(tr("Save xy extent"), this);
     connect(save_cartesian_limits_act, &QAction::triggered, [&]() {
-        const auto img_path = m_settings->value("png_output_folder", "d:/temp").toString();
+        const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
         const auto out_file = img_path + "/parameters.ini";
         QFile f(out_file);
         if (f.open(QIODevice::WriteOnly)) {
