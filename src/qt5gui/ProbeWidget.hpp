@@ -60,6 +60,9 @@ private:
     QDoubleSpinBox*     m_origin_z2_sb;
     QDoubleSpinBox*     m_starttime_sb;
     QDoubleSpinBox*     m_endtime_sb;
+    QDoubleSpinBox*     m_rotation_x_sb;
+    QDoubleSpinBox*     m_rotation_y_sb;
+    QDoubleSpinBox*     m_rotation_z_sb;
 };
 
 // Widget to edit probe position and orientation.

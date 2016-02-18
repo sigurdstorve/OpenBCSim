@@ -129,6 +129,24 @@ DynamicProbeWidget::DynamicProbeWidget(QWidget* parent, Qt::WindowFlags f)
     m_endtime_sb->setSingleStep(0.1);
     m_endtime_sb->setDecimals(3);
 
+    m_rotation_x_sb = new QDoubleSpinBox;
+    m_rotation_x_sb->setRange(-10, 10);
+    m_rotation_x_sb->setValue(0.0);
+    m_rotation_x_sb->setSingleStep(0.1);
+    m_rotation_x_sb->setDecimals(3);
+
+    m_rotation_y_sb = new QDoubleSpinBox;
+    m_rotation_y_sb->setRange(-10, 10);
+    m_rotation_y_sb->setValue(0.0);
+    m_rotation_y_sb->setSingleStep(0.1);
+    m_rotation_y_sb->setDecimals(3);
+
+    m_rotation_z_sb = new QDoubleSpinBox;
+    m_rotation_z_sb->setRange(-10, 10);
+    m_rotation_z_sb->setValue(0.0);
+    m_rotation_z_sb->setSingleStep(0.1);
+    m_rotation_z_sb->setDecimals(3);
+
 
     form_layout->addRow("Origin1.x [m]", m_origin_x1_sb);
     form_layout->addRow("Origin1.y [m]", m_origin_y1_sb);
@@ -138,6 +156,9 @@ DynamicProbeWidget::DynamicProbeWidget(QWidget* parent, Qt::WindowFlags f)
     form_layout->addRow("Origin2.y [m]", m_origin_y2_sb);
     form_layout->addRow("Origin2.z [m]", m_origin_z2_sb);
     form_layout->addRow("Time 2 [s]",    m_endtime_sb);
+    form_layout->addRow("Rot.x [rad]",   m_rotation_x_sb);
+    form_layout->addRow("Rot.y [rad]",   m_rotation_y_sb);
+    form_layout->addRow("Rot.z [rad]",   m_rotation_z_sb);
 
     groupbox->setLayout(form_layout);
     mainlayout->addWidget(groupbox);
@@ -171,8 +192,9 @@ QVector3D DynamicProbeWidget::get_origin(float time) const {
 };
 
 QVector3D DynamicProbeWidget::get_rot_angles(float /*time*/) const {
-    // TODO: implement
-    return QVector3D(0.0, 0.0, 0.0);
+    return QVector3D(m_rotation_x_sb->value(),
+                     m_rotation_y_sb->value(),
+                     m_rotation_z_sb->value());
 }
 
 ProbeWidget::ProbeWidget(QWidget* parent, Qt::WindowFlags f)
