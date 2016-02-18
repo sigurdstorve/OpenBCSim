@@ -114,10 +114,6 @@ private slots:
 
     void onGetXyExtent();
 
-    void onToggleSaveImage(bool status) {
-        m_save_images = status;
-    }
-
     void updateOpenGlVisualization();
 
     void onSetSimTme();
@@ -141,7 +137,9 @@ private:
     bcsim::IAlgorithm::s_ptr        m_sim;
     // Running count of number of frames simulated since the simulator was created.
     size_t                          m_num_simulated_frames;
-    bool                            m_save_images;
+    
+    // True/false checkable menu actions
+    QAction*                        m_save_image_act;
 
     // The OpenGL based visualization widget
     GLVisualizationWidget*          m_gl_vis_widget;

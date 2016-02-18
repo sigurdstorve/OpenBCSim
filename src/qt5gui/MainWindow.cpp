@@ -166,7 +166,6 @@ MainWindow::MainWindow() {
     int num_lines;
     auto geometry = m_scanseq_widget->get_geometry(num_lines);
     newScansequence(geometry, num_lines);
-    m_save_images = false;
 
     // refresh thread setup
     qRegisterMetaType<refresh_worker::WorkTask::ptr>();
@@ -176,7 +175,7 @@ MainWindow::MainWindow() {
         work_result->image.setColorTable(GrayColortable());
         
         m_label->setPixmap(QPixmap::fromImage(work_result->image));
-        if (m_save_images) {
+        if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
             const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
             m_num_simulated_frames++;
@@ -245,11 +244,10 @@ void MainWindow::createMenus() {
     connect(simulateAct, SIGNAL(triggered()), this, SLOT(onSimulate()));
     simulateMenu->addAction(simulateAct);
 
-    auto toggle_save_image_act = new QAction(tr("Save images"), this);
-    toggle_save_image_act->setCheckable(true);
-    toggle_save_image_act->setChecked(m_save_images);
-    connect(toggle_save_image_act, SIGNAL(triggered(bool)), this, SLOT(onToggleSaveImage(bool)));
-    simulateMenu->addAction(toggle_save_image_act);
+    m_save_image_act = new QAction(tr("Save images"), this);
+    m_save_image_act->setCheckable(true);
+    m_save_image_act->setChecked(false);
+    simulateMenu->addAction(m_save_image_act);
 
     auto save_cartesian_limits_act = new QAction(tr("Save xy extent"), this);
     connect(save_cartesian_limits_act, &QAction::triggered, [&]() {
