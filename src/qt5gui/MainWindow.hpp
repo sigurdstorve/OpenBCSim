@@ -176,6 +176,11 @@ private:
     QAction*                        m_save_iq_act;
     QAction*                        m_save_iq_buffer_as_act;
     QAction*                        m_reset_iq_buffer_act;
+
+    // Invariant: Always equal to current scan sequence.
+    // Needed for color Doppler since a packet of frames must be simulated
+    // with different timestamps.
+    bcsim::ScanSequence::s_ptr      m_cur_scanseq;
 };
 
 

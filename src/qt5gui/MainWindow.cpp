@@ -509,6 +509,7 @@ void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_
     auto new_scanseq = bcsim::OrientScanSequence(bcsim::CreateScanSequence(new_geometry, new_num_lines, cur_time), rot_angles, probe_origin);
 
     m_sim->set_scan_sequence(new_scanseq);
+    m_cur_scanseq = new_scanseq;
     
     if (m_settings->value("enable_gl_widget", true).toBool()) {
         m_gl_vis_widget->setScanSequence(new_scanseq);
