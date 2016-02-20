@@ -531,79 +531,73 @@ void MainWindow::doSimulation() {
     int new_num_scanlines;
     auto new_scan_geometry = m_scanseq_widget->get_geometry(new_num_scanlines);
     newScansequence(new_scan_geometry, new_num_scanlines);
-
-    std::vector<std::vector<std::complex<float>> > rf_lines_complex;
     
-    std::vector<float> sim_milliseconds;
-    const auto num_rep = m_settings->value("simulate_lines_num_rep", 1).toInt();
+    bool scan_is_color = false;
 
-    try {
-        for (int rep_no = 0; rep_no < num_rep; rep_no++) {
-            ScopedCpuTimer timer([&](int millisec) {
-                sim_milliseconds.push_back(millisec);
-            });
-            m_sim->simulate_lines(rf_lines_complex);
-        }
-
-        m_display_widget->update_status(QString("Radial samples: %1").arg(rf_lines_complex[0].size()));
-
-        if (m_save_iq_act->isChecked()) {
-            m_iq_buffer.push_back(rf_lines_complex);
-        }
-
-        // Transform complex IQ samples to real-valued envelope.
-        if (rf_lines_complex.size() == 0) throw std::runtime_error("No lines returned");
-        const auto num_iq_samples = rf_lines_complex[0].size();;
-        std::vector<std::vector<float>> rf_lines;
-        for (size_t line_no = 0; line_no < rf_lines_complex.size(); line_no++) {
-            std::vector<float> temp;
-            temp.reserve(num_iq_samples);
-            for (size_t i = 0; i < rf_lines_complex[line_no].size(); i++) {
-                temp.push_back(std::abs(rf_lines_complex[line_no][i]));
-            }
-            rf_lines.push_back(temp);
-        }
+    typedef std::vector<std::vector<std::complex<float>>> IQ_Frame;
+    std::vector<IQ_Frame> rf_lines_complex;
     
-        // Create refresh work task from current geometry and the beam space data
-        auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
-        refresh_task->set_geometry(m_scan_geometry);
-        refresh_task->set_data(rf_lines);
-        auto grayscale_settings = m_grayscale_widget->get_values();
-        refresh_task->set_normalize_const(grayscale_settings.normalization_const);
-        refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
-        refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
-        refresh_task->set_dyn_range(grayscale_settings.dyn_range);
-        refresh_task->set_gain(grayscale_settings.gain); 
-    
-        m_refresh_worker->process_data(refresh_task);
-    
-    } catch (const std::runtime_error& e) {
-        qDebug() << "Caught exception: " << e.what();
-    }
+    if (scan_is_color) {
+        // Color Doppler scan
+        const auto color_packet_size = m_settings->value("color_packet_size", 3).toInt();
+        const auto color_prf         = m_settings->value("color_prf", 2000.0).toFloat();
 
-    float mean_ms = 0.0f;
-    float std_ms = 0.0f;
-    const auto num_ms = sim_milliseconds.size();
-    for (size_t i = 0; i < num_ms; i++) {
-        mean_ms += sim_milliseconds[i];
-    }
-    mean_ms = mean_ms / num_ms;
-    for (size_t i = 0; i < num_ms; i++) {
-        const auto temp = sim_milliseconds[i]-mean_ms;
-        std_ms += temp*temp;
-    }
-    std_ms = std::sqrt(std_ms/num_ms);
-    if (num_ms == 1) {
-        const auto total_scatterers = m_sim->get_total_num_scatterers();
-        const auto ns_value = static_cast<float>(1e6*sim_milliseconds[0]/(new_num_scanlines*total_scatterers));
-        const auto msg = QString("Simulation time: %1 ms   ~   %2 nanosec. per scatterer per line")
-                            .arg(sim_milliseconds[0], 3)
-                            .arg(ns_value, 3);
-        statusBar()->showMessage(msg);
     } else {
-        statusBar()->showMessage("Simulation time: " + QString::number(mean_ms) 
-                                 + " +- " + QString::number(std_ms) + " ms."
-                                 + " (N=" + QString::number(num_ms) + ").");
+        // B-Mode scan
+        try {
+            IQ_Frame rf_lines_complex;
+            int total_millisec;
+            {
+            ScopedCpuTimer timer([&](int millisec) { total_millisec = millisec; });
+            m_sim->simulate_lines(rf_lines_complex);
+            }
+
+            m_display_widget->update_status(QString("Radial samples: %1").arg(rf_lines_complex[0].size()));
+
+            if (m_save_iq_act->isChecked()) {
+                m_iq_buffer.push_back(rf_lines_complex);
+            }
+
+            // Transform complex IQ samples to real-valued envelope.
+            if (rf_lines_complex.size() == 0) throw std::runtime_error("No lines returned");
+            const auto num_iq_samples = rf_lines_complex[0].size();;
+            std::vector<std::vector<float>> rf_lines;
+            for (size_t line_no = 0; line_no < rf_lines_complex.size(); line_no++) {
+                std::vector<float> temp;
+                temp.reserve(num_iq_samples);
+                for (size_t i = 0; i < rf_lines_complex[line_no].size(); i++) {
+                    temp.push_back(std::abs(rf_lines_complex[line_no][i]));
+                }
+                rf_lines.push_back(temp);
+            }
+
+            // Create refresh work task from current geometry and the beam space data
+            auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
+            refresh_task->set_geometry(m_scan_geometry);
+            refresh_task->set_data(rf_lines);
+            auto grayscale_settings = m_grayscale_widget->get_values();
+            refresh_task->set_normalize_const(grayscale_settings.normalization_const);
+            refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
+            refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+            refresh_task->set_dyn_range(grayscale_settings.dyn_range);
+            refresh_task->set_gain(grayscale_settings.gain); 
+    
+            m_refresh_worker->process_data(refresh_task);
+            statusBar()->showMessage("B-mode simulation time: " + QString::number(total_millisec) + " ms.");
+
+            const auto total_scatterers = m_sim->get_total_num_scatterers();
+            const auto ns_value = static_cast<float>(1e6*sim_milliseconds[0]/(new_num_scanlines*total_scatterers));
+            const auto msg = QString("Simulation time: %1 ms   ~   %2 nanosec. per scatterer per line")
+                                .arg(sim_milliseconds[0], 3)
+                                .arg(ns_value, 3);
+            statusBar()->showMessage(msg);
+
+        } catch (std::runtime_error& e) {
+            qDebug() << "Caught exception while simulating B-mode: " << e.what();
+
+        } catch (...) {
+            qDebug() << "Caught unknown error";
+        }
     }
 }
 
