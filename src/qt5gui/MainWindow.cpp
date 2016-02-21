@@ -572,21 +572,30 @@ void MainWindow::doSimulation() {
 
             // Estimate R0: TODO: Also R1
             std::vector<std::vector<float>> r0_lines;
+            std::vector<std::vector<float>> velocity_lines;
 
             const auto num_iq_lines   = iq_frames_complex[0].size();
             const auto num_iq_samples = iq_frames_complex[0][0].size();;
             for (size_t line_no = 0; line_no < num_iq_lines; line_no++) {
-                std::vector<float> temp;
-                temp.reserve(num_iq_samples);
+                std::vector<float> temp1;
+                std::vector<float> temp2;
+                temp1.reserve(num_iq_samples);
+                temp2.reserve(num_iq_samples);
                 for (size_t i = 0; i < num_iq_samples; i++) {
                     float r0 = 0.0f;
+                    std::complex<float> r1 = 0.0f;
                     for (int packet_no = 0; packet_no < color_packet_size; packet_no++) {
                         const auto z = iq_frames_complex[packet_no][line_no][i];
                         r0 += (z*std::conj(z)).real();
                     }
-                    temp.push_back(r0);
+                    for (int packet_no = 0; packet_no < color_packet_size-1; packet_no++) {
+                        r1 += std::conj(iq_frames_complex[packet_no][line_no][i])*iq_frames_complex[packet_no+1][line_no][i];
+                    }
+                    temp1.push_back(r0);
+                    temp2.push_back(std::arg(r1));
                 }
-                r0_lines.push_back(temp);
+                r0_lines.push_back(temp1);
+                velocity_lines.push_back(temp2);
             }
 
             // Draw R0: TODO: Also R1
