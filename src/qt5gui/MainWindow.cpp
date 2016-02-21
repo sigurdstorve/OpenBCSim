@@ -533,15 +533,81 @@ void MainWindow::doSimulation() {
     auto new_scan_geometry = m_scanseq_widget->get_geometry(new_num_scanlines);
     newScansequence(new_scan_geometry, new_num_scanlines);
     
-    bool scan_is_color = false;
+    bool scan_is_color = true;
 
     typedef std::vector<std::vector<std::complex<float>>> IQ_Frame;
-    std::vector<IQ_Frame> rf_lines_complex;
     
     if (scan_is_color) {
         // Color Doppler scan
-        const auto color_packet_size = m_settings->value("color_packet_size", 3).toInt();
-        const auto color_prf         = m_settings->value("color_prf", 2000.0).toFloat();
+        const auto color_packet_size = m_settings->value("color_packet_size", 16).toInt();
+        const auto color_prf         = m_settings->value("color_prf", 2500.0).toFloat();
+        const auto color_prt         = 1.0f/color_prf;
+        std::vector<IQ_Frame> iq_frames_complex;
+
+        try {
+            int total_millisec = 0;
+            for (int packet_no = 0; packet_no < color_packet_size; packet_no++) {
+                // make a copy of current scan sequence to change timestamp
+                auto temp_scanseq = bcsim::ScanSequence::s_ptr(new bcsim::ScanSequence(m_cur_scanseq->line_length));
+                const auto num_lines = m_cur_scanseq->get_num_lines();
+                float packet_timestamp;
+                for (int line_no = 0; line_no < num_lines; line_no++) {
+                    auto scanline = m_cur_scanseq->get_scanline(line_no);
+                    const auto temp_direction = scanline.get_direction();
+                    const auto temp_lateral_dir = scanline.get_lateral_dir();
+                    const auto temp_origin = scanline.get_origin();
+                    packet_timestamp = scanline.get_timestamp()+packet_no*color_prt;
+                    temp_scanseq->add_scanline(bcsim::Scanline(temp_origin, temp_direction, temp_lateral_dir, packet_timestamp));
+                }
+                m_sim->set_scan_sequence(temp_scanseq);
+
+                IQ_Frame iq_frame;
+                {
+                ScopedCpuTimer timer([&](int millisec) { total_millisec += millisec; });
+                m_sim->simulate_lines(iq_frame);
+                }
+                iq_frames_complex.push_back(iq_frame);
+                qDebug() << "Simulated frame in packet: timestamp is " << packet_timestamp;
+            }
+
+            // Estimate R0: TODO: Also R1
+            std::vector<std::vector<float>> r0_lines;
+
+            const auto num_iq_lines   = iq_frames_complex[0].size();
+            const auto num_iq_samples = iq_frames_complex[0][0].size();;
+            for (size_t line_no = 0; line_no < num_iq_lines; line_no++) {
+                std::vector<float> temp;
+                temp.reserve(num_iq_samples);
+                for (size_t i = 0; i < num_iq_samples; i++) {
+                    float r0 = 0.0f;
+                    for (int packet_no = 0; packet_no < color_packet_size; packet_no++) {
+                        const auto z = iq_frames_complex[packet_no][line_no][i];
+                        r0 += (z*std::conj(z)).real();
+                    }
+                    temp.push_back(r0);
+                }
+                r0_lines.push_back(temp);
+            }
+
+            // Draw R0: TODO: Also R1
+            // Create refresh work task from current geometry and the beam space data
+            auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
+            refresh_task->set_geometry(m_scan_geometry);
+            refresh_task->set_data(r0_lines);
+            auto grayscale_settings = m_grayscale_widget->get_values();
+            refresh_task->set_normalize_const(grayscale_settings.normalization_const);
+            refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
+            refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+            refresh_task->set_dyn_range(grayscale_settings.dyn_range);
+            refresh_task->set_gain(grayscale_settings.gain); 
+    
+            m_refresh_worker->process_data(refresh_task);
+            statusBar()->showMessage("Color Doppler simulation time per packet: " + QString::number(total_millisec/static_cast<float>(color_packet_size)) + " ms.");
+
+
+        } catch (std::runtime_error& e) {
+            qDebug() << "Caught exception simulating color Doppler: " << e.what();
+        }
 
     } else {
         // B-Mode scan
