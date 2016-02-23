@@ -36,7 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMenuBar>
 #include <QMenu>
 #include <QMessageBox>
-#include <QLabel>
 #include <QHBoxLayout>
 #include <QImage>
 #include <QPixmap>
@@ -46,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QInputDialog>
 #include <QTimer>
+#include <QGraphicsPixmapItem>
 #include "ScopedCpuTimer.hpp"
 
 #include "MainWindow.hpp"
@@ -155,9 +155,15 @@ MainWindow::MainWindow() {
     */
     onCreateNewSimulator();
 
-    m_label = new QLabel("No simulation data");
-    h_layout->addWidget(m_label);
-
+    // If no inital size is given, the scene bouding rect will be
+    // large enough to cover all items that has been added to it
+    // since creation.
+    m_scene = new QGraphicsScene(this);
+    m_view = new QGraphicsView(m_scene);
+    m_pixmap_item = new QGraphicsPixmapItem;
+    m_scene->addItem(m_pixmap_item);
+    h_layout->addWidget(m_view);
+    
     // Playback timer
     m_playback_timer = new QTimer;
     m_playback_millisec = 1;
@@ -174,7 +180,23 @@ MainWindow::MainWindow() {
     connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
         work_result->image.setColorTable(GrayColortable());
         
-        m_label->setPixmap(QPixmap::fromImage(work_result->image));
+        const auto temp_pixmap = QPixmap::fromImage(work_result->image);
+
+        // get Cartesian extents from current scan geometry.
+        const auto geometry = m_scanseq_widget->get_geometry(num_lines);
+        float x_min, x_max, y_min, y_max;
+        geometry->get_xy_extent(x_min, x_max, y_min, y_max);
+
+        // HACK. TODO: Also move it to the correct position
+        const auto width_meters = x_max - x_min;
+        const auto height_meters = y_max - y_min;
+        m_pixmap_item->setPixmap(temp_pixmap);
+        const auto scale_x = width_meters/temp_pixmap.width();
+        const auto scale_y = height_meters/temp_pixmap.height();
+        m_pixmap_item->setTransform(QTransform::fromScale(scale_x, scale_y));
+        m_view->fitInView(m_pixmap_item, Qt::KeepAspectRatio);
+        qDebug() << "Current view's sceneRect: " << m_view->sceneRect();
+        
         if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
             const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
