@@ -30,9 +30,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <memory>
 #include <QMainWindow>
-#include <QLabel>
 #include <QSlider>
 #include <QDebug>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsPixmapItem>
 #include "../core/LibBCSim.hpp"
 #include "SimTimeManager.hpp"
 #include "../utils/ScanGeometry.hpp"
@@ -148,8 +150,10 @@ private:
     // The OpenGL based visualization widget
     GLVisualizationWidget*          m_gl_vis_widget;
 
-    // The label that is used to show the B-mode image
-    QLabel*                         m_label;
+    // Use Graphics View Framework for visualizing ultrasound data
+    QGraphicsView*                  m_view;
+    QGraphicsScene*                 m_scene;
+    QGraphicsPixmapItem*            m_pixmap_item;
 
     QSettings*                      m_settings;
     GaussianBeamProfileWidget*      m_beamprofile_widget;

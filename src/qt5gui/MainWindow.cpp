@@ -36,7 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMenuBar>
 #include <QMenu>
 #include <QMessageBox>
-#include <QLabel>
 #include <QHBoxLayout>
 #include <QImage>
 #include <QPixmap>
@@ -46,6 +45,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QInputDialog>
 #include <QTimer>
+#include <QGraphicsPixmapItem>
+#include <QWheelEvent>
 #include "ScopedCpuTimer.hpp"
 
 #include "MainWindow.hpp"
@@ -68,6 +69,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SimTimeWidget.hpp"
 #include "GrayscaleTransformWidget.hpp"
 #include "RefreshWorker.hpp"
+
+class CustomView : public QGraphicsView {
+public:
+    CustomView(QWidget* parent = 0)
+        : QGraphicsView(parent) { }
+    CustomView(QGraphicsScene* scene, QWidget* parent = 0)
+        : QGraphicsView(scene, parent) { }
+
+protected:
+    virtual void wheelEvent(QWheelEvent* event) override {
+        if (event->modifiers() == Qt::ControlModifier) {
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+            if (event->delta() > 0) {
+                scale(1.1, 1.1);
+            } else {
+                scale(1.0/1.1, 1.0/1.1);
+            }
+        } else {
+            QGraphicsView::wheelEvent(event);
+        }
+    }
+};
 
 MainWindow::MainWindow() {
     onLoadIniSettings();
@@ -155,9 +178,18 @@ MainWindow::MainWindow() {
     */
     onCreateNewSimulator();
 
-    m_label = new QLabel("No simulation data");
-    h_layout->addWidget(m_label);
-
+    // If no inital size is given, the scene bouding rect will be
+    // large enough to cover all items that has been added to it
+    // since creation.
+    m_scene = new QGraphicsScene(this);
+    m_view = new CustomView(m_scene);
+    m_view->setDragMode(QGraphicsView::ScrollHandDrag);
+    m_view->setInteractive(false);
+    m_pixmap_item = new QGraphicsPixmapItem;
+    m_pixmap_item->setTransformationMode(Qt::SmoothTransformation); // enable bilinear filtering
+    m_scene->addItem(m_pixmap_item);
+    h_layout->addWidget(m_view);
+    
     // Playback timer
     m_playback_timer = new QTimer;
     m_playback_millisec = 1;
@@ -174,7 +206,26 @@ MainWindow::MainWindow() {
     connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
         work_result->image.setColorTable(GrayColortable());
         
-        m_label->setPixmap(QPixmap::fromImage(work_result->image));
+        const auto temp_pixmap = QPixmap::fromImage(work_result->image);
+
+        // get Cartesian extents from current scan geometry.
+        const auto geometry = m_scanseq_widget->get_geometry(num_lines);
+        float x_min, x_max, y_min, y_max;
+        geometry->get_xy_extent(x_min, x_max, y_min, y_max);
+
+        // set pixel data and scale item
+        m_pixmap_item->setPixmap(temp_pixmap);
+        const auto width_meters = x_max - x_min;
+        const auto height_meters = y_max - y_min;
+        const auto scale_x = width_meters/temp_pixmap.width();
+        const auto scale_y = height_meters/temp_pixmap.height();
+        const auto transform_scale = QTransform::fromScale(scale_x, scale_y);
+        m_pixmap_item->setTransform(transform_scale);
+
+        // move it
+        m_pixmap_item->setPos(x_min, y_min);
+        m_view->fitInView(m_pixmap_item, Qt::KeepAspectRatio);
+
         if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
             const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
