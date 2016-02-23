@@ -188,16 +188,19 @@ MainWindow::MainWindow() {
         float x_min, x_max, y_min, y_max;
         geometry->get_xy_extent(x_min, x_max, y_min, y_max);
 
-        // HACK. TODO: Also move it to the correct position
+        // set pixel data and scale item
+        m_pixmap_item->setPixmap(temp_pixmap);
         const auto width_meters = x_max - x_min;
         const auto height_meters = y_max - y_min;
-        m_pixmap_item->setPixmap(temp_pixmap);
         const auto scale_x = width_meters/temp_pixmap.width();
         const auto scale_y = height_meters/temp_pixmap.height();
-        m_pixmap_item->setTransform(QTransform::fromScale(scale_x, scale_y));
+        const auto transform_scale = QTransform::fromScale(scale_x, scale_y);
+        m_pixmap_item->setTransform(transform_scale);
+
+        // move it
+        m_pixmap_item->setPos(x_min, y_min);
         m_view->fitInView(m_pixmap_item, Qt::KeepAspectRatio);
-        qDebug() << "Current view's sceneRect: " << m_view->sceneRect();
-        
+
         if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
             const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
