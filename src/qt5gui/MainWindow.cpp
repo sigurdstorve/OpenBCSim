@@ -69,6 +69,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GrayscaleTransformWidget.hpp"
 #include "RefreshWorker.hpp"
 
+class CustomView : public QGraphicsView {
+public:
+    CustomView(QWidget* parent = 0)
+        : QGraphicsView(parent) { }
+    CustomView(QGraphicsScene* scene, QWidget* parent = 0)
+        : QGraphicsView(scene, parent) { }
+
+};
+
 MainWindow::MainWindow() {
     onLoadIniSettings();
 
@@ -159,7 +168,7 @@ MainWindow::MainWindow() {
     // large enough to cover all items that has been added to it
     // since creation.
     m_scene = new QGraphicsScene(this);
-    m_view = new QGraphicsView(m_scene);
+    m_view = new CustomView(m_scene);
     m_pixmap_item = new QGraphicsPixmapItem;
     m_pixmap_item->setTransformationMode(Qt::SmoothTransformation); // enable bilinear filtering
     m_scene->addItem(m_pixmap_item);
