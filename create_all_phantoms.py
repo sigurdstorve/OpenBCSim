@@ -248,6 +248,18 @@ def create_tissue_flow_phantom():
     args.num_cs = 6
     args.flow_ampl_factor = 0.2
     create_phantom(args)
+
+def create_spinning_disk_phantom():
+    from spinning_disc import create_phantom
+    args = Args()
+    args.h5_file = os.path.join(out_dir, "spinning_disc.h5")
+    args.degree = 2
+    args.num_cs = 10
+    args.period = 1.0
+    args.num_scatterers = 20000
+    args.z0 = 0.025
+    args.radius = 2e-2
+    create_phantom(args)
     
 if __name__ == '__main__':
     verify_correct_path()
@@ -262,6 +274,7 @@ if __name__ == '__main__':
     create_2d_cyst_phantom()
     create_simple_phantom()
     create_tissue_flow_phantom()
+    create_spinning_disk_phantom()
     print 'NOTE: This is the last script and may take a while to finish...'
     create_artery_phantom()
     
