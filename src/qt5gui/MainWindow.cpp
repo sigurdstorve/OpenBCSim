@@ -46,6 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QInputDialog>
 #include <QTimer>
 #include <QGraphicsPixmapItem>
+#include <QWheelEvent>
 #include "ScopedCpuTimer.hpp"
 
 #include "MainWindow.hpp"
@@ -76,6 +77,19 @@ public:
     CustomView(QGraphicsScene* scene, QWidget* parent = 0)
         : QGraphicsView(scene, parent) { }
 
+protected:
+    virtual void wheelEvent(QWheelEvent* event) override {
+        if (event->modifiers() == Qt::ControlModifier) {
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+            if (event->delta() > 0) {
+                scale(1.1, 1.1);
+            } else {
+                scale(1.0/1.1, 1.0/1.1);
+            }
+        } else {
+            QGraphicsView::wheelEvent(event);
+        }
+    }
 };
 
 MainWindow::MainWindow() {
