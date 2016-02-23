@@ -473,9 +473,8 @@ void MainWindow::loadScatterers(const QString h5_file) {
         m_sim->add_spline_scatterers(spline_scatterers);
 
         // update simulation time limits
-        const auto& knots = spline_scatterers->knot_vector;
-        const auto min_time = knots.front();
-        const auto max_time = knots.back() - 1e-6f; // "end-hack"
+        float min_time, max_time;
+        spline_scatterers->get_time_limits(min_time, max_time);
         m_sim_time_manager->set_min_time(min_time);
         m_sim_time_manager->set_max_time(max_time);
         m_sim_time_manager->reset();
