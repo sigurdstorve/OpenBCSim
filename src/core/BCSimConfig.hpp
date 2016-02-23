@@ -112,6 +112,18 @@ struct SplineScatterers : public Scatterers {
         }
         return control_points[0].size();
     }
+
+    // returns the start time
+    void get_time_limits(float& start_time, float& end_time) const {
+        const auto num_knots = static_cast<int>(knot_vector.size());
+        const auto num_cs    = static_cast<int>(get_num_control_points());
+        
+        if ((spline_degree >= num_knots) || (num_cs >= num_knots)) {
+            throw std::logic_error("invalid spline configuration");
+        }
+        start_time = knot_vector[spline_degree];
+        end_time   = knot_vector[num_cs] - 1e-5; // "end-hack" 
+    }
     
     // Spline degree and knot vector are common for
     // all point scatterers.
