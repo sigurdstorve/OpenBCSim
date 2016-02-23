@@ -529,8 +529,6 @@ void MainWindow::doSimulation() {
     int new_num_scanlines;
     auto new_scan_geometry = m_scanseq_widget->get_geometry(new_num_scanlines);
     newScansequence(new_scan_geometry, new_num_scanlines);
-    
-    //qDebug() << "doSimulation(): simulation time is " << m_sim_time_manager->get_time();
 
     std::vector<std::vector<std::complex<float>> > rf_lines_complex;
     
