@@ -161,6 +161,7 @@ MainWindow::MainWindow() {
     m_scene = new QGraphicsScene(this);
     m_view = new QGraphicsView(m_scene);
     m_pixmap_item = new QGraphicsPixmapItem;
+    m_pixmap_item->setTransformationMode(Qt::SmoothTransformation); // enable bilinear filtering
     m_scene->addItem(m_pixmap_item);
     h_layout->addWidget(m_view);
     
