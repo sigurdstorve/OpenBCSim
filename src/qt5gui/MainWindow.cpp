@@ -206,6 +206,7 @@ MainWindow::MainWindow() {
     connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
         work_result->image.setColorTable(GrayColortable());
         
+        bool should_autofit = (m_pixmap_item->boundingRect().width()==0) && (m_pixmap_item->boundingRect().height()==0);
         const auto temp_pixmap = QPixmap::fromImage(work_result->image);
 
         // get Cartesian extents from current scan geometry.
@@ -224,7 +225,11 @@ MainWindow::MainWindow() {
 
         // move it
         m_pixmap_item->setPos(x_min, y_min);
-        m_view->fitInView(m_pixmap_item, Qt::KeepAspectRatio);
+        
+        // only do fitInView() first time since it messes up manual zoominal and positioning.
+        if (should_autofit) {
+            m_view->fitInView(m_pixmap_item, Qt::KeepAspectRatio);
+        }
 
         if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
