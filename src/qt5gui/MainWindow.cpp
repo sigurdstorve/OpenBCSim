@@ -889,7 +889,13 @@ void MainWindow::onSetSimulatorParameter() {
         qDebug() << "Invalid value.";
         return;
     }
-    m_sim->set_parameter(key.toUtf8().constData(), value.toUtf8().constData());
+    try {
+        m_sim->set_parameter(key.toUtf8().constData(), value.toUtf8().constData());
+    } catch (std::runtime_error& e) {
+        qDebug() << "Caught exception: " << e.what();
+    } catch (...) {
+        qDebug() << "Caught unknown exception.";
+    }
 }
 
 void MainWindow::onSaveIqBufferAs() {
