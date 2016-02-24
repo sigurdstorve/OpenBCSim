@@ -36,4 +36,15 @@ if (BCSIM_ENABLE_CUDA)
                           ${CUDA_LIBRARIES}
                          )
     install(TARGETS gpu_3d_texture_example DESTINATION bin)
+    
+    cuda_add_executable(cufft_speedtest
+                        cufft_speedtest.cu
+                        ../core/algorithm/cuda_helpers.h
+                        ../core/algorithm/cufft_helpers.h
+                        )
+    target_link_libraries(cufft_speedtest
+                          ${CUDA_LIBRARIES}
+                          ${CUDA_CUFFT_LIBRARIES}
+                         )
+    install(TARGETS cufft_speedtest DESTINATION bin)
 endif()
