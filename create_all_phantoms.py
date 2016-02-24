@@ -239,16 +239,24 @@ def create_simple_phantom():
 def create_tissue_flow_phantom():
     from tissue_with_flow import create_phantom
     args = Args()
-    args.h5_file = os.path.join(out_dir, "tissue_with_flow.h5")
+    args.h5_file = os.path.join(out_dir, "tissue_with_constant_flow.h5")
     args.num_tissue_scatterers = 1000000
     args.num_flow_scatterers = 200000
     args.box_dim = 0.03
     args.radius = 0.008
-    args.x_length = 8e-2
+    args.tissue_length = 8e-2
     args.num_cs = 6
     args.flow_ampl_factor = 0.2
+    args.peak_velocity = 15e-2
+    args.t0 = 0.0
+    args.t1 = 1.0
+    args.exponent = 20 # approximate constant flow
     create_phantom(args)
-
+    
+    args.exponent = 2
+    args.h5_file = os.path.join(out_dir, "tissue_with_parabolic_flow.h5")
+    create_phantom(args)
+    
 def create_spinning_disk_phantom():
     from spinning_disc import create_phantom
     args = Args()
