@@ -211,6 +211,7 @@ def create_lv_spline_phantom():
     args.num_cs = 10
     args.scale_h5_file = "phantom_data/real_left_ventricle_contraction.h5"
     args.lv_max_amplitude = 1.0
+    args.rotation_scale = 3.0
     create_phantom(args)
 
 def create_2d_cyst_phantom():

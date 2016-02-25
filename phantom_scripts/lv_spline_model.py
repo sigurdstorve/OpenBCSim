@@ -4,6 +4,7 @@ from utils import *
 import h5py
 import argparse
 from phantom_common import load_scale_function
+from rotation3d import rot_mat_z
 
 description="""
     Create a spline model for a synthetic 3D LV myocardium which
@@ -70,16 +71,26 @@ def create_phantom(args):
     knot_vector = np.array(knot_vector, dtype='float32')
     knot_avgs = bsplines.control_points(args.spline_degree, knot_vector)
 
+    # value in [0, 1] for the normalized z coordinate of each scatterer
+    # will be used to control rotation amplitude.
+    zs_fractional = (zs-args.z_min)/(args.z_max-args.z_min)
+
     control_points = np.zeros( (num_scatterers, args.num_cs, 3), dtype='float32')
     for cs_i, t_star in enumerate(knot_avgs):
         print 'Computing control points for knot average %d of %d' % (cs_i+1, args.num_cs)
 
         s = scale_fn(t_star)
 
+        temp_in  = np.stack([s*xs, s*ys, s*zs])
+        temp_out = np.empty((3, num_scatterers))
+        for i in range(num_scatterers):
+            cur_angle = zs_fractional[i]*s*args.rotation_scale
+            temp_out[:, i] = rot_mat_z(cur_angle).dot(temp_in[:, i])
+        
         # Compute control point position. Amplitude is unchanged.
-        control_points[:,cs_i,0] = s*np.array(xs)
-        control_points[:,cs_i,1] = s*np.array(ys)
-        control_points[:,cs_i,2] = s*np.array(zs)
+        control_points[:,cs_i,0] = temp_out[0,:] #s*np.array(xs)
+        control_points[:,cs_i,1] = temp_out[1,:] #s*np.array(ys)
+        control_points[:,cs_i,2] = temp_out[2,:] #s*np.array(zs)
 
     
     # Write results to disk
@@ -110,6 +121,7 @@ if __name__ == '__main__':
     parser.add_argument("--num_cs", help="Number of control points used in spline approximation", type=int, default=10)
     parser.add_argument("--scale_h5_file", help="Hdf5 file with scaling trace", type=str, default=None)
     parser.add_argument("--lv_max_amplitude", help="Maximum scatterer amplitude", type=float, default=1.0)
+    parser.add_argument("--rotation_scale", help="Scale of rotation signal", type=float, default=3.0)
     
     args = parser.parse_args()
     create_phantom(args)
