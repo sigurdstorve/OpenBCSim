@@ -46,7 +46,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QInputDialog>
 #include <QTimer>
 #include <QGraphicsPixmapItem>
-#include <QWheelEvent>
 #include "ScopedCpuTimer.hpp"
 
 #include "MainWindow.hpp"
@@ -56,6 +55,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../utils/SimpleHDF.hpp"    // for reading scatterer splines for vis.
 #include "utils.hpp"
 #include "../core/ScanSequence.hpp"
+#include "DisplayWidget.hpp"
 
 #include "GLVisualizationWidget.hpp"
 #include "scanseq/ScanseqWidget.hpp"
@@ -69,28 +69,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SimTimeWidget.hpp"
 #include "GrayscaleTransformWidget.hpp"
 #include "RefreshWorker.hpp"
-
-class CustomView : public QGraphicsView {
-public:
-    CustomView(QWidget* parent = 0)
-        : QGraphicsView(parent) { }
-    CustomView(QGraphicsScene* scene, QWidget* parent = 0)
-        : QGraphicsView(scene, parent) { }
-
-protected:
-    virtual void wheelEvent(QWheelEvent* event) override {
-        if (event->modifiers() == Qt::ControlModifier) {
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-            if (event->delta() > 0) {
-                scale(1.1, 1.1);
-            } else {
-                scale(1.0/1.1, 1.0/1.1);
-            }
-        } else {
-            QGraphicsView::wheelEvent(event);
-        }
-    }
-};
 
 MainWindow::MainWindow() {
     onLoadIniSettings();
@@ -177,18 +155,8 @@ MainWindow::MainWindow() {
     loadScatterers(scatterers_file.toUtf8().constData());
     */
     onCreateNewSimulator();
-
-    // If no inital size is given, the scene bouding rect will be
-    // large enough to cover all items that has been added to it
-    // since creation.
-    m_scene = new QGraphicsScene(this);
-    m_view = new CustomView(m_scene);
-    m_view->setDragMode(QGraphicsView::ScrollHandDrag);
-    m_view->setInteractive(false);
-    m_pixmap_item = new QGraphicsPixmapItem;
-    m_pixmap_item->setTransformationMode(Qt::SmoothTransformation); // enable bilinear filtering
-    m_scene->addItem(m_pixmap_item);
-    h_layout->addWidget(m_view);
+    m_display_widget = new DisplayWidget;
+    h_layout->addWidget(m_display_widget);
     
     // Playback timer
     m_playback_timer = new QTimer;
@@ -205,31 +173,24 @@ MainWindow::MainWindow() {
     m_refresh_worker = new refresh_worker::RefreshWorker(33);
     connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
         work_result->image.setColorTable(GrayColortable());
-        
-        bool should_autofit = (m_pixmap_item->boundingRect().width()==0) && (m_pixmap_item->boundingRect().height()==0);
-        const auto temp_pixmap = QPixmap::fromImage(work_result->image);
 
         // get Cartesian extents from current scan geometry.
         const auto geometry = m_scanseq_widget->get_geometry(num_lines);
         float x_min, x_max, y_min, y_max;
         geometry->get_xy_extent(x_min, x_max, y_min, y_max);
 
-        // set pixel data and scale item
-        m_pixmap_item->setPixmap(temp_pixmap);
-        const auto width_meters = x_max - x_min;
-        const auto height_meters = y_max - y_min;
-        const auto scale_x = width_meters/temp_pixmap.width();
-        const auto scale_y = height_meters/temp_pixmap.height();
-        const auto transform_scale = QTransform::fromScale(scale_x, scale_y);
-        m_pixmap_item->setTransform(transform_scale);
-
-        // move it
-        m_pixmap_item->setPos(x_min, y_min);
+        m_display_widget->update_bmode(QPixmap::fromImage(work_result->image), x_min, x_max, y_min, y_max);
         
-        // only do fitInView() first time since it messes up manual zoominal and positioning.
-        if (should_autofit) {
-            m_view->fitInView(m_pixmap_item, Qt::KeepAspectRatio);
+        // TEST CODE: Demonstrate that images with an alpha channel works.
+        /*
+        QImage dummy_img(64, 64, QImage::Format_ARGB32);
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < 64; j++) {
+                dummy_img.setPixel(i, j, QColor(255, 0, 0, i >= j ? 0 : 255).rgba());
+            }
         }
+        m_display_widget->update_colorflow(QPixmap::fromImage(dummy_img), x_min, x_max, y_min, y_max);
+        */
 
         if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
