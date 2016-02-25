@@ -170,7 +170,7 @@ MainWindow::MainWindow() {
     // refresh thread setup
     qRegisterMetaType<refresh_worker::WorkTask::ptr>();
     qRegisterMetaType<refresh_worker::WorkResult::ptr>();
-    m_refresh_worker = new refresh_worker::RefreshWorker(33);
+    m_refresh_worker = new refresh_worker::RefreshWorker(10);
     connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
         work_result->image.setColorTable(GrayColortable());
 
@@ -396,6 +396,7 @@ void MainWindow::createNewSimulator(const QString sim_type) {
     m_sim->set_parameter("verbose", "0");
     m_sim->set_parameter("sound_speed", "1540.0");
     m_sim->set_parameter("radial_decimation", std::to_string(m_settings->value("radial_decimation", 15).toInt()));
+    m_sim->set_parameter("phase_delay", "on");
 
     // force-emit from all widgets to ensure a fully configured simulator.
     m_excitation_signal_widget->force_emit();
