@@ -30,7 +30,7 @@ def create_fixed_scatterers(args, h5_f):
     ampls = ampls[keep_inds]
     
     data = np.stack([xs, ys, zs, ampls], axis=-1)
-    print data.shape
+    print "Final number of tissue scatterers: %d " % data.shape[0]
     
     h5_f["data"] = np.array(data)
     
@@ -55,8 +55,7 @@ def create_spline_scatterers(args, h5_f):
     rs = rs[keep_inds]
 
     num_scatterers = len(rs)
-    ampls = np.random.uniform(low=-1.0, high=1.0, size=(num_scatterers,))*args.flow_ampl_factor
-
+    print "Number of flow scatterers after first filtering: %d" % num_scatterers
     # currenly only support for t0=0
     assert(abs(args.t0) < 1e-6)
     
@@ -64,17 +63,30 @@ def create_spline_scatterers(args, h5_f):
     x_max = 0.5*args.tissue_length
     print "x components in [%f, %f]" % (x_min, x_max)
     xs = np.random.uniform(low=x_min, high=x_max, size=(num_scatterers,))
+
+    # compute velocity along x-axis for all scatterers
+    #    (1-(r/R)**K), where K controls the shape
+    # this is a function of the radius
+    velocities = args.peak_velocity*(1.0-(rs/args.radius)**args.exponent)
+
+    # compute the x-coordinate of each scatterer at the end time
+    end_xs = xs + args.t1*velocities
+
+    # ...and remove those who never will enter the tissue region
+    keep_inds = (end_xs >= -0.5*args.tissue_length)
+    xs = xs[keep_inds]
+    ys = ys[keep_inds]
+    zs = zs[keep_inds]
+    velocities = velocities[keep_inds]
     
-    # velocity along x-axis will be a function of the radius computed above
-    # (1-(r/R)**K), where K controls the shape
+    num_scatterers = len(xs)
+    ampls = np.random.uniform(low=-1.0, high=1.0, size=(num_scatterers,))*args.flow_ampl_factor
     
     control_points = np.zeros( (num_scatterers, args.num_cs, 3), dtype="float32")
     for cs_i, t_star in enumerate(knot_avgs):
         print "Computing control points for knot average %d of %d" % (cs_i+1, args.num_cs)
 
         # Compute control point position. Amplitude is unchanged.
-        velocities = args.peak_velocity*(1.0-(rs/args.radius)**args.exponent)
-        print velocities
         control_points[:, cs_i, 0] = np.array(xs) + t_star*velocities
         control_points[:, cs_i, 1] = np.array(ys)
         
@@ -88,6 +100,7 @@ def create_spline_scatterers(args, h5_f):
         f["control_points"] = control_points
         f["amplitudes"]     = np.array(ampls, dtype="float32")
 
+    print "Final number of flow scatterers: %d" % num_scatterers
 def create_phantom(args):
     with h5py.File(args.h5_file, "w") as f:
         create_fixed_scatterers(args, f)
