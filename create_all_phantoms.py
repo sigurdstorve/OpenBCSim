@@ -245,11 +245,9 @@ def create_tissue_flow_phantom():
     args.box_dim = 0.03
     args.radius = 0.008
     args.tissue_length = 8e-2
-    args.num_cs = 6
     args.flow_ampl_factor = 0.2
     args.peak_velocity = 15e-2
-    args.t0 = 0.0
-    args.t1 = 1.0
+    args.end_time = 1.0
     args.exponent = 20 # approximate constant flow
     create_phantom(args)
     
