@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class QSlider;
 class GLScattererWidget;
 class IScattererModel;
+class QCheckBox;
 
 // Widget used to visualize scatterers and possibly also the probe
 // (and scanned sector image?)
@@ -67,5 +68,8 @@ private:
 
     // The scatterer data model
     QSharedPointer<IScattererModel> m_scatterer_model;
+
+    // for controlling rendering of point scatterers
+    QCheckBox*              m_render_sb;
 };
 

@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QPushButton>
 #include <QDesktopWidget>
 #include <QApplication>
+#include <QCheckBox>
 #include <QMessageBox>
 
 GLVisualizationWidget::GLVisualizationWidget(QWidget* parent)
@@ -60,13 +61,21 @@ GLVisualizationWidget::GLVisualizationWidget(QWidget* parent)
     connect(camera_slider, SIGNAL(valueChanged(int)), glWidget,SLOT(setCameraZ(int)));
     connect(glWidget, SIGNAL(cameraZChanged(int)), camera_slider, SLOT(setValue(int)));
 
-    QHBoxLayout* container = new QHBoxLayout;
+    auto v_layout = new QVBoxLayout;
+
+    auto container = new QHBoxLayout;
     container->addWidget(glWidget);
     container->addWidget(xSlider);
     container->addWidget(ySlider);
     container->addWidget(zSlider);
     container->addWidget(camera_slider);
-    setLayout(container);
+    
+    v_layout->addLayout(container);
+    m_render_sb = new QCheckBox("Update scatterers");
+    m_render_sb->setCheckable(true);
+    m_render_sb->setChecked(false);
+    v_layout->addWidget(m_render_sb);
+    setLayout(v_layout);
     
     xSlider->setValue(15*16);
     ySlider->setValue(345*16);
@@ -84,6 +93,9 @@ QSlider* GLVisualizationWidget::createSlider() {
 }
 
 void GLVisualizationWidget::updateTimestamp(float new_timestamp) {
+    // skip processing if not enabled
+    if (!m_render_sb->isChecked()) return;
+
     // This is a hack. It would be better to have some sort of adapter
     // registered to the actual scatterer object in the main application.
     auto temp = m_scatterer_model.dynamicCast<SplineScattererModel>();
@@ -92,7 +104,7 @@ void GLVisualizationWidget::updateTimestamp(float new_timestamp) {
     } else {
         qDebug() << "Cast to SplineScattererModel failed!";
     }
-    
+
     glWidget->updateFromModel();
     update();
 }
