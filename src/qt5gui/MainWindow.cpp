@@ -634,23 +634,10 @@ void MainWindow::doSimulation() {
                 m_iq_buffer.push_back(rf_lines_complex);
             }
 
-            // Transform complex IQ samples to real-valued envelope.
-            if (rf_lines_complex.size() == 0) throw std::runtime_error("No lines returned");
-            const auto num_iq_samples = rf_lines_complex[0].size();;
-            std::vector<std::vector<float>> rf_lines;
-            for (size_t line_no = 0; line_no < rf_lines_complex.size(); line_no++) {
-                std::vector<float> temp;
-                temp.reserve(num_iq_samples);
-                for (size_t i = 0; i < rf_lines_complex[line_no].size(); i++) {
-                    temp.push_back(std::abs(rf_lines_complex[line_no][i]));
-                }
-                rf_lines.push_back(temp);
-            }
-
             // Create refresh work task from current geometry and the beam space data
             auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
             refresh_task->set_geometry(m_scan_geometry);
-            refresh_task->set_data(rf_lines);
+            refresh_task->set_data(rf_lines_complex);
             auto grayscale_settings = m_grayscale_widget->get_values();
             refresh_task->set_normalize_const(grayscale_settings.normalization_const);
             refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
@@ -874,7 +861,7 @@ void MainWindow::onLoadSimulatedData() {
         throw std::runtime_error("real/imag rank mismatch");
     }
 
-    std::vector<std::vector<std::vector<float>>> env_frames;
+    std::vector<std::vector<std::vector<std::complex<float>>>> iq_frames;
     if (sim_data_rank == 3) {
         // load IQ data from disk
         auto temp_real = hdf_reader.readMultiArray<float, 3>("sim_data_real");
@@ -890,16 +877,14 @@ void MainWindow::onLoadSimulatedData() {
         if (temp_imag.shape()[2] != num_lines) throw std::runtime_error("real/imag mismatch in dimension 2");
 
         for (size_t frame_no = 0; frame_no < num_frames; frame_no++) {
-            std::vector<std::vector<float>> env_lines(num_lines);
+            std::vector<std::vector<std::complex<float>>> iq_lines(num_lines);
             for (size_t i = 0; i < num_lines; i++) {
-                env_lines[i].resize(num_samples);
+                iq_lines[i].resize(num_samples);
                 for (size_t n = 0; n < num_samples; n++) {
-                    const auto complex_sample = std::complex<float>(temp_real[frame_no][n][i],
-                                                                    temp_imag[frame_no][n][i]);
-                    env_lines[i][n] = std::abs(complex_sample);
+                    iq_lines[i][n] = std::complex<float>(temp_real[frame_no][n][i], temp_imag[frame_no][n][i]);
                 }
             }
-            env_frames.push_back(env_lines);
+            iq_frames.push_back(iq_lines);
             qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
         }
     } else if (sim_data_rank == 2) {
@@ -913,26 +898,24 @@ void MainWindow::onLoadSimulatedData() {
         if (temp_imag.shape()[0] != num_samples) throw std::runtime_error("real/imag mismatch in dimension 0");
         if (temp_imag.shape()[1] != num_lines) throw std::runtime_error("real/imag mismatch in dimension 1");
         
-        std::vector<std::vector<float>> env_lines(num_lines);
+        std::vector<std::vector<std::complex<float>>> iq_lines(num_lines);
         for (size_t i = 0; i < num_lines; i++) {
-            env_lines[i].resize(num_samples);
+            iq_lines[i].resize(num_samples);
             for (size_t n = 0; n < num_samples; n++) {
-                const auto complex_sample = std::complex<float>(temp_real[n][i],
-                                                                temp_imag[n][i]);
-                env_lines[i][n] = std::abs(complex_sample);
+                iq_lines[i][n] = std::complex<float>(temp_real[n][i], temp_imag[n][i]);
             }
         }
-        env_frames.push_back(env_lines);
+        iq_frames.push_back(iq_lines);
         qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
     } else {
         throw std::runtime_error("sim_data must have rank 2 or 3");
     }
     
-    for (size_t frame_no = 0; frame_no < env_frames.size(); frame_no++) {
+    for (size_t frame_no = 0; frame_no < iq_frames.size(); frame_no++) {
         // Create refresh work task from current geometry and the beam space data
         auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
         refresh_task->set_geometry(m_scan_geometry);
-        refresh_task->set_data(env_frames[frame_no]);
+        refresh_task->set_data(iq_frames[frame_no]);
         auto grayscale_settings = m_grayscale_widget->get_values();
         refresh_task->set_normalize_const(grayscale_settings.normalization_const);
         refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);

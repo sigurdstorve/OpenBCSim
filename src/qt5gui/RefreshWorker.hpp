@@ -53,7 +53,7 @@ public:
     void set_geometry(bcsim::ScanGeometry::ptr geometry) {
         m_scan_geometry = geometry;
     }
-    void set_data(const std::vector<std::vector<float>>& data) {
+    void set_data(const std::vector<std::vector<std::complex<float>>>& data) {
         m_data = data;
     }
     void set_auto_normalize(bool status) {
@@ -72,7 +72,7 @@ public:
         m_dyn_range = dyn_range;
     }
 private:
-    std::vector<std::vector<float>>  m_data;
+    std::vector<std::vector<std::complex<float>>>  m_data;
     bcsim::ScanGeometry::ptr            m_scan_geometry;
     bool                                m_auto_normalize;
     float                               m_normalize_const;
@@ -114,7 +114,20 @@ private:
             auto work_result = WorkResult::ptr(new WorkResult);
             
             auto work_task = m_queue.dequeue();
-            auto& rf_lines = work_task->m_data;
+            const auto& iq_data = work_task->m_data;
+
+            // Transform complex IQ samples to real-valued envelope.
+            if (iq_data.size() == 0) throw std::runtime_error("No lines returned");
+            const auto num_iq_samples = iq_data[0].size();;
+            std::vector<std::vector<float>> env_lines;
+            for (size_t line_no = 0; line_no < iq_data.size(); line_no++) {
+                std::vector<float> temp;
+                temp.reserve(num_iq_samples);
+                for (size_t i = 0; i < iq_data[line_no].size(); i++) {
+                    temp.push_back(std::abs(iq_data[line_no][i]));
+                }
+                env_lines.push_back(temp);
+            }
 
             m_cartesianator->SetGeometry(work_task->m_scan_geometry);
 
@@ -129,21 +142,21 @@ private:
             // As long as the size doesn't change, this call is not expensive.
             m_cartesianator->SetOutputSize(width_pixels, height_pixels);
 
-            const size_t num_beams = rf_lines.size();
-            const size_t num_range = rf_lines[0].size();
+            const size_t num_beams = env_lines.size();
+            const size_t num_range = env_lines[0].size();
             if (num_beams <= 0) {
                 throw std::runtime_error("No lines were returned");
             }
     
 
             if (work_task->m_auto_normalize) {
-                work_result->updated_normalization_const = bcsim::get_max_value(rf_lines);
+                work_result->updated_normalization_const = bcsim::get_max_value(env_lines);
             } else {
                 work_result->updated_normalization_const = work_task->m_normalize_const;
             }
 
             // grayscale log-compression
-            bcsim::log_compress_frame(rf_lines, work_task->m_dyn_range,
+            bcsim::log_compress_frame(env_lines, work_task->m_dyn_range,
                                       work_result->updated_normalization_const,
                                       work_task->m_gain);
             
@@ -151,8 +164,8 @@ private:
             // i.e. sample index most rapidly varying. Convert to unsigned char.
             std::vector<unsigned char> beamspace_data(num_beams*num_range);
             for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-                std::transform(std::begin(rf_lines[beam_no]),
-                               std::end(rf_lines[beam_no]),
+                std::transform(std::begin(env_lines[beam_no]),
+                               std::end(env_lines[beam_no]),
                                beamspace_data.data()+num_range*beam_no,
                                [=](float v) {
                     return static_cast<unsigned char>(v);
