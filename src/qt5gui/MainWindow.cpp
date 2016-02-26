@@ -172,14 +172,15 @@ MainWindow::MainWindow() {
     qRegisterMetaType<refresh_worker::WorkResult::ptr>();
     m_refresh_worker = new refresh_worker::RefreshWorker(10);
     connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
-        work_result->image.setColorTable(GrayColortable());
+        auto result_image = work_result->image.get_image();
+        result_image.setColorTable(GrayColortable());
 
         // get Cartesian extents from current scan geometry.
         const auto geometry = m_scanseq_widget->get_geometry(num_lines);
         float x_min, x_max, y_min, y_max;
         geometry->get_xy_extent(x_min, x_max, y_min, y_max);
 
-        m_display_widget->update_bmode(QPixmap::fromImage(work_result->image), x_min, x_max, y_min, y_max);
+        m_display_widget->update_bmode(QPixmap::fromImage(result_image), x_min, x_max, y_min, y_max);
         
         // TEST CODE: Demonstrate that images with an alpha channel works.
         /*
@@ -198,7 +199,7 @@ MainWindow::MainWindow() {
             m_num_simulated_frames++;
             const QString filename =  img_path + QString("/frame%1.bmp").arg(m_num_simulated_frames, 6, 10, QChar('0'));
             qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Writing image to" << filename;
-            work_result->image.save(filename, 0, 100);
+            result_image.save(filename, 0, 100);
         }
         // store updated normalization constant if enabled.
         auto temp = m_grayscale_widget->get_values();
