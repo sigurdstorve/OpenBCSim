@@ -566,7 +566,12 @@ void MainWindow::doSimulation() {
     }
     std_ms = std::sqrt(std_ms/num_ms);
     if (num_ms == 1) {
-        statusBar()->showMessage("Simulation time: " + QString::number(sim_milliseconds[0]) + " ms.");
+        const auto total_scatterers = m_sim->get_total_num_scatterers();
+        const auto ns_value = static_cast<float>(1e6*sim_milliseconds[0]/(new_num_scanlines*total_scatterers));
+        const auto msg = QString("Simulation time: %1 ms   ~   %2 nanosec. per scatterer per line")
+                            .arg(sim_milliseconds[0], 3)
+                            .arg(ns_value, 3);
+        statusBar()->showMessage(msg);
     } else {
         statusBar()->showMessage("Simulation time: " + QString::number(mean_ms) 
                                  + " +- " + QString::number(std_ms) + " ms."
