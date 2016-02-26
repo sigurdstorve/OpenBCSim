@@ -509,6 +509,8 @@ void MainWindow::doSimulation() {
             m_sim->simulate_lines(rf_lines_complex);
         }
 
+        m_display_widget->update_status(QString("Radial samples: %1").arg(rf_lines_complex[0].size()));
+
         if (m_save_iq_act->isChecked()) {
             m_iq_buffer.push_back(rf_lines_complex);
         }
