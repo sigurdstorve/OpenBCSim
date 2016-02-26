@@ -452,9 +452,18 @@ void MainWindow::loadScatterers(const QString h5_file) {
     }
 
     // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
-    //initializeSplineVisualization(h5_file);
-    //initializeFixedVisualization(h5_file);
-    //updateOpenGlVisualization();
+    // This does not yet support hdf5 files with both types of scatterers!
+    try {
+        initializeSplineVisualization(h5_file);
+    } catch (...) {
+        qDebug() << "Failed to initialize visualization of spline scatterers";
+    }
+    try {
+        initializeFixedVisualization(h5_file);
+    } catch (...) {
+        qDebug() << "Failed to initialize visualization of fixed scatterers";
+    }
+    updateOpenGlVisualization();
 }
 
 void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines) {
