@@ -475,7 +475,6 @@ void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_
     
     if (m_settings->value("enable_gl_widget", true).toBool()) {
         m_gl_vis_widget->setScanSequence(new_scanseq);
-        updateOpenGlVisualization();
     }
 }
 
