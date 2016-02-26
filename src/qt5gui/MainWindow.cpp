@@ -713,22 +713,12 @@ void MainWindow::onTimer() {
 }
 
 void MainWindow::onAboutScatterers() {
-    throw std::runtime_error("TODO: UPDATE");
-    /*
-    QString info = "Phantom consists of " + QString::number(m_current_scatterers->num_scatterers());
-    auto spline_scatterers = std::dynamic_pointer_cast<bcsim::SplineScatterers>(m_current_scatterers);
-    auto fixed_scatterers = std::dynamic_pointer_cast<bcsim::FixedScatterers>(m_current_scatterers);
-    
-    if (spline_scatterers) {
-        info += " spline scatterers of degree " + QString::number(spline_scatterers->spline_degree);
-        info += ", each consisting of " + QString::number(spline_scatterers->get_num_control_points()) + " control points.";
-    } else if (fixed_scatterers) {
-        info += " fixed scatterers.";
-    } else {
-        throw std::runtime_error("onAboutScatterers(): all casts failed");
+    if (!m_sim) {
+        qDebug() << "No simulator is active";
+        return;
     }
-    QMessageBox::information(this, "Current scatterers", info); 
-    */
+    const auto n = m_sim->get_total_num_scatterers();
+    QMessageBox::information(this, "Current scatterers", QString("Phantom consists of %1 scatterers").arg(n));
 }
 
 void MainWindow::onGetXyExtent() {
