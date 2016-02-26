@@ -52,14 +52,14 @@ public:
     {
     }
 
-    SafeQImage(const unsigned char* data, int width, int height, int bytes_per_line, QImage::Format format) {
-        const auto num_pixels = width*height;
+    SafeQImage(const unsigned char* data, int width, int height, int bytes_per_sample, QImage::Format format) {
+        const auto num_bytes = width*height*bytes_per_sample;
         m_pixels = new std::vector<unsigned char>;
-        m_pixels->reserve(num_pixels);
-        for (int i = 0; i < num_pixels; i++) {
-            (*m_pixels)[i] = data[i];
+        m_pixels->reserve(num_bytes);
+        for (int i = 0; i < num_bytes; i++) {
+            m_pixels->push_back(data[i]);
         }
-        m_img = QImage(m_pixels->data(), width, height, bytes_per_line, format);
+        m_img = QImage(m_pixels->data(), width, height, width*bytes_per_sample, format);
     }
 
     QImage get_image() const {
@@ -256,7 +256,7 @@ private:
         work_result->image = SafeQImage(m_cartesianator->GetOutputBuffer(),
                                         static_cast<int>(out_x),
                                         static_cast<int>(out_y),
-                                        static_cast<int>(out_x),
+                                        1,
                                         QImage::Format_Indexed8);
         emit finished_processing(work_result);
     }
