@@ -171,7 +171,8 @@ MainWindow::MainWindow() {
     qRegisterMetaType<refresh_worker::WorkTask::ptr>();
     qRegisterMetaType<refresh_worker::WorkResult::ptr>();
     m_refresh_worker = new refresh_worker::RefreshWorker(10);
-    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
+
+    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_bmode_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
         auto result_image = work_result->image.get_image();
         result_image.setColorTable(GrayColortable());
 
@@ -181,17 +182,6 @@ MainWindow::MainWindow() {
         geometry->get_xy_extent(x_min, x_max, y_min, y_max);
 
         m_display_widget->update_bmode(QPixmap::fromImage(result_image), x_min, x_max, y_min, y_max);
-        
-        // TEST CODE: Demonstrate that images with an alpha channel works.
-        /*
-        QImage dummy_img(64, 64, QImage::Format_ARGB32);
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 64; j++) {
-                dummy_img.setPixel(i, j, QColor(255, 0, 0, i >= j ? 0 : 255).rgba());
-            }
-        }
-        m_display_widget->update_colorflow(QPixmap::fromImage(dummy_img), x_min, x_max, y_min, y_max);
-        */
 
         if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
@@ -206,6 +196,20 @@ MainWindow::MainWindow() {
         if (temp.auto_normalize) {
             m_grayscale_widget->set_normalization_constant(work_result->updated_normalization_const);
         }
+    });
+
+
+    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_color_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
+        auto result_image = work_result->image.get_image();
+
+        // get Cartesian extents from current scan geometry.
+        const auto geometry = m_scanseq_widget->get_geometry(num_lines);
+        float x_min, x_max, y_min, y_max;
+        geometry->get_xy_extent(x_min, x_max, y_min, y_max);
+
+        m_display_widget->update_colorflow(QPixmap::fromImage(result_image), x_min, x_max, y_min, y_max);
+        
+        // TODO: Handle saving PNG images
     });
 }
 

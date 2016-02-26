@@ -258,7 +258,7 @@ private:
                                         static_cast<int>(out_y),
                                         1,
                                         QImage::Format_Indexed8);
-        emit finished_processing(work_result);
+        emit finished_processing_bmode(work_result);
     }
 
     void process(WorkTask_ColorDoppler::ptr work_task) {
@@ -400,11 +400,13 @@ private:
                                         static_cast<int>(out_y),
                                         4,
                                         QImage::Format_ARGB32);
-        emit finished_processing(work_result);
+        emit finished_processing_color(work_result);
     }
 
-    // finished processing work item
-    Q_SIGNAL void finished_processing(refresh_worker::WorkResult::ptr);
+    // finished processing a B-mode work item
+    Q_SIGNAL void finished_processing_bmode(refresh_worker::WorkResult::ptr);
+
+    Q_SIGNAL void finished_processing_color(refresh_worker::WorkResult::ptr);
 
 private:
     QMutex                      m_mutex;
@@ -421,8 +423,10 @@ public:
         m_timer.moveToThread(&m_thread);    // not neccessary according to tutorial.
         m_worker.moveToThread(&m_thread);
         m_thread.start();
-        connect(&m_worker, SIGNAL(finished_processing(refresh_worker::WorkResult::ptr)),
-                this, SIGNAL(processed_data_available(refresh_worker::WorkResult::ptr)));
+        connect(&m_worker, SIGNAL(finished_processing_bmode(refresh_worker::WorkResult::ptr)),
+                this, SIGNAL(processed_bmode_data_available(refresh_worker::WorkResult::ptr)));
+        connect(&m_worker, SIGNAL(finished_processing_color(refresh_worker::WorkResult::ptr)),
+                this, SIGNAL(processed_color_data_available(refresh_worker::WorkResult::ptr)));
     }
 
     // new beam space data for processing
@@ -431,7 +435,9 @@ public:
     }
 
     // processed beam space data is ready
-    Q_SIGNAL void processed_data_available(refresh_worker::WorkResult::ptr);
+    Q_SIGNAL void processed_bmode_data_available(refresh_worker::WorkResult::ptr);
+
+    Q_SIGNAL void processed_color_data_available(refresh_worker::WorkResult::ptr);
 
 private:
     QThread     m_thread;
