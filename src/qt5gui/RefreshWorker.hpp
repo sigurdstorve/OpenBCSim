@@ -55,16 +55,11 @@ public:
         m_scan_geometry = geometry;
     }
 
-    void set_data(const std::vector<std::vector<std::complex<float>>>& data) {
-        m_data = data;
-    }
-
     void set_dots_per_meter(float dpm) {
         m_dpm = dpm;
     }
 
 private:
-    std::vector<std::vector<std::complex<float>>>  m_data;
     bcsim::ScanGeometry::ptr            m_scan_geometry;
     float                               m_dpm;
 };
@@ -73,6 +68,10 @@ class WorkTask_BMode : public WorkTask {
 public:
     friend class Worker;
     typedef std::shared_ptr<WorkTask_BMode> ptr;
+
+    void set_data(const std::vector<std::vector<std::complex<float>>>& data) {
+        m_data = data;
+    }
 
     void set_auto_normalize(bool status) {
         m_auto_normalize = status;
@@ -88,6 +87,7 @@ public:
     }
 
 private:
+    std::vector<std::vector<std::complex<float>>>  m_data;
     bool                                m_auto_normalize;
     float                               m_normalize_const;
     float                               m_gain;
