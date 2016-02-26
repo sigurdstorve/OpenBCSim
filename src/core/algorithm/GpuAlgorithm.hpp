@@ -67,6 +67,8 @@ public:
 
     virtual void add_spline_scatterers(SplineScatterers::s_ptr)                                     override;
 
+    virtual size_t get_total_num_scatterers() const                                     override;
+
 protected:
     // Debug functionality: slice the 3D texture and write as RAW file to disk.    
     void dump_orthogonal_lut_slices(const std::string& raw_path);

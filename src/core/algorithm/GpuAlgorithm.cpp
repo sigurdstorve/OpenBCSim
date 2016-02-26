@@ -765,6 +765,9 @@ void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanl
     }
 }
 
+size_t GpuAlgorithm::get_total_num_scatterers() const {
+    return m_num_fixed_scatterers+m_num_spline_scatterers;
+}
 
 }   // end namespace
 

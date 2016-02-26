@@ -566,7 +566,12 @@ void MainWindow::doSimulation() {
     }
     std_ms = std::sqrt(std_ms/num_ms);
     if (num_ms == 1) {
-        statusBar()->showMessage("Simulation time: " + QString::number(sim_milliseconds[0]) + " ms.");
+        const auto total_scatterers = m_sim->get_total_num_scatterers();
+        const auto ns_value = static_cast<float>(1e6*sim_milliseconds[0]/(new_num_scanlines*total_scatterers));
+        const auto msg = QString("Simulation time: %1 ms   ~   %2 nanosec. per scatterer per line")
+                            .arg(sim_milliseconds[0], 3)
+                            .arg(ns_value, 3);
+        statusBar()->showMessage(msg);
     } else {
         statusBar()->showMessage("Simulation time: " + QString::number(mean_ms) 
                                  + " +- " + QString::number(std_ms) + " ms."
@@ -708,22 +713,12 @@ void MainWindow::onTimer() {
 }
 
 void MainWindow::onAboutScatterers() {
-    throw std::runtime_error("TODO: UPDATE");
-    /*
-    QString info = "Phantom consists of " + QString::number(m_current_scatterers->num_scatterers());
-    auto spline_scatterers = std::dynamic_pointer_cast<bcsim::SplineScatterers>(m_current_scatterers);
-    auto fixed_scatterers = std::dynamic_pointer_cast<bcsim::FixedScatterers>(m_current_scatterers);
-    
-    if (spline_scatterers) {
-        info += " spline scatterers of degree " + QString::number(spline_scatterers->spline_degree);
-        info += ", each consisting of " + QString::number(spline_scatterers->get_num_control_points()) + " control points.";
-    } else if (fixed_scatterers) {
-        info += " fixed scatterers.";
-    } else {
-        throw std::runtime_error("onAboutScatterers(): all casts failed");
+    if (!m_sim) {
+        qDebug() << "No simulator is active";
+        return;
     }
-    QMessageBox::information(this, "Current scatterers", info); 
-    */
+    const auto n = m_sim->get_total_num_scatterers();
+    QMessageBox::information(this, "Current scatterers", QString("Phantom consists of %1 scatterers").arg(n));
 }
 
 void MainWindow::onGetXyExtent() {
