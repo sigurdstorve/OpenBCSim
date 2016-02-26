@@ -662,9 +662,9 @@ void MainWindow::doSimulation() {
             statusBar()->showMessage("B-mode simulation time: " + QString::number(total_millisec) + " ms.");
 
             const auto total_scatterers = m_sim->get_total_num_scatterers();
-            const auto ns_value = static_cast<float>(1e6*sim_milliseconds[0]/(new_num_scanlines*total_scatterers));
+            const auto ns_value = static_cast<float>(1e6*total_millisec/(new_num_scanlines*total_scatterers));
             const auto msg = QString("Simulation time: %1 ms   ~   %2 nanosec. per scatterer per line")
-                                .arg(sim_milliseconds[0], 3)
+                                .arg(total_millisec, 3)
                                 .arg(ns_value, 3);
             statusBar()->showMessage(msg);
 
