@@ -92,6 +92,8 @@ public:
 
     virtual void add_spline_scatterers(SplineScatterers::s_ptr)                                     override;
 
+    virtual size_t get_total_num_scatterers() const                                                 override;
+
 protected:
     // Projection loop for a single fixed scatterer dataset.
     void projection_loop(FixedScatterers::s_ptr fixed_scatterers, const Scanline& line, std::complex<float>* time_proj_signal, size_t num_time_samples);

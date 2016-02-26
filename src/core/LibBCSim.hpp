@@ -79,6 +79,9 @@ public:
 
     // Get debug data by identifier. Throws std::runtime_error on invalid key.
     virtual std::vector<double> get_debug_data(const std::string& identifier) const = 0;
+
+    // Get the total number of scatterers (fixed and dynamic)
+    virtual size_t get_total_num_scatterers() const = 0;
 };
 
 // Factory function for creating simulator instances.

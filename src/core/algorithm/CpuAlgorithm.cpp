@@ -442,5 +442,9 @@ void CpuAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scattere
     }
 }
 
+size_t CpuAlgorithm::get_total_num_scatterers() const {
+    return m_scatterers_collection.total_num_scatterers();
+}
+
 }   // namespace
 
