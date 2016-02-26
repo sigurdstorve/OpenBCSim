@@ -348,20 +348,58 @@ private:
         m_cartesianator->GetOutputSize(out_x, out_y);
 
         // binary thresholding on R0
-        const float normalized_threshold = 0.15f;
+        const float normalized_threshold = 0.01f;
         const auto abs_threshold = 255*normalized_threshold;
+        qDebug() << "abs threshold is " << abs_threshold;
         const auto num_output_samples = out_x*out_y;
-        std::vector<unsigned char> thresholded_samples(num_output_samples);
+        std::vector<bool> thresholded_samples(num_output_samples);
         const auto out_ptr = m_cartesianator->GetOutputBuffer();
         for (size_t i = 0; i < num_output_samples; i++) {
-            thresholded_samples[i] = (out_ptr[i] >= abs_threshold) ? out_ptr[i] : 0;
+            thresholded_samples[i] = (out_ptr[i] >= abs_threshold);
         }
 
-        work_result->image = SafeQImage(thresholded_samples.data(),
+        // Process phase angles
+        for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
+            std::transform(std::begin(velocity_lines[beam_no]),
+                            std::end(velocity_lines[beam_no]),
+                            beamspace_data.data()+num_range*beam_no,
+                            [=](float v) {
+                return static_cast<unsigned char>(255.0*(v+3.141592)/(3.141592*2));
+            });
+        }
+
+        // do geometry transform
+        m_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
+
+        std::vector<unsigned char> color_pixels(4*num_output_samples);
+        for (size_t i = 0; i < num_output_samples; i++) {
+            unsigned char alpha = 0;
+            unsigned char red;
+            unsigned char green = 0;
+            unsigned char blue;
+
+            if (thresholded_samples[i]) {
+                auto color_value = m_cartesianator->GetOutputBuffer()[i];
+                alpha = 255;
+                if (color_value > 127) {
+                    red  = (color_value-127)*2;
+                    blue = 0;
+                } else {
+                    blue = (127-color_value)*2;
+                    red  = 0;
+                }
+            }
+            color_pixels[4*i + 3] = alpha;
+            color_pixels[4*i + 2] = red;
+            color_pixels[4*i + 1] = green;
+            color_pixels[4*i + 0] = blue;
+        }
+
+        work_result->image = SafeQImage(color_pixels.data(),
                                         static_cast<int>(out_x),
                                         static_cast<int>(out_y),
-                                        static_cast<int>(out_x),
-                                        QImage::Format_Indexed8);
+                                        4,
+                                        QImage::Format_ARGB32);
         emit finished_processing(work_result);
     }
 
