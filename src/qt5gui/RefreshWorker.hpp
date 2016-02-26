@@ -129,7 +129,7 @@ public:
     typedef std::shared_ptr<WorkResult> ptr;
     WorkResult() {
     }
-    QImage  image;
+    SafeQImage  image;
     float   updated_normalization_const;
 };
 
@@ -229,11 +229,19 @@ private:
         // make QImage from output of Cartesianator
         size_t out_x, out_y;
         m_cartesianator->GetOutputSize(out_x, out_y);
-        work_result->image = QImage(m_cartesianator->GetOutputBuffer(),
-                                    static_cast<int>(out_x),
-                                    static_cast<int>(out_y),
-                                    static_cast<int>(out_x),
-                                    QImage::Format_Indexed8);
+
+        // copy output buffer
+        const auto num_out_pixels = out_x*out_y;
+        std::vector<unsigned char> temp_buffer(num_out_pixels);
+        for (size_t i = 0; i < num_out_pixels; i++) {
+            temp_buffer[i] = m_cartesianator->GetOutputBuffer()[i];
+        }
+
+        work_result->image = SafeQImage(m_cartesianator->GetOutputBuffer(),
+                                        static_cast<int>(out_x),
+                                        static_cast<int>(out_y),
+                                        static_cast<int>(out_x),
+                                        QImage::Format_Indexed8);
         emit finished_processing(work_result);
     }
 
