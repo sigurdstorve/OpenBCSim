@@ -538,11 +538,12 @@ void MainWindow::doSimulation() {
     auto new_scan_geometry = m_scanseq_widget->get_geometry(new_num_scanlines);
     newScansequence(new_scan_geometry, new_num_scanlines);
     
-    bool scan_is_color = true;
+    bool do_color_scan = m_settings->value("do_color_scan", false).toBool();
+    bool do_bmode_scan = m_settings->value("do_bmode_scan", true).toBool();
 
     typedef std::vector<std::vector<std::complex<float>>> IQ_Frame;
     
-    if (scan_is_color) {
+    if (do_color_scan) {
         // Color Doppler scan
         const auto color_packet_size = m_settings->value("color_packet_size", 16).toInt();
         const auto color_prf         = m_settings->value("color_prf", 2500.0).toFloat();
@@ -588,7 +589,8 @@ void MainWindow::doSimulation() {
         } catch (std::runtime_error& e) {
             qDebug() << "Caught exception simulating color Doppler: " << e.what();
         }
-    } else {
+    }
+    if (do_bmode_scan) {
         // B-Mode scan
         try {
             IQ_Frame rf_lines_complex;
