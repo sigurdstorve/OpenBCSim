@@ -123,6 +123,19 @@ private:
     float                               m_dyn_range;
 };
 
+class WorkTask_ColorDoppler : public WorkTask {
+public:
+    friend class Worker;
+    typedef std::shared_ptr<WorkTask_ColorDoppler> ptr;
+
+    void set_data(const std::vector<std::vector<std::vector<std::complex<float>>>>& data) {
+        m_data = data;
+    }
+
+private:
+    std::vector<std::vector<std::vector<std::complex<float>>>>  m_data;
+};
+
 class WorkResult {
 public:
     friend class Worker;
@@ -155,7 +168,10 @@ private:
             auto work_task = m_queue.dequeue();
             if (std::dynamic_pointer_cast<WorkTask_BMode>(work_task)) {
                 process(std::dynamic_pointer_cast<WorkTask_BMode>(work_task));
+            } else if (std::dynamic_pointer_cast<WorkTask_ColorDoppler>(work_task)) {
+                process(std::dynamic_pointer_cast<WorkTask_ColorDoppler>(work_task));
             } else {
+                qDebug() << "Unable to cast WorkTask";
                 throw std::logic_error("Unable to cast WorkTask");
             }
         }
@@ -238,6 +254,110 @@ private:
         }
 
         work_result->image = SafeQImage(m_cartesianator->GetOutputBuffer(),
+                                        static_cast<int>(out_x),
+                                        static_cast<int>(out_y),
+                                        static_cast<int>(out_x),
+                                        QImage::Format_Indexed8);
+        emit finished_processing(work_result);
+    }
+
+    void process(WorkTask_ColorDoppler::ptr work_task) {
+        // Create output package
+        auto work_result = WorkResult::ptr(new WorkResult);
+
+        const auto& iq_data = work_task->m_data;
+        
+        // Estimate R0 and R1
+        std::vector<std::vector<float>> r0_lines;
+        std::vector<std::vector<float>> velocity_lines;
+
+        const auto packet_size    = iq_data.size();
+        const auto num_iq_lines   = iq_data[0].size();
+        const auto num_iq_samples = iq_data[0][0].size();;
+        for (size_t line_no = 0; line_no < num_iq_lines; line_no++) {
+            std::vector<float> temp1;
+            std::vector<float> temp2;
+            temp1.reserve(num_iq_samples);
+            temp2.reserve(num_iq_samples);
+            for (size_t i = 0; i < num_iq_samples; i++) {
+                float r0 = 0.0f;
+                std::complex<float> r1 = 0.0f;
+
+                // simple clutter filter
+                std::complex<float> mean_val(0.0f);
+                for (int packet_no = 0; packet_no < packet_size; packet_no++) {
+                    mean_val += iq_data[packet_no][line_no][i];
+                }
+                mean_val = mean_val/static_cast<float>(packet_size);
+
+                // estimate R0
+                for (int packet_no = 0; packet_no < packet_size; packet_no++) {
+                    const auto z = iq_data[packet_no][line_no][i] - mean_val;
+                    r0 += (z*std::conj(z)).real();
+                }
+
+                // estimate R1
+                for (int packet_no = 0; packet_no < packet_size-1; packet_no++) {
+                    r1 += std::conj(iq_data[packet_no][line_no][i])*iq_data[packet_no+1][line_no][i];
+                }
+                temp1.push_back(r0);
+                temp2.push_back(std::arg(r1));
+            }
+            r0_lines.push_back(temp1);
+            velocity_lines.push_back(temp2);
+        }
+
+        const auto max_r0_value = bcsim::get_max_value(r0_lines);
+        qDebug() << "Max R0 value is " << max_r0_value;
+
+        m_cartesianator->SetGeometry(work_task->m_scan_geometry);
+
+        // update size of final image [pixels]
+        float qimage_width_m, qimage_height_m;
+        GetCartesianDimensions(work_task->m_scan_geometry, qimage_width_m, qimage_height_m);
+        const auto qimage_dpm = work_task->m_dpm;
+        const size_t width_pixels  = qimage_width_m*qimage_dpm;
+        const size_t height_pixels = qimage_height_m*qimage_dpm;
+    
+        // As long as the size doesn't change, this call is not expensive.
+        m_cartesianator->SetOutputSize(width_pixels, height_pixels);
+
+        const size_t num_beams = r0_lines.size();
+        const size_t num_range = r0_lines[0].size();
+        if (num_beams <= 0) {
+            throw std::runtime_error("No lines were returned");
+        }
+    
+        // Copy beamspace data in order to get correct memory layout,
+        // i.e. sample index most rapidly varying. Convert to unsigned char.
+        std::vector<unsigned char> beamspace_data(num_beams*num_range);
+        for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
+            std::transform(std::begin(r0_lines[beam_no]),
+                            std::end(r0_lines[beam_no]),
+                            beamspace_data.data()+num_range*beam_no,
+                            [=](float v) {
+                return static_cast<unsigned char>(255.0*v/max_r0_value);
+            });
+        }
+
+        // do geometry transform
+        m_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
+    
+        // make QImage from output of Cartesianator
+        size_t out_x, out_y;
+        m_cartesianator->GetOutputSize(out_x, out_y);
+
+        // binary thresholding on R0
+        const float normalized_threshold = 0.15f;
+        const auto abs_threshold = 255*normalized_threshold;
+        const auto num_output_samples = out_x*out_y;
+        std::vector<unsigned char> thresholded_samples(num_output_samples);
+        const auto out_ptr = m_cartesianator->GetOutputBuffer();
+        for (size_t i = 0; i < num_output_samples; i++) {
+            thresholded_samples[i] = (out_ptr[i] >= abs_threshold) ? out_ptr[i] : 0;
+        }
+
+        work_result->image = SafeQImage(thresholded_samples.data(),
                                         static_cast<int>(out_x),
                                         static_cast<int>(out_y),
                                         static_cast<int>(out_x),
