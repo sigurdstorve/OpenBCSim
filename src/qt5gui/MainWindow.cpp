@@ -840,6 +840,7 @@ void MainWindow::onLoadBeamProfileLUT() {
 }
 
 void MainWindow::onLoadSimulatedData() {
+    qDebug() << "!!! Warning: THIS ONLY WORKS WITH B-MODE DATA !!!";
     if (!m_sim) {
         qDebug() << "No active simulator. Ignoring";
         return;
