@@ -635,17 +635,17 @@ void MainWindow::doSimulation() {
             }
 
             // Create refresh work task from current geometry and the beam space data
-            auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
-            refresh_task->set_geometry(m_scan_geometry);
-            refresh_task->set_data(rf_lines_complex);
+            auto bmode_task = std::make_shared<refresh_worker::WorkTask_BMode>();
+            bmode_task->set_geometry(m_scan_geometry);
+            bmode_task->set_data(rf_lines_complex);
             auto grayscale_settings = m_grayscale_widget->get_values();
-            refresh_task->set_normalize_const(grayscale_settings.normalization_const);
-            refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
-            refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
-            refresh_task->set_dyn_range(grayscale_settings.dyn_range);
-            refresh_task->set_gain(grayscale_settings.gain); 
+            bmode_task->set_normalize_const(grayscale_settings.normalization_const);
+            bmode_task->set_auto_normalize(grayscale_settings.auto_normalize);
+            bmode_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+            bmode_task->set_dyn_range(grayscale_settings.dyn_range);
+            bmode_task->set_gain(grayscale_settings.gain); 
     
-            m_refresh_worker->process_data(refresh_task);
+            m_refresh_worker->process_data(bmode_task);
             statusBar()->showMessage("B-mode simulation time: " + QString::number(total_millisec) + " ms.");
 
             const auto total_scatterers = m_sim->get_total_num_scatterers();
@@ -913,16 +913,16 @@ void MainWindow::onLoadSimulatedData() {
     
     for (size_t frame_no = 0; frame_no < iq_frames.size(); frame_no++) {
         // Create refresh work task from current geometry and the beam space data
-        auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
-        refresh_task->set_geometry(m_scan_geometry);
-        refresh_task->set_data(iq_frames[frame_no]);
+        auto bmode_task = std::make_shared<refresh_worker::WorkTask_BMode>();
+        bmode_task->set_geometry(m_scan_geometry);
+        bmode_task->set_data(iq_frames[frame_no]);
         auto grayscale_settings = m_grayscale_widget->get_values();
-        refresh_task->set_normalize_const(grayscale_settings.normalization_const);
-        refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
-        refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
-        refresh_task->set_dyn_range(grayscale_settings.dyn_range);
-        refresh_task->set_gain(grayscale_settings.gain); 
-        m_refresh_worker->process_data(refresh_task);
+        bmode_task->set_normalize_const(grayscale_settings.normalization_const);
+        bmode_task->set_auto_normalize(grayscale_settings.auto_normalize);
+        bmode_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+        bmode_task->set_dyn_range(grayscale_settings.dyn_range);
+        bmode_task->set_gain(grayscale_settings.gain); 
+        m_refresh_worker->process_data(bmode_task);
     }
 }
 

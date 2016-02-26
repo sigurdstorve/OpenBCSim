@@ -48,22 +48,37 @@ class WorkTask {
 public:
     friend class Worker;
     typedef std::shared_ptr<WorkTask> ptr;
-    WorkTask() {
-    }
+
+    virtual ~WorkTask() { }
+
     void set_geometry(bcsim::ScanGeometry::ptr geometry) {
         m_scan_geometry = geometry;
     }
+
     void set_data(const std::vector<std::vector<std::complex<float>>>& data) {
         m_data = data;
     }
+
+    void set_dots_per_meter(float dpm) {
+        m_dpm = dpm;
+    }
+
+private:
+    std::vector<std::vector<std::complex<float>>>  m_data;
+    bcsim::ScanGeometry::ptr            m_scan_geometry;
+    float                               m_dpm;
+};
+
+class WorkTask_BMode : public WorkTask {
+public:
+    friend class Worker;
+    typedef std::shared_ptr<WorkTask_BMode> ptr;
+
     void set_auto_normalize(bool status) {
         m_auto_normalize = status;
     }
     void set_normalize_const(float c) {
         m_normalize_const = c;
-    }
-    void set_dots_per_meter(float dpm) {
-        m_dpm = dpm;
     }
     void set_gain(float gain) {
         m_gain = gain;
@@ -71,12 +86,10 @@ public:
     void set_dyn_range(float dyn_range) {
         m_dyn_range = dyn_range;
     }
+
 private:
-    std::vector<std::vector<std::complex<float>>>  m_data;
-    bcsim::ScanGeometry::ptr            m_scan_geometry;
     bool                                m_auto_normalize;
     float                               m_normalize_const;
-    float                               m_dpm;
     float                               m_gain;
     float                               m_dyn_range;
 };
@@ -110,81 +123,89 @@ private:
         QMutexLocker mutex_locker(&m_mutex);
         auto num_elements = m_queue.size();
         if (!m_queue.isEmpty()) {
-            // Create output package
-            auto work_result = WorkResult::ptr(new WorkResult);
-            
             auto work_task = m_queue.dequeue();
-            const auto& iq_data = work_task->m_data;
-
-            // Transform complex IQ samples to real-valued envelope.
-            if (iq_data.size() == 0) throw std::runtime_error("No lines returned");
-            const auto num_iq_samples = iq_data[0].size();;
-            std::vector<std::vector<float>> env_lines;
-            for (size_t line_no = 0; line_no < iq_data.size(); line_no++) {
-                std::vector<float> temp;
-                temp.reserve(num_iq_samples);
-                for (size_t i = 0; i < iq_data[line_no].size(); i++) {
-                    temp.push_back(std::abs(iq_data[line_no][i]));
-                }
-                env_lines.push_back(temp);
-            }
-
-            m_cartesianator->SetGeometry(work_task->m_scan_geometry);
-
-
-            // update size of final image [pixels]
-            float qimage_width_m, qimage_height_m;
-            GetCartesianDimensions(work_task->m_scan_geometry, qimage_width_m, qimage_height_m);
-            const auto qimage_dpm = work_task->m_dpm;
-            const size_t width_pixels  = qimage_width_m*qimage_dpm;
-            const size_t height_pixels = qimage_height_m*qimage_dpm;
-    
-            // As long as the size doesn't change, this call is not expensive.
-            m_cartesianator->SetOutputSize(width_pixels, height_pixels);
-
-            const size_t num_beams = env_lines.size();
-            const size_t num_range = env_lines[0].size();
-            if (num_beams <= 0) {
-                throw std::runtime_error("No lines were returned");
-            }
-    
-
-            if (work_task->m_auto_normalize) {
-                work_result->updated_normalization_const = bcsim::get_max_value(env_lines);
+            if (std::dynamic_pointer_cast<WorkTask_BMode>(work_task)) {
+                process(std::dynamic_pointer_cast<WorkTask_BMode>(work_task));
             } else {
-                work_result->updated_normalization_const = work_task->m_normalize_const;
+                throw std::logic_error("Unable to cast WorkTask");
             }
-
-            // grayscale log-compression
-            bcsim::log_compress_frame(env_lines, work_task->m_dyn_range,
-                                      work_result->updated_normalization_const,
-                                      work_task->m_gain);
-            
-            // Copy beamspace data in order to get correct memory layout,
-            // i.e. sample index most rapidly varying. Convert to unsigned char.
-            std::vector<unsigned char> beamspace_data(num_beams*num_range);
-            for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-                std::transform(std::begin(env_lines[beam_no]),
-                               std::end(env_lines[beam_no]),
-                               beamspace_data.data()+num_range*beam_no,
-                               [=](float v) {
-                    return static_cast<unsigned char>(v);
-                });
-            }
-
-            // do geometry transform
-            m_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
-    
-            // make QImage from output of Cartesianator
-            size_t out_x, out_y;
-            m_cartesianator->GetOutputSize(out_x, out_y);
-            work_result->image = QImage(m_cartesianator->GetOutputBuffer(),
-                                        static_cast<int>(out_x),
-                                        static_cast<int>(out_y),
-                                        static_cast<int>(out_x),
-                                        QImage::Format_Indexed8);
-            emit finished_processing(work_result);
         }
+    }
+
+    void process(WorkTask_BMode::ptr work_task) {
+        // Create output package
+        auto work_result = WorkResult::ptr(new WorkResult);
+
+        const auto& iq_data = work_task->m_data;
+
+        // Transform complex IQ samples to real-valued envelope.
+        if (iq_data.size() == 0) throw std::runtime_error("No lines returned");
+        const auto num_iq_samples = iq_data[0].size();;
+        std::vector<std::vector<float>> env_lines;
+        for (size_t line_no = 0; line_no < iq_data.size(); line_no++) {
+            std::vector<float> temp;
+            temp.reserve(num_iq_samples);
+            for (size_t i = 0; i < iq_data[line_no].size(); i++) {
+                temp.push_back(std::abs(iq_data[line_no][i]));
+            }
+            env_lines.push_back(temp);
+        }
+
+        m_cartesianator->SetGeometry(work_task->m_scan_geometry);
+
+
+        // update size of final image [pixels]
+        float qimage_width_m, qimage_height_m;
+        GetCartesianDimensions(work_task->m_scan_geometry, qimage_width_m, qimage_height_m);
+        const auto qimage_dpm = work_task->m_dpm;
+        const size_t width_pixels  = qimage_width_m*qimage_dpm;
+        const size_t height_pixels = qimage_height_m*qimage_dpm;
+    
+        // As long as the size doesn't change, this call is not expensive.
+        m_cartesianator->SetOutputSize(width_pixels, height_pixels);
+
+        const size_t num_beams = env_lines.size();
+        const size_t num_range = env_lines[0].size();
+        if (num_beams <= 0) {
+            throw std::runtime_error("No lines were returned");
+        }
+    
+
+        if (work_task->m_auto_normalize) {
+            work_result->updated_normalization_const = bcsim::get_max_value(env_lines);
+        } else {
+            work_result->updated_normalization_const = work_task->m_normalize_const;
+        }
+
+        // grayscale log-compression
+        bcsim::log_compress_frame(env_lines, work_task->m_dyn_range,
+                                    work_result->updated_normalization_const,
+                                    work_task->m_gain);
+            
+        // Copy beamspace data in order to get correct memory layout,
+        // i.e. sample index most rapidly varying. Convert to unsigned char.
+        std::vector<unsigned char> beamspace_data(num_beams*num_range);
+        for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
+            std::transform(std::begin(env_lines[beam_no]),
+                            std::end(env_lines[beam_no]),
+                            beamspace_data.data()+num_range*beam_no,
+                            [=](float v) {
+                return static_cast<unsigned char>(v);
+            });
+        }
+
+        // do geometry transform
+        m_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
+    
+        // make QImage from output of Cartesianator
+        size_t out_x, out_y;
+        m_cartesianator->GetOutputSize(out_x, out_y);
+        work_result->image = QImage(m_cartesianator->GetOutputBuffer(),
+                                    static_cast<int>(out_x),
+                                    static_cast<int>(out_y),
+                                    static_cast<int>(out_x),
+                                    QImage::Format_Indexed8);
+        emit finished_processing(work_result);
     }
 
     // finished processing work item
