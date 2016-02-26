@@ -2,8 +2,9 @@
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
 #include <QWheelEvent>
-#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QDebug>
+#include <QStatusBar>
 #include "DisplayWidget.hpp"
 
 class CustomView : public QGraphicsView {
@@ -34,6 +35,8 @@ DisplayWidget::DisplayWidget(QWidget* parent, Qt::WindowFlags f)
     // If no inital size is given, the scene bouding rect will be
     // large enough to cover all items that has been added to it
     // since creation.
+    m_layout = new QVBoxLayout;
+
     m_scene = new QGraphicsScene(this);
     m_view = new CustomView(m_scene);
     m_view->setDragMode(QGraphicsView::ScrollHandDrag);
@@ -48,9 +51,12 @@ DisplayWidget::DisplayWidget(QWidget* parent, Qt::WindowFlags f)
     m_colorflow_item = new QGraphicsPixmapItem;
     m_colorflow_item->setTransformationMode(Qt::SmoothTransformation);
     m_scene->addItem(m_colorflow_item);
-
-    m_layout = new QHBoxLayout;
     m_layout->addWidget(m_view);
+
+    // status bar on the bottom
+    m_status_bar = new QStatusBar;
+    m_layout->addWidget(m_status_bar);
+
     setLayout(m_layout);
 }
 
@@ -78,4 +84,8 @@ void DisplayWidget::update_colorflow(const QPixmap& pixmap, float x_min, float x
     m_colorflow_item->setPixmap(pixmap);
     m_colorflow_item->setTransform(QTransform::fromScale(0.05/64, 0.05/64));
     m_colorflow_item->setPos(x_min, y_min);
+}
+
+void DisplayWidget::update_status(const QString& msg, int timeout) {
+    m_status_bar->showMessage(msg, timeout);
 }
