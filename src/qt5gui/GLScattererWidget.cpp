@@ -292,6 +292,8 @@ void GLScattererWidget::setScanSequence(bcsim::ScanSequence::s_ptr scan_seq) {
     m_scanseq_vbo.bind();
     m_scanseq_vbo.allocate(m_scanseq_data->constData(), m_scanseq_data->count()*sizeof(GLfloat));
     m_scanseq_vbo.release();
+
+    update();
 }
 
 void GLScattererWidget::setScatterers(QSharedPointer<IScattererModel> scatterers) {
