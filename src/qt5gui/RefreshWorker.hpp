@@ -44,6 +44,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace refresh_worker {
 
+// A safe variant of QImage owning its pixel data.
+class SafeQImage {
+public:
+    SafeQImage()
+        : m_pixels(nullptr)
+    {
+    }
+
+    SafeQImage(const unsigned char* data, int width, int height, int bytes_per_line, QImage::Format format) {
+        const auto num_pixels = width*height;
+        m_pixels = new std::vector<unsigned char>;
+        m_pixels->reserve(num_pixels);
+        for (int i = 0; i < num_pixels; i++) {
+            (*m_pixels)[i] = data[i];
+        }
+        m_img = QImage(m_pixels->data(), width, height, bytes_per_line, format);
+    }
+
+    QImage get_image() const {
+        return m_img;
+    }
+
+private:
+    QImage                      m_img;
+    
+    // Must be a pointer so that copying a SafeQImage is safe!
+    std::vector<unsigned char>* m_pixels;
+};
+
 class WorkTask {
 public:
     friend class Worker;
