@@ -42,17 +42,30 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <string>
 #include <cuda.h>
+#include <vector>
+#include <chrono>
 #include "../core/algorithm/cuda_helpers.h"
 
 void measure_speed(size_t num_bytes, void* dst, void* src, cudaMemcpyKind kind, const std::string& msg) {
     EventTimerRAII gpu_timer;
     gpu_timer.restart();
     cudaErrorCheck( cudaMemcpy(dst, src, num_bytes, kind) );
+    cudaErrorCheck( cudaDeviceSynchronize() );
     auto elapsed_ms = gpu_timer.stop();
     std::cout << "=== " << msg << " ===\n";
     std::cout << "Copied " << num_bytes << " bytes in " << elapsed_ms << "  milliseconds.\n";
     auto gb_per_sec = num_bytes/(elapsed_ms*1e6f);
     std::cout << "Transfer speed was " << gb_per_sec << " GB/sec.\n";
+}
+
+void measure_cpu_speed(size_t num_bytes) {
+    std::vector<unsigned char> data(num_bytes, 1);
+    const auto start_time = std::chrono::high_resolution_clock::now();
+    auto copy_of_data = data;
+    const auto end_time   = std::chrono::high_resolution_clock::now();
+    const auto duration_sec = std::chrono::duration_cast<std::chrono::milliseconds>(end_time-start_time).count()*1e-3;
+    const auto num_gb = num_bytes/1e9;
+    std::cout << "Host => Host: " << (2.0*num_gb/duration_sec) << " GB/s \n";
 }
 
 int main() {
@@ -67,8 +80,16 @@ int main() {
     DeviceBufferRAII<float> device_buffer(num_bytes);
     std::cout << "Allocated " << num_bytes << " bytes of device memory.\n";
 
+    DeviceBufferRAII<float> device_buffer2(num_bytes);
+    std::cout << "Allocated " << num_bytes << " bytes of device memory.\n";
+
     measure_speed(num_bytes, device_buffer.data(), pinned_host_buffer.data(), cudaMemcpyHostToDevice, "Pinned Host => Device");
     measure_speed(num_bytes, pinned_host_buffer.data(), device_buffer.data(), cudaMemcpyDeviceToHost, "Device => Pinned Host"); 
     measure_speed(num_bytes, device_buffer.data(), regular_host_buffer.data(), cudaMemcpyHostToDevice, "Regular Host => Device");
     measure_speed(num_bytes, regular_host_buffer.data(), device_buffer.data(), cudaMemcpyDeviceToHost, "Device => Regular Host");
+    measure_speed(num_bytes, device_buffer.data(), device_buffer2.data(), cudaMemcpyDeviceToDevice, "Device => Device");
+    std::cout << "NOTE: For Device => Device, the actual bandwidth is twice since each bytes was both read and written.\n";
+
+    std::cout << "\nCPU memory:\n";
+    measure_cpu_speed(num_bytes);
 }
