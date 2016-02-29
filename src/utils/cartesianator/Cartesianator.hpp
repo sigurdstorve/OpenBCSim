@@ -34,16 +34,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Geometry + Beam Space data => Sampled cartesian grid.
 // Manages its own output buffer.
+template <typename T>
 class ICartesianator {
 public:
-    typedef std::unique_ptr<ICartesianator> u_ptr;
-    typedef std::shared_ptr<ICartesianator> s_ptr;
+    typedef std::unique_ptr<ICartesianator<T>> u_ptr;
+    typedef std::shared_ptr<ICartesianator<T>> s_ptr;
 
     // Also computes Cartesian xy extents.
     virtual void SetGeometry(bcsim::ScanGeometry::ptr geometry)  = 0;
 
     // Indexing: num_samples_x*y_idx + x_idx
-    virtual const unsigned char* GetOutputBuffer()              = 0;
+    virtual const T* GetOutputBuffer()                           = 0;
 
     // Set the number of output samples.
     virtual void SetOutputSize(size_t num_samples_x,
@@ -56,18 +57,19 @@ public:
     // Indexing: num_beams*sample_idx + beam_idx
     // Needs to know number of beams and number of samples in
     // each beam.
-    virtual void Process(unsigned char* in_buffer,
+    virtual void Process(T* in_buffer,
                          int num_beams,
                          int num_samples)                       = 0;
 };
 
-class CpuCartesianator : public ICartesianator {
+template <typename T>
+class CpuCartesianator : public ICartesianator<T> {
 public:
     CpuCartesianator();
 
     virtual void SetGeometry(bcsim::ScanGeometry::ptr geometry);
 
-    virtual const unsigned char* GetOutputBuffer();
+    virtual const T* GetOutputBuffer();
 
     virtual void SetOutputSize(size_t num_samples_x,
                                size_t num_samples_y);
@@ -75,21 +77,21 @@ public:
     virtual void GetOutputSize(size_t& num_samples_x,
                                size_t& num_samples_y);
 
-    virtual void Process(unsigned char* in_buffer, int num_beams, int num_samples);
+    virtual void Process(T* in_buffer, int num_beams, int num_samples);
 
 private:
 
     void UpdateOutputBuffer();
 
-    void DoSectorTransform(unsigned char* in_buffer, int num_beams, int num_range,
+    void DoSectorTransform(T* in_buffer, int num_beams, int num_range,
                            std::shared_ptr<bcsim::SectorScanGeometry> geometry);
 
-    void DoLinearTransform(unsigned char* in_buffer, int num_beams, int num_range,
+    void DoLinearTransform(T* in_buffer, int num_beams, int num_range,
                            std::shared_ptr<bcsim::LinearScanGeometry> geometry);
 
 private:
-    bcsim::ScanGeometry::ptr     m_geometry;
-    std::vector<unsigned char>  m_output_buffer;
+    bcsim::ScanGeometry::ptr    m_geometry;
+    std::vector<T>              m_output_buffer;
     size_t                      m_num_samples_x;
     size_t                      m_num_samples_y;
 

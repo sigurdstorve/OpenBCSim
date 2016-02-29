@@ -151,7 +151,7 @@ Q_OBJECT
 public:
     Worker() : QObject() {
         // Create geometry converter
-        m_cartesianator = ICartesianator::u_ptr(new CpuCartesianator);
+        m_cartesianator = ICartesianator<unsigned char>::u_ptr(new CpuCartesianator<unsigned char>);
     }
 
     // enqueue new work item
@@ -411,7 +411,7 @@ private:
 private:
     QMutex                      m_mutex;
     QQueue<WorkTask::ptr>       m_queue;
-    ICartesianator::u_ptr       m_cartesianator;
+    ICartesianator<unsigned char>::u_ptr    m_cartesianator;
 };
 
 class RefreshWorker : public QObject {
