@@ -92,5 +92,9 @@ std::vector<double> BaseAlgorithm::get_debug_data(const std::string& identifier)
     return m_debug_data.at(identifier);
 }
 
+std::string BaseAlgorithm::get_parameter(const std::string& key) const {
+    throw std::runtime_error("Illegal key: " + key);
+}
+
 }   // end namespace
 
