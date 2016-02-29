@@ -150,8 +150,9 @@ class Worker : public QObject {
 Q_OBJECT
 public:
     Worker() : QObject() {
-        // Create geometry converter
-        m_cartesianator = ICartesianator<unsigned char>::u_ptr(new CpuCartesianator<unsigned char>);
+        // Create geometry converters
+        m_cartesianator       = ICartesianator<unsigned char>::u_ptr(new CpuCartesianator<unsigned char>);
+        m_color_cartesianator = ICartesianator<float>::u_ptr(new CpuCartesianator<float>); 
     }
 
     // enqueue new work item
@@ -409,9 +410,10 @@ private:
     Q_SIGNAL void finished_processing_color(refresh_worker::WorkResult::ptr);
 
 private:
-    QMutex                      m_mutex;
-    QQueue<WorkTask::ptr>       m_queue;
+    QMutex                                  m_mutex;
+    QQueue<WorkTask::ptr>                   m_queue;
     ICartesianator<unsigned char>::u_ptr    m_cartesianator;
+    ICartesianator<float>::u_ptr            m_color_cartesianator;
 };
 
 class RefreshWorker : public QObject {
