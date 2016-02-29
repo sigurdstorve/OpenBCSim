@@ -349,7 +349,7 @@ private:
         m_color_cartesianator->GetOutputSize(out_x, out_y);
 
         // binary thresholding on R0
-        const float normalized_threshold = 0.01f;
+        const float normalized_threshold = 0.001f;
 
         const auto num_output_samples = out_x*out_y;
         std::vector<bool> thresholded_samples(num_output_samples);
