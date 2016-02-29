@@ -311,7 +311,7 @@ private:
         const auto max_r0_value = bcsim::get_max_value(r0_lines);
         qDebug() << "Max R0 value is " << max_r0_value;
 
-        m_cartesianator->SetGeometry(work_task->m_scan_geometry);
+        m_color_cartesianator->SetGeometry(work_task->m_scan_geometry);
 
         // update size of final image [pixels]
         float qimage_width_m, qimage_height_m;
@@ -321,7 +321,7 @@ private:
         const size_t height_pixels = qimage_height_m*qimage_dpm;
     
         // As long as the size doesn't change, this call is not expensive.
-        m_cartesianator->SetOutputSize(width_pixels, height_pixels);
+        m_color_cartesianator->SetOutputSize(width_pixels, height_pixels);
 
         const size_t num_beams = r0_lines.size();
         const size_t num_range = r0_lines[0].size();
@@ -330,47 +330,46 @@ private:
         }
     
         // Copy beamspace data in order to get correct memory layout,
-        // i.e. sample index most rapidly varying. Convert to unsigned char.
-        std::vector<unsigned char> beamspace_data(num_beams*num_range);
+        // i.e. sample index most rapidly varying. Normalize power to [0, 1]
+        std::vector<float> beamspace_data(num_beams*num_range);
         for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
             std::transform(std::begin(r0_lines[beam_no]),
                             std::end(r0_lines[beam_no]),
                             beamspace_data.data()+num_range*beam_no,
                             [=](float v) {
-                return static_cast<unsigned char>(255.0*v/max_r0_value);
+                return v/max_r0_value;
             });
         }
 
         // do geometry transform
-        m_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
+        m_color_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
     
         // make QImage from output of Cartesianator
         size_t out_x, out_y;
-        m_cartesianator->GetOutputSize(out_x, out_y);
+        m_color_cartesianator->GetOutputSize(out_x, out_y);
 
         // binary thresholding on R0
         const float normalized_threshold = 0.01f;
-        const auto abs_threshold = 255*normalized_threshold;
-        qDebug() << "abs threshold is " << abs_threshold;
+
         const auto num_output_samples = out_x*out_y;
         std::vector<bool> thresholded_samples(num_output_samples);
-        const auto out_ptr = m_cartesianator->GetOutputBuffer();
+        const auto out_ptr = m_color_cartesianator->GetOutputBuffer();
         for (size_t i = 0; i < num_output_samples; i++) {
-            thresholded_samples[i] = (out_ptr[i] >= abs_threshold);
+            thresholded_samples[i] = (out_ptr[i] >= normalized_threshold);
         }
 
-        // Process phase angles
+        // Reorganize memory layout
         for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
             std::transform(std::begin(velocity_lines[beam_no]),
                             std::end(velocity_lines[beam_no]),
                             beamspace_data.data()+num_range*beam_no,
                             [=](float v) {
-                return static_cast<unsigned char>(255.0*(v+3.141592)/(3.141592*2));
+                return v;
             });
         }
 
         // do geometry transform
-        m_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
+        m_color_cartesianator->Process(beamspace_data.data(), static_cast<int>(num_beams), static_cast<int>(num_range));
 
         std::vector<unsigned char> color_pixels(4*num_output_samples);
         for (size_t i = 0; i < num_output_samples; i++) {
@@ -380,13 +379,14 @@ private:
             unsigned char blue;
 
             if (thresholded_samples[i]) {
-                auto color_value = m_cartesianator->GetOutputBuffer()[i];
+                const auto phase_angle = m_color_cartesianator->GetOutputBuffer()[i];
+                const auto color_value = static_cast<unsigned char>(255.0f*std::abs(phase_angle)/3.14159f); 
                 alpha = 255;
-                if (color_value > 127) {
-                    red  = (color_value-127)*2;
+                if (phase_angle >= 0.0) {
+                    red  = color_value;
                     blue = 0;
                 } else {
-                    blue = (127-color_value)*2;
+                    blue = color_value;
                     red  = 0;
                 }
             }
