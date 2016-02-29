@@ -28,7 +28,7 @@ def create_fixed_scatterers(args, h5_f):
     zs = zs[keep_inds]
     ampls = ampls[keep_inds]
     
-    data = np.stack([xs, ys, zs, ampls], axis=-1)
+    data = np.vstack([xs, ys, zs, ampls])
     print "Final number of tissue scatterers: %d " % data.shape[0]
     
     h5_f["data"] = np.array(data)

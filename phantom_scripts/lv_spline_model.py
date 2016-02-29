@@ -81,7 +81,7 @@ def create_phantom(args):
 
         s = scale_fn(t_star)
 
-        temp_in  = np.stack([s*xs, s*ys, s*zs])
+        temp_in  = np.vstack([s*xs, s*ys, s*zs])
         temp_out = np.empty((3, num_scatterers))
         for i in range(num_scatterers):
             cur_angle = zs_fractional[i]*s*args.rotation_scale
