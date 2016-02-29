@@ -204,6 +204,8 @@ void CpuCartesianator<T>::DoLinearTransform(T* in_buffer, int num_beams, int num
     }
 }
 
-// explicit instantiations
+// explicit instantiations for the required datatypes.
 template class ICartesianator<unsigned char>;
 template class CpuCartesianator<unsigned char>;
+template class ICartesianator<float>;
+template class CpuCartesianator<float>;
