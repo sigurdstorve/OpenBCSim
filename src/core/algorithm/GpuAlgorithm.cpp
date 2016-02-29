@@ -769,6 +769,20 @@ size_t GpuAlgorithm::get_total_num_scatterers() const {
     return m_num_fixed_scatterers+m_num_spline_scatterers;
 }
 
+std::string GpuAlgorithm::get_parameter(const std::string& key) const {
+    if (key == "num_cuda_devices") {
+        int num_devices;
+        cudaErrorCheck( cudaGetDeviceCount(&num_devices) );
+        return std::to_string(num_devices);
+    } else if (key == "cur_device_name") {
+        cudaDeviceProp prop;
+        cudaErrorCheck( cudaGetDeviceProperties(&prop, m_param_cuda_device_no) );
+        return prop.name;
+    } else {
+        return BaseAlgorithm::get_parameter(key);
+    }
+}
+
 }   // end namespace
 
 #endif // BCSIM_ENABLE_CUDA

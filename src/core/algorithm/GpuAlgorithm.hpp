@@ -48,6 +48,8 @@ public:
     
     virtual void set_parameter(const std::string& key, const std::string& value)        override;
 
+    virtual std::string get_parameter(const std::string& key) const                     override;
+
     virtual void simulate_lines(std::vector<std::vector<std::complex<float>> >&  /*out*/ rf_lines) override;
     
     // NOTE: currently requires that set_excitation is called first!
