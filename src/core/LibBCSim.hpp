@@ -49,6 +49,9 @@ public:
     // Set misc. parameters. Available keys depends on the algorithm.
     virtual void set_parameter(const std::string&, const std::string& value)            = 0;
     
+    // Get misc. parameters. Available keys depends on the algorithm.
+    virtual std::string get_parameter(const std::string& key) const                     = 0;
+
     // Clear all fixed point scatterers.
     virtual void clear_fixed_scatterers()                                               = 0;
 
