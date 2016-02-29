@@ -912,7 +912,7 @@ void MainWindow::onSaveIqBufferAs() {
     }
 
     auto file = H5::H5File(h5_file.toUtf8().constData(), H5F_ACC_TRUNC);
-    size_t dspace_dims[] = {num_frames, num_lines, num_samples};
+    hsize_t dspace_dims[] = {num_frames, num_lines, num_samples};
     H5::DataSpace dspace(3, dspace_dims);
     
     qDebug() << "Writing real part";
