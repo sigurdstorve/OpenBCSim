@@ -386,10 +386,38 @@ void MainWindow::onSetSimulatorNoise() {
 
 void MainWindow::createNewSimulator(const QString sim_type) {
     m_sim = bcsim::Create(sim_type.toUtf8().constData());
+    QString window_title_extra;
     if (sim_type == "cpu") {
-        const int num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
+        const auto num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
         m_sim->set_parameter("num_cpu_cores", std::to_string(num_cores));
+        window_title_extra = QString::number(num_cores) + " CPU cores";
+    } else if (sim_type == "gpu") {
+        auto device_no = m_settings->value("cuda_device_no", 0).toInt();
+
+        // hack to query devices
+        const auto num_devices = std::stoi(m_sim->get_parameter("num_cuda_devices"));
+        if (num_devices == 0) {
+            throw std::runtime_error("No CUDA devices was found");
+        }
+        if (device_no >= num_devices) {
+            qDebug() << "Invalid device number specified in config. Will default to 0";
+            device_no = 0;
+        }
+        qDebug() << "Number of CUDA devices: " << num_devices;
+        for (int device_no = 0; device_no < num_devices; device_no++) {
+            m_sim->set_parameter("gpu_device", std::to_string(device_no));
+            const auto device_name = m_sim->get_parameter("cur_device_name");
+            qDebug() << "Device " << device_no << " : " << device_name.c_str();
+        }
+
+        // switch to selected device number (or default)
+        m_sim->set_parameter("gpu_device", std::to_string(device_no));
+        QString device_name = m_sim->get_parameter("cur_device_name").c_str();
+        window_title_extra += "GPU: " + device_name;
+    } else {
+        throw std::runtime_error("Should not happen");
     }
+    setWindowTitle("BCSimGUI @ " + window_title_extra);
     
     // ask user for a scatterer dataset.
     onLoadScatterers();
