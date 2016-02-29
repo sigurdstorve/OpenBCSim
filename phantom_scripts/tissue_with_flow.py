@@ -31,7 +31,7 @@ def create_fixed_scatterers(args, h5_f):
     data = np.vstack([xs, ys, zs, ampls]).transpose()
     print "Final number of tissue scatterers: %d " % data.shape[0]
     
-    h5_f["data"] = np.array(data)
+    h5_f["data"] = np.array(data, dtype="float32")
     
 def create_spline_scatterers(args, h5_f):
     num_scatterers = args.num_flow_scatterers
