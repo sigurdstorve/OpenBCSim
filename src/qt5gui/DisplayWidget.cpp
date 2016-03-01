@@ -81,11 +81,33 @@ void DisplayWidget::update_bmode(const QPixmap& pixmap, float x_min, float x_max
 }
 
 void DisplayWidget::update_colorflow(const QPixmap& pixmap, float x_min, float x_max, float y_min, float y_max) {
+    bool should_autofit = (m_colorflow_item->boundingRect().width()==0) && (m_colorflow_item->boundingRect().height()==0);
+
     m_colorflow_item->setPixmap(pixmap);
-    m_colorflow_item->setTransform(QTransform::fromScale(0.05/64, 0.05/64));
+    const auto width_meters = x_max - x_min;
+    const auto height_meters = y_max - y_min;
+    const auto scale_x = width_meters/pixmap.width();
+    const auto scale_y = height_meters/pixmap.height();
+    const auto transform_scale = QTransform::fromScale(scale_x, scale_y);
+    m_colorflow_item->setTransform(transform_scale);
+
+    // move it
     m_colorflow_item->setPos(x_min, y_min);
+
+    // only do fitInView() first time since it messes up manual zoominal and positioning.
+    if (should_autofit) {
+        m_view->fitInView(m_colorflow_item, Qt::KeepAspectRatio);
+    }
 }
 
 void DisplayWidget::update_status(const QString& msg, int timeout) {
     m_status_bar->showMessage(msg, timeout);
+}
+
+void DisplayWidget::enable_b_mode(bool enabled) {
+    m_pixmap_item->setVisible(enabled);
+}
+
+void DisplayWidget::enable_color_doppler(bool enabled) {
+    m_colorflow_item->setVisible(enabled);
 }

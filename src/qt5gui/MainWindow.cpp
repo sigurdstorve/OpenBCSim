@@ -142,7 +142,6 @@ MainWindow::MainWindow() {
     v_layout->addLayout(h_layout);
     v_layout->addWidget(m_time_widget);
 
-    createMenus();
     /*
     auto scatterers_file = m_settings->value("default_scatterers").toString();
     if (!QFileInfo(scatterers_file).exists()) {
@@ -171,26 +170,17 @@ MainWindow::MainWindow() {
     qRegisterMetaType<refresh_worker::WorkTask::ptr>();
     qRegisterMetaType<refresh_worker::WorkResult::ptr>();
     m_refresh_worker = new refresh_worker::RefreshWorker(10);
-    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
-        work_result->image.setColorTable(GrayColortable());
+
+    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_bmode_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
+        auto result_image = work_result->image.get_image();
+        result_image.setColorTable(GrayColortable());
 
         // get Cartesian extents from current scan geometry.
         const auto geometry = m_scanseq_widget->get_geometry(num_lines);
         float x_min, x_max, y_min, y_max;
         geometry->get_xy_extent(x_min, x_max, y_min, y_max);
 
-        m_display_widget->update_bmode(QPixmap::fromImage(work_result->image), x_min, x_max, y_min, y_max);
-        
-        // TEST CODE: Demonstrate that images with an alpha channel works.
-        /*
-        QImage dummy_img(64, 64, QImage::Format_ARGB32);
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 64; j++) {
-                dummy_img.setPixel(i, j, QColor(255, 0, 0, i >= j ? 0 : 255).rgba());
-            }
-        }
-        m_display_widget->update_colorflow(QPixmap::fromImage(dummy_img), x_min, x_max, y_min, y_max);
-        */
+        m_display_widget->update_bmode(QPixmap::fromImage(result_image), x_min, x_max, y_min, y_max);
 
         if (m_save_image_act->isChecked()) {
             // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
@@ -198,7 +188,7 @@ MainWindow::MainWindow() {
             m_num_simulated_frames++;
             const QString filename =  img_path + QString("/frame%1.bmp").arg(m_num_simulated_frames, 6, 10, QChar('0'));
             qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Writing image to" << filename;
-            work_result->image.save(filename, 0, 100);
+            result_image.save(filename, 0, 100);
         }
         // store updated normalization constant if enabled.
         auto temp = m_grayscale_widget->get_values();
@@ -206,6 +196,22 @@ MainWindow::MainWindow() {
             m_grayscale_widget->set_normalization_constant(work_result->updated_normalization_const);
         }
     });
+
+
+    connect(m_refresh_worker, &refresh_worker::RefreshWorker::processed_color_data_available, [&](refresh_worker::WorkResult::ptr work_result) {
+        auto result_image = work_result->image.get_image();
+
+        // get Cartesian extents from current scan geometry.
+        const auto geometry = m_scanseq_widget->get_geometry(num_lines);
+        float x_min, x_max, y_min, y_max;
+        geometry->get_xy_extent(x_min, x_max, y_min, y_max);
+
+        m_display_widget->update_colorflow(QPixmap::fromImage(result_image), x_min, x_max, y_min, y_max);
+        
+        // TODO: Handle saving PNG images
+    });
+
+    createMenus();
 }
 
 void MainWindow::onLoadIniSettings() {
@@ -225,6 +231,7 @@ void MainWindow::createMenus() {
     auto menuBar = new QMenuBar;
     auto fileMenu =     menuBar->addMenu(tr("&File"));
     auto simulateMenu = menuBar->addMenu(tr("&Simulate"));
+    auto scan_menu = menuBar->addMenu(tr("Scan &Types"));
     auto about_menu = menuBar->addMenu(tr("&About"));
     
     // Create all actions in "File" menu
@@ -329,6 +336,19 @@ void MainWindow::createMenus() {
     auto get_xy_extent_act = new QAction(tr("Get Cartesian scan limits"), this);
     connect(get_xy_extent_act, &QAction::triggered, this, &MainWindow::onGetXyExtent);
     about_menu->addAction(get_xy_extent_act);
+
+    // Actions in scan types menu
+    m_enable_bmode_act = new QAction("B-Mode", this);
+    m_enable_bmode_act->setCheckable(true);
+    m_enable_bmode_act->setChecked(true);
+    scan_menu->addAction(m_enable_bmode_act);
+    connect(m_enable_bmode_act, SIGNAL(toggled(bool)), m_display_widget, SLOT(enable_b_mode(bool)));
+
+    m_enable_color_act = new QAction("Color Doppler", this);
+    m_enable_color_act->setCheckable(true);
+    m_enable_color_act->setChecked(false);
+    scan_menu->addAction(m_enable_color_act);
+    connect(m_enable_color_act, SIGNAL(triggered(bool)), m_display_widget, SLOT(enable_color_doppler(bool)));
 
     setMenuBar(menuBar);
 
@@ -509,6 +529,7 @@ void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_
     auto new_scanseq = bcsim::OrientScanSequence(bcsim::CreateScanSequence(new_geometry, new_num_lines, cur_time), rot_angles, probe_origin);
 
     m_sim->set_scan_sequence(new_scanseq);
+    m_cur_scanseq = new_scanseq;
     
     if (m_settings->value("enable_gl_widget", true).toBool()) {
         m_gl_vis_widget->setScanSequence(new_scanseq);
@@ -531,79 +552,99 @@ void MainWindow::doSimulation() {
     int new_num_scanlines;
     auto new_scan_geometry = m_scanseq_widget->get_geometry(new_num_scanlines);
     newScansequence(new_scan_geometry, new_num_scanlines);
-
-    std::vector<std::vector<std::complex<float>> > rf_lines_complex;
     
-    std::vector<float> sim_milliseconds;
-    const auto num_rep = m_settings->value("simulate_lines_num_rep", 1).toInt();
+    typedef std::vector<std::vector<std::complex<float>>> IQ_Frame;
+    
+    if (m_enable_color_act->isChecked()) {
+        // Color Doppler scan
+        const auto color_packet_size = m_settings->value("color_packet_size", 16).toInt();
+        const auto color_prf         = m_settings->value("color_prf", 2500.0).toFloat();
+        const auto color_prt         = 1.0f/color_prf;
+        std::vector<IQ_Frame> iq_frames_complex;
 
-    try {
-        for (int rep_no = 0; rep_no < num_rep; rep_no++) {
-            ScopedCpuTimer timer([&](int millisec) {
-                sim_milliseconds.push_back(millisec);
-            });
-            m_sim->simulate_lines(rf_lines_complex);
-        }
+        try {
+            int total_millisec = 0;
+            for (int packet_no = 0; packet_no < color_packet_size; packet_no++) {
+                // make a copy of current scan sequence to change timestamp
+                auto temp_scanseq = bcsim::ScanSequence::s_ptr(new bcsim::ScanSequence(m_cur_scanseq->line_length));
+                const auto num_lines = m_cur_scanseq->get_num_lines();
+                float packet_timestamp;
+                for (int line_no = 0; line_no < num_lines; line_no++) {
+                    auto scanline = m_cur_scanseq->get_scanline(line_no);
+                    const auto temp_direction = scanline.get_direction();
+                    const auto temp_lateral_dir = scanline.get_lateral_dir();
+                    const auto temp_origin = scanline.get_origin();
+                    packet_timestamp = scanline.get_timestamp()+packet_no*color_prt;
+                    temp_scanseq->add_scanline(bcsim::Scanline(temp_origin, temp_direction, temp_lateral_dir, packet_timestamp));
+                }
+                m_sim->set_scan_sequence(temp_scanseq);
 
-        m_display_widget->update_status(QString("Radial samples: %1").arg(rf_lines_complex[0].size()));
-
-        if (m_save_iq_act->isChecked()) {
-            m_iq_buffer.push_back(rf_lines_complex);
-        }
-
-        // Transform complex IQ samples to real-valued envelope.
-        if (rf_lines_complex.size() == 0) throw std::runtime_error("No lines returned");
-        const auto num_iq_samples = rf_lines_complex[0].size();;
-        std::vector<std::vector<float>> rf_lines;
-        for (size_t line_no = 0; line_no < rf_lines_complex.size(); line_no++) {
-            std::vector<float> temp;
-            temp.reserve(num_iq_samples);
-            for (size_t i = 0; i < rf_lines_complex[line_no].size(); i++) {
-                temp.push_back(std::abs(rf_lines_complex[line_no][i]));
+                IQ_Frame iq_frame;
+                {
+                ScopedCpuTimer timer([&](int millisec) { total_millisec += millisec; });
+                m_sim->simulate_lines(iq_frame);
+                }
+                iq_frames_complex.push_back(iq_frame);
+                qDebug() << "Simulated frame in packet: timestamp is " << packet_timestamp;
             }
-            rf_lines.push_back(temp);
-        }
-    
-        // Create refresh work task from current geometry and the beam space data
-        auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
-        refresh_task->set_geometry(m_scan_geometry);
-        refresh_task->set_data(rf_lines);
-        auto grayscale_settings = m_grayscale_widget->get_values();
-        refresh_task->set_normalize_const(grayscale_settings.normalization_const);
-        refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
-        refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
-        refresh_task->set_dyn_range(grayscale_settings.dyn_range);
-        refresh_task->set_gain(grayscale_settings.gain); 
-    
-        m_refresh_worker->process_data(refresh_task);
-    
-    } catch (const std::runtime_error& e) {
-        qDebug() << "Caught exception: " << e.what();
-    }
 
-    float mean_ms = 0.0f;
-    float std_ms = 0.0f;
-    const auto num_ms = sim_milliseconds.size();
-    for (size_t i = 0; i < num_ms; i++) {
-        mean_ms += sim_milliseconds[i];
+
+            auto color_task = std::make_shared<refresh_worker::WorkTask_ColorDoppler>();
+            color_task->set_geometry(m_scan_geometry);
+            color_task->set_data(iq_frames_complex);
+            color_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+    
+            m_refresh_worker->process_data(color_task);
+            statusBar()->showMessage("Color Doppler simulation time per packet: " + QString::number(total_millisec/static_cast<float>(color_packet_size)) + " ms.");
+
+
+        } catch (std::runtime_error& e) {
+            qDebug() << "Caught exception simulating color Doppler: " << e.what();
+        }
     }
-    mean_ms = mean_ms / num_ms;
-    for (size_t i = 0; i < num_ms; i++) {
-        const auto temp = sim_milliseconds[i]-mean_ms;
-        std_ms += temp*temp;
-    }
-    std_ms = std::sqrt(std_ms/num_ms);
-    if (num_ms == 1) {
-        const auto total_scatterers = m_sim->get_total_num_scatterers();
-        const auto ns_value = static_cast<float>(1e6*sim_milliseconds[0]/(new_num_scanlines*total_scatterers));
-        const auto msg = QString("Simulation time: %1 ms   ~   %2 nanosec. per scatterer per line")
-                            .arg(sim_milliseconds[0], 3)
-                            .arg(ns_value, 3);
-        statusBar()->showMessage(msg);
-    } else {
-        statusBar()->showMessage("Simulation time: " + QString::number(mean_ms) 
-                                 + " +- " + QString::number(std_ms) + " ms."
-                                 + " (N=" + QString::number(num_ms) + ").");
+    if (m_enable_bmode_act->isChecked()) {
+        // B-Mode scan
+        try {
+            IQ_Frame rf_lines_complex;
+            int total_millisec;
+            {
+            ScopedCpuTimer timer([&](int millisec) { total_millisec = millisec; });
+            m_sim->simulate_lines(rf_lines_complex);
+            }
+
+            m_display_widget->update_status(QString("Radial samples: %1").arg(rf_lines_complex[0].size()));
+
+            if (m_save_iq_act->isChecked()) {
+                m_iq_buffer.push_back(rf_lines_complex);
+            }
+
+            // Create refresh work task from current geometry and the beam space data
+            auto bmode_task = std::make_shared<refresh_worker::WorkTask_BMode>();
+            bmode_task->set_geometry(m_scan_geometry);
+            bmode_task->set_data(rf_lines_complex);
+            auto grayscale_settings = m_grayscale_widget->get_values();
+            bmode_task->set_normalize_const(grayscale_settings.normalization_const);
+            bmode_task->set_auto_normalize(grayscale_settings.auto_normalize);
+            bmode_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+            bmode_task->set_dyn_range(grayscale_settings.dyn_range);
+            bmode_task->set_gain(grayscale_settings.gain); 
+    
+            m_refresh_worker->process_data(bmode_task);
+            statusBar()->showMessage("B-mode simulation time: " + QString::number(total_millisec) + " ms.");
+
+            const auto total_scatterers = m_sim->get_total_num_scatterers();
+            const auto ns_value = static_cast<float>(1e6*total_millisec/(new_num_scanlines*total_scatterers));
+            const auto msg = QString("Simulation time: %1 ms   ~   %2 nanosec. per scatterer per line")
+                                .arg(total_millisec, 3)
+                                .arg(ns_value, 3);
+            statusBar()->showMessage(msg);
+
+        } catch (std::runtime_error& e) {
+            qDebug() << "Caught exception while simulating B-mode: " << e.what();
+
+        } catch (...) {
+            qDebug() << "Caught unknown error";
+        }
     }
 }
 
@@ -783,6 +824,7 @@ void MainWindow::onLoadBeamProfileLUT() {
 }
 
 void MainWindow::onLoadSimulatedData() {
+    qDebug() << "!!! Warning: THIS ONLY WORKS WITH B-MODE DATA !!!";
     if (!m_sim) {
         qDebug() << "No active simulator. Ignoring";
         return;
@@ -804,7 +846,7 @@ void MainWindow::onLoadSimulatedData() {
         throw std::runtime_error("real/imag rank mismatch");
     }
 
-    std::vector<std::vector<std::vector<float>>> env_frames;
+    std::vector<std::vector<std::vector<std::complex<float>>>> iq_frames;
     if (sim_data_rank == 3) {
         // load IQ data from disk
         auto temp_real = hdf_reader.readMultiArray<float, 3>("sim_data_real");
@@ -820,16 +862,14 @@ void MainWindow::onLoadSimulatedData() {
         if (temp_imag.shape()[2] != num_lines) throw std::runtime_error("real/imag mismatch in dimension 2");
 
         for (size_t frame_no = 0; frame_no < num_frames; frame_no++) {
-            std::vector<std::vector<float>> env_lines(num_lines);
+            std::vector<std::vector<std::complex<float>>> iq_lines(num_lines);
             for (size_t i = 0; i < num_lines; i++) {
-                env_lines[i].resize(num_samples);
+                iq_lines[i].resize(num_samples);
                 for (size_t n = 0; n < num_samples; n++) {
-                    const auto complex_sample = std::complex<float>(temp_real[frame_no][n][i],
-                                                                    temp_imag[frame_no][n][i]);
-                    env_lines[i][n] = std::abs(complex_sample);
+                    iq_lines[i][n] = std::complex<float>(temp_real[frame_no][n][i], temp_imag[frame_no][n][i]);
                 }
             }
-            env_frames.push_back(env_lines);
+            iq_frames.push_back(iq_lines);
             qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
         }
     } else if (sim_data_rank == 2) {
@@ -843,33 +883,31 @@ void MainWindow::onLoadSimulatedData() {
         if (temp_imag.shape()[0] != num_samples) throw std::runtime_error("real/imag mismatch in dimension 0");
         if (temp_imag.shape()[1] != num_lines) throw std::runtime_error("real/imag mismatch in dimension 1");
         
-        std::vector<std::vector<float>> env_lines(num_lines);
+        std::vector<std::vector<std::complex<float>>> iq_lines(num_lines);
         for (size_t i = 0; i < num_lines; i++) {
-            env_lines[i].resize(num_samples);
+            iq_lines[i].resize(num_samples);
             for (size_t n = 0; n < num_samples; n++) {
-                const auto complex_sample = std::complex<float>(temp_real[n][i],
-                                                                temp_imag[n][i]);
-                env_lines[i][n] = std::abs(complex_sample);
+                iq_lines[i][n] = std::complex<float>(temp_real[n][i], temp_imag[n][i]);
             }
         }
-        env_frames.push_back(env_lines);
+        iq_frames.push_back(iq_lines);
         qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
     } else {
         throw std::runtime_error("sim_data must have rank 2 or 3");
     }
     
-    for (size_t frame_no = 0; frame_no < env_frames.size(); frame_no++) {
+    for (size_t frame_no = 0; frame_no < iq_frames.size(); frame_no++) {
         // Create refresh work task from current geometry and the beam space data
-        auto refresh_task = refresh_worker::WorkTask::ptr(new refresh_worker::WorkTask);
-        refresh_task->set_geometry(m_scan_geometry);
-        refresh_task->set_data(env_frames[frame_no]);
+        auto bmode_task = std::make_shared<refresh_worker::WorkTask_BMode>();
+        bmode_task->set_geometry(m_scan_geometry);
+        bmode_task->set_data(iq_frames[frame_no]);
         auto grayscale_settings = m_grayscale_widget->get_values();
-        refresh_task->set_normalize_const(grayscale_settings.normalization_const);
-        refresh_task->set_auto_normalize(grayscale_settings.auto_normalize);
-        refresh_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
-        refresh_task->set_dyn_range(grayscale_settings.dyn_range);
-        refresh_task->set_gain(grayscale_settings.gain); 
-        m_refresh_worker->process_data(refresh_task);
+        bmode_task->set_normalize_const(grayscale_settings.normalization_const);
+        bmode_task->set_auto_normalize(grayscale_settings.auto_normalize);
+        bmode_task->set_dots_per_meter( m_settings->value("qimage_dots_per_meter", 6000.0f).toFloat() );
+        bmode_task->set_dyn_range(grayscale_settings.dyn_range);
+        bmode_task->set_gain(grayscale_settings.gain); 
+        m_refresh_worker->process_data(bmode_task);
     }
 }
 

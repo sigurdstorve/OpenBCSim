@@ -31,7 +31,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include "Cartesianator.hpp"
 
-CpuCartesianator::CpuCartesianator() 
+template <typename T>
+CpuCartesianator<T>::CpuCartesianator() 
     : m_num_samples_x(512),
       m_num_samples_y(512),
       m_geometry(nullptr)
@@ -39,29 +40,34 @@ CpuCartesianator::CpuCartesianator()
     UpdateOutputBuffer();           
 }
 
-void CpuCartesianator::SetGeometry(bcsim::ScanGeometry::ptr geometry) {
+template <typename T>
+void CpuCartesianator<T>::SetGeometry(bcsim::ScanGeometry::ptr geometry) {
     m_geometry = geometry;
     geometry->get_xy_extent(m_x_min, m_x_max, m_y_min, m_y_max);
 }
 
-const unsigned char* CpuCartesianator::GetOutputBuffer() {
+template <typename T>
+const T* CpuCartesianator<T>::GetOutputBuffer() {
     return m_output_buffer.data();
 }
 
-void CpuCartesianator::SetOutputSize(size_t num_samples_x,
-                                     size_t num_samples_y) {
+template <typename T>
+void CpuCartesianator<T>::SetOutputSize(size_t num_samples_x,
+                                        size_t num_samples_y) {
     m_num_samples_x = num_samples_x;
     m_num_samples_y = num_samples_y;
     UpdateOutputBuffer();
 }
 
-void CpuCartesianator::GetOutputSize(size_t& num_samples_x,
-                                     size_t& num_samples_y) {
+template <typename T>
+void CpuCartesianator<T>::GetOutputSize(size_t& num_samples_x,
+                                        size_t& num_samples_y) {
     num_samples_x = m_num_samples_x;
     num_samples_y = m_num_samples_y;
 }
 
-void CpuCartesianator::Process(unsigned char* in_buffer, int num_beams, int num_samples) {
+template <typename T>
+void CpuCartesianator<T>::Process(T* in_buffer, int num_beams, int num_samples) {
     if (!m_geometry) {
         throw std::runtime_error("geometry not configured");
     }
@@ -76,13 +82,15 @@ void CpuCartesianator::Process(unsigned char* in_buffer, int num_beams, int num_
     }
 }
 
-void CpuCartesianator::UpdateOutputBuffer() {
+template <typename T>
+void CpuCartesianator<T>::UpdateOutputBuffer() {
     auto num_samples = m_num_samples_x*m_num_samples_y;
     m_output_buffer.resize(num_samples);
 }
 
-void CpuCartesianator::DoSectorTransform(unsigned char* in_buffer, int num_beams, int num_range,
-                                         std::shared_ptr<bcsim::SectorScanGeometry> geometry) {
+template <typename T>
+void CpuCartesianator<T>::DoSectorTransform(T* in_buffer, int num_beams, int num_range,
+                                            std::shared_ptr<bcsim::SectorScanGeometry> geometry) {
 
     // deltas for cartesian grid
     const auto dx = (m_x_max - m_x_min) / (m_num_samples_x-1);
@@ -138,13 +146,14 @@ void CpuCartesianator::DoSectorTransform(unsigned char* in_buffer, int num_beams
 
 
             size_t res_offset = static_cast<size_t>(m_num_samples_x*yi + xi);
-            m_output_buffer[res_offset] = static_cast<unsigned char>(value);
+            m_output_buffer[res_offset] = static_cast<T>(value);
         }
     }
 }
 
-void CpuCartesianator::DoLinearTransform(unsigned char* in_buffer, int num_beams, int num_range,
-                                         std::shared_ptr<bcsim::LinearScanGeometry> geometry) {
+template <typename T>
+void CpuCartesianator<T>::DoLinearTransform(T* in_buffer, int num_beams, int num_range,
+                                            std::shared_ptr<bcsim::LinearScanGeometry> geometry) {
     // deltas for cartesian grid
     const auto dx = (m_x_max - m_x_min) / (m_num_samples_x-1);
     const auto dy = (m_y_max - m_y_min) / (m_num_samples_y-1);
@@ -190,8 +199,13 @@ void CpuCartesianator::DoLinearTransform(unsigned char* in_buffer, int num_beams
                                             +sample11*(y-y0)*(x-x0));
 
             size_t res_offset = static_cast<size_t>(m_num_samples_x*yi + xi);
-            m_output_buffer[res_offset] = static_cast<unsigned char>(value);
+            m_output_buffer[res_offset] = static_cast<T>(value);
         }
     }
 }
 
+// explicit instantiations for the required datatypes.
+template class ICartesianator<unsigned char>;
+template class CpuCartesianator<unsigned char>;
+template class ICartesianator<float>;
+template class CpuCartesianator<float>;
