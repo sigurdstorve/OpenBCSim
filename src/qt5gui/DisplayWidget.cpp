@@ -103,3 +103,11 @@ void DisplayWidget::update_colorflow(const QPixmap& pixmap, float x_min, float x
 void DisplayWidget::update_status(const QString& msg, int timeout) {
     m_status_bar->showMessage(msg, timeout);
 }
+
+void DisplayWidget::enable_b_mode(bool enabled) {
+    m_pixmap_item->setVisible(enabled);
+}
+
+void DisplayWidget::enable_color_doppler(bool enabled) {
+    m_colorflow_item->setVisible(enabled);
+}

@@ -142,7 +142,6 @@ MainWindow::MainWindow() {
     v_layout->addLayout(h_layout);
     v_layout->addWidget(m_time_widget);
 
-    createMenus();
     /*
     auto scatterers_file = m_settings->value("default_scatterers").toString();
     if (!QFileInfo(scatterers_file).exists()) {
@@ -211,6 +210,8 @@ MainWindow::MainWindow() {
         
         // TODO: Handle saving PNG images
     });
+
+    createMenus();
 }
 
 void MainWindow::onLoadIniSettings() {
@@ -230,6 +231,7 @@ void MainWindow::createMenus() {
     auto menuBar = new QMenuBar;
     auto fileMenu =     menuBar->addMenu(tr("&File"));
     auto simulateMenu = menuBar->addMenu(tr("&Simulate"));
+    auto scan_menu = menuBar->addMenu(tr("Scan &Types"));
     auto about_menu = menuBar->addMenu(tr("&About"));
     
     // Create all actions in "File" menu
@@ -334,6 +336,19 @@ void MainWindow::createMenus() {
     auto get_xy_extent_act = new QAction(tr("Get Cartesian scan limits"), this);
     connect(get_xy_extent_act, &QAction::triggered, this, &MainWindow::onGetXyExtent);
     about_menu->addAction(get_xy_extent_act);
+
+    // Actions in scan types menu
+    m_enable_bmode_act = new QAction("B-Mode", this);
+    m_enable_bmode_act->setCheckable(true);
+    m_enable_bmode_act->setChecked(true);
+    scan_menu->addAction(m_enable_bmode_act);
+    connect(m_enable_bmode_act, SIGNAL(toggled(bool)), m_display_widget, SLOT(enable_b_mode(bool)));
+
+    m_enable_color_act = new QAction("Color Doppler", this);
+    m_enable_color_act->setCheckable(true);
+    m_enable_color_act->setChecked(false);
+    scan_menu->addAction(m_enable_color_act);
+    connect(m_enable_color_act, SIGNAL(triggered(bool)), m_display_widget, SLOT(enable_color_doppler(bool)));
 
     setMenuBar(menuBar);
 
@@ -538,12 +553,9 @@ void MainWindow::doSimulation() {
     auto new_scan_geometry = m_scanseq_widget->get_geometry(new_num_scanlines);
     newScansequence(new_scan_geometry, new_num_scanlines);
     
-    bool do_color_scan = m_settings->value("do_color_scan", false).toBool();
-    bool do_bmode_scan = m_settings->value("do_bmode_scan", true).toBool();
-
     typedef std::vector<std::vector<std::complex<float>>> IQ_Frame;
     
-    if (do_color_scan) {
+    if (m_enable_color_act->isChecked()) {
         // Color Doppler scan
         const auto color_packet_size = m_settings->value("color_packet_size", 16).toInt();
         const auto color_prf         = m_settings->value("color_prf", 2500.0).toFloat();
@@ -590,7 +602,7 @@ void MainWindow::doSimulation() {
             qDebug() << "Caught exception simulating color Doppler: " << e.what();
         }
     }
-    if (do_bmode_scan) {
+    if (m_enable_bmode_act->isChecked()) {
         // B-Mode scan
         try {
             IQ_Frame rf_lines_complex;

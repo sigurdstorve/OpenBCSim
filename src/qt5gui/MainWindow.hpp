@@ -177,6 +177,10 @@ private:
     QAction*                        m_save_iq_buffer_as_act;
     QAction*                        m_reset_iq_buffer_act;
 
+    // Related to scan types
+    QAction*                        m_enable_bmode_act;
+    QAction*                        m_enable_color_act;
+
     // Invariant: Always equal to current scan sequence.
     // Needed for color Doppler since a packet of frames must be simulated
     // with different timestamps.
