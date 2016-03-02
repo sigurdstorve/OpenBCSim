@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include <memory>
+#include <QApplication>
 #include <QMainWindow>
 #include <QSlider>
 #include <QDebug>
@@ -91,7 +92,7 @@ private slots:
     void onCreateNewSimulator();
 
     void onExit() {
-        exit(0);
+        QApplication::quit();
     }
 
     // Update simulator object with new ExcitationSignal from widget
