@@ -54,15 +54,8 @@ if (BCSIM_ENABLE_CUDA)
     find_package(CUDA REQUIRED)
     message(STATUS "Found CUDA version: ${CUDA_VERSION}")
     include_directories(${CUDA_INCLUDE_DIRS})
-    # Optimized flags: -O3-gencode arch=compute_30,code=sm_30;-use_fast_math
-    # Put in CUDA_NVCC_FLAGS_RELEASE
-    if(UNIX)
-        # Tell host compiler to use -fPIC
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -std=c++11 -Xcompiler -fPIC)
-    else()
-        # C++11 is enabled by default in MSVC
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3)
-    endif()
+    # default flags for JIT compilation targeting Kepler and Maxwell, with "fast-math" enabled.
+    set(CUDA_NVCC_FLAGS "-gencode=arch=compute_30,code=compute_30;-gencode=arch=compute_50,code=compute_50;-use_fast_math")
 endif()
 
 # Need to add -fPIC on 64-bit Linux
