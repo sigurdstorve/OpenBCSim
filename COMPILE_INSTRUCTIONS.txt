@@ -1,11 +1,26 @@
 # Compile instructions
-The entire project can be built using CMake. There is also an INSTALL target that will copy the public headers and all executables and libraries according to the CMake variable CMAKE_INSTALL_PREFIX. Note that this does not copy the required DLLs, which must be done manually.
+The entire project can be built using CMake. There is also an INSTALL target
+that will copy the public headers and all executables and libraries according
+to the CMake variable CMAKE_INSTALL_PREFIX. Note that this does not copy
+the required DLLs, which must be done manually.
 
 ## GPU
-After configuring CMake, some extra steps must be done. It is very important to set CUDA_NVCC_FLAGS to the correct architecture and compute capability. For a Quadro K4000M device, the following was successfully used:
-    CUDA_NVCC_FLAGS=-gencode arch=compute_30,code=sm_30
+The cache variable CUDA_NVCC_FLAGS is used to define NVCC compilation flags.
+By default,it is set up for JIT (just-in-time) compilation for compute_30 
+(Kepler) and compute_50 (Maxwell). Currently, Kepler is the lowest supported
+architecture because of usage of grids with large x-dimensions. (If necessary,
+it should be easy to modify the code for older hardware).
 
-Not setting this variable may result in strange behavior. For the K4000M device, the compiling was successful with empty CUDA_NVCC_FLAGS, but device refused to have more than 65535 as grid size x-component at runtime.
+It is also possible to change this to compile for a specific combination of
+virtual and real architecture, e.g. for K4000M (Kepler, sm_30):
+    CUDA_NVCC_FLAGS=-gencode=arch=compute_30,code=sm_30
 
-It is also possible to add the flag -use_fast_math, in which case the variable should look like:
-    CUDA_NVCC_FLAGS=-gencode arch=compute_30,code=sm_30;-use_fast_math
+NOTE: The compute_XX are virtual architectures, while sm_XX are real arch.
+When compiling for a specific architecture, it is also possible to add the
+flag --resource-usage to show details about hardware resources (this is not
+possible when using JIT).
+
+NOTE: The flags in the CMake cache variable CUDA_NVCC_FLAGS must be delimited
+with semicolons.
+
+The flag -use_fast_math is also added by default.
