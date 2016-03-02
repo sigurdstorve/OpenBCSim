@@ -71,6 +71,8 @@ struct PointScattererCollection {
 class CpuAlgorithm : public BaseAlgorithm {
 public:
     CpuAlgorithm();
+
+    virtual ~CpuAlgorithm() { }
         
     virtual void set_parameter(const std::string& key, const std::string& value)                    override;
     

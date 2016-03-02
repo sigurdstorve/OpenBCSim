@@ -45,6 +45,12 @@ inline float3 to_float3(const bcsim::vector3& v) {
 class GpuAlgorithm : public BaseAlgorithm {
 public:
     GpuAlgorithm();
+
+    virtual ~GpuAlgorithm() {
+        // TODO: Somehow call cudaDeviceReset() without crashes that
+        // occur most likely when RAII-wrappers go out of scope and
+        // tries to free CUDA resources..
+    }
     
     virtual void set_parameter(const std::string& key, const std::string& value)        override;
 

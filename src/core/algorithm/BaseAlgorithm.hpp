@@ -45,6 +45,8 @@ enum class BeamProfileType {
 class BaseAlgorithm : public IAlgorithm {
 public:
     BaseAlgorithm();
+
+    virtual ~BaseAlgorithm() { }
     
     // Handle common parameters for all algorithm implementations.
     virtual void set_parameter(const std::string& key, const std::string& value)    override;
