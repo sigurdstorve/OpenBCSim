@@ -112,6 +112,7 @@ if __name__ == "__main__":
     parser.add_argument("--end_time", help="Will reset to start time after this", type=float, default=0.999)
     parser.add_argument("--xz_tilt_angle", help="Control M-mode beam direction", type=float, default=0.0)
     parser.add_argument("--only_save_png", help="Only save two png images", action="store_true")
+    parser.add_argument("--gpu_device_no", help="Which GPU to use", type=int, default=0)
     args = parser.parse_args()
     
     c0 = 1540.0
@@ -148,7 +149,14 @@ if __name__ == "__main__":
     sim_fixed.set_parameter("sound_speed", "%f" % c0);  sim_spline.set_parameter("sound_speed", "%f" % c0)
     sim_fixed.set_parameter("phase_delay", "on");       sim_spline.set_parameter("phase_delay", "on")
     sim_fixed.set_parameter("radial_decimation", "5");  sim_spline.set_parameter("radial_decimation", "5")
-
+    
+    num_gpus = int(sim_fixed.get_parameter("num_cuda_devices"))
+    print "System has %d CUDA devices" % num_gpus
+    sim_fixed.set_parameter("gpu_device", "%d" % args.gpu_device_no)
+    sim_spline.set_parameter("gpu_device", "%d" % args.gpu_device_no)
+    print "Fixed simulator uses %s" % sim_fixed.get_parameter("cur_device_name")
+    print "Spline simulator uses %s" % sim_spline.get_parameter("cur_device_name")
+    
     # define excitation signal
     t_vector = np.arange(-16/args.fc, 16/args.fc, 1.0/args.fs)
     samples = np.array(gausspulse(t_vector, bw=args.bw, fc=args.fc), dtype="float32")
