@@ -51,11 +51,12 @@ if (BCSIM_ENABLE_OPENMP)
 endif ()
 
 if (BCSIM_ENABLE_CUDA)
+    # default flags for JIT compilation targeting Kepler and Maxwell, with "fast-math" enabled.
+    set(CUDA_NVCC_FLAGS "-gencode=arch=compute_30,code=compute_30;-gencode=arch=compute_50,code=compute_50;-use_fast_math"
+        CACHE STRING "Semi-colon delimit multiple arguments.")
     find_package(CUDA REQUIRED)
     message(STATUS "Found CUDA version: ${CUDA_VERSION}")
     include_directories(${CUDA_INCLUDE_DIRS})
-    # default flags for JIT compilation targeting Kepler and Maxwell, with "fast-math" enabled.
-    set(CUDA_NVCC_FLAGS "-gencode=arch=compute_30,code=compute_30;-gencode=arch=compute_50,code=compute_50;-use_fast_math")
 endif()
 
 # Need to add -fPIC on 64-bit Linux
