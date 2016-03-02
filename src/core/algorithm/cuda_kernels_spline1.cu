@@ -3,10 +3,12 @@
 #include "cuda_kernels_spline1.cuh"
 #include "common_definitions.h" // for MAX_SPLINE_DEGREE
 
-__constant__ float eval_basis[MAX_SPLINE_DEGREE+1];
+// Named "eval_basis1" because of a strange linker error with MSVC when compiling
+// only for a virtual target in order to enable JIT compilation.
+__constant__ float eval_basis1[MAX_SPLINE_DEGREE+1];
 
 bool splineAlg1_updateConstantMemory_internal(float* src_ptr, size_t num_bytes) {
-    const auto res = cudaMemcpyToSymbol(eval_basis, src_ptr, num_bytes);
+    const auto res = cudaMemcpyToSymbol(eval_basis1, src_ptr, num_bytes);
     return (res == cudaSuccess);
 }
 
@@ -31,9 +33,9 @@ __global__ void RenderSplineKernel(const float* control_xs,
     float rendered_y = 0.0f;
     float rendered_z = 0.0f;
     for (int i = cs_idx_start; i <= cs_idx_end; i++) {
-        rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
-        rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
-        rendered_z += control_zs[NUM_SPLINES*i + idx]*eval_basis[i-cs_idx_start];
+        rendered_x += control_xs[NUM_SPLINES*i + idx]*eval_basis1[i-cs_idx_start];
+        rendered_y += control_ys[NUM_SPLINES*i + idx]*eval_basis1[i-cs_idx_start];
+        rendered_z += control_zs[NUM_SPLINES*i + idx]*eval_basis1[i-cs_idx_start];
     }
 
     // write result to memory
