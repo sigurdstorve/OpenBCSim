@@ -341,6 +341,6 @@ BOOST_PYTHON_MODULE(pyrfsim) {
         .def("set_lut_beam_profile",        &RfSimulatorWrapper::set_lut_beam_profile)
         .def("simulate_lines",              &RfSimulatorWrapper::simulate_lines)
         .def("get_debug_data",              &RfSimulatorWrapper::get_debug_data)
-        .def("get_parameter",               &RfSimulatorWrapper::set_parameter)
+        .def("get_parameter",               &RfSimulatorWrapper::get_parameter)
     ;
 }
