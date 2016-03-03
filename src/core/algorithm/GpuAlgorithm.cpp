@@ -228,29 +228,54 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
             }
         }
     }
+
+    // block to ensure that all operations are completed
     cudaErrorCheck( cudaDeviceSynchronize() );
 
-    // in-place batched forward FFT
+    std::unique_ptr<EventTimerRAII> event_timer;
+    if (m_store_kernel_details) {
+        event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(0));
+        event_timer->restart();
+    }
+
+    // in-place batched forward FFT, using default stream 0
     cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_FORWARD));
-    // m_debug_data["kernel_forward_fft_ms"].push_back(elapsed_ms);
+    if (m_store_kernel_details) {
+        const auto elapsed_ms = static_cast<double>(event_timer->stop());
+        m_debug_data["kernel_forward_fft_ms"].push_back(elapsed_ms);
+    }
 
     // Multiply kernel
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
         
+        std::unique_ptr<EventTimerRAII> event_timer;
+        if (m_store_kernel_details) {
+            event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(cur_stream));
+            event_timer->restart();
+        }
+
         auto rf_ptr = m_device_time_proj->data() + beam_no*m_num_time_samples;
 
         // multiply with FFT of impulse response w/Hilbert transform
         int threads_per_line = 128;
         launch_MultiplyFftKernel(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, m_device_excitation_fft->data(), m_num_time_samples);
-        //m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
+        if (m_store_kernel_details) {
+            const auto elapsed_ms = static_cast<double>(event_timer->stop());
+            m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
+        }
     }
 
-
-    // in-place batched backward FFT
-    cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_INVERSE))
-    // m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
+    // in-place batched backward FFT, using default stream 0
+    if (m_store_kernel_details) {
+        event_timer->restart();
+    }
+    cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_INVERSE));
+    if (m_store_kernel_details) {
+        const auto elapsed_ms = static_cast<double>(event_timer->stop());
+        m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
+    }
 
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
