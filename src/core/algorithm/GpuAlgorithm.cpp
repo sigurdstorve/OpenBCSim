@@ -276,6 +276,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         const auto elapsed_ms = static_cast<double>(event_timer->stop());
         m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
     }
+    cudaErrorCheck( cudaDeviceSynchronize() );
 
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
