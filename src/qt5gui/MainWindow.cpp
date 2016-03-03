@@ -693,7 +693,7 @@ void MainWindow::initializeSplineVisualization(const QString& h5_file) {
     int num_scatterers = static_cast<int>(shape[0]);
     int num_cs = static_cast<int>(shape[1]);
     int num_comp = static_cast<int>(shape[2]);
-    Q_ASSERT(num_comp == 4);
+    Q_ASSERT(num_comp == 3);
     qDebug() << "Number of scatterers is " << num_scatterers;
     qDebug() << "Each scatterer has " << num_cs << " control points";
     int num_vis_scatterers = m_settings->value("num_opengl_scatterers", 1000).toInt();
