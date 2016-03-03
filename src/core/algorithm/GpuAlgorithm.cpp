@@ -347,8 +347,8 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
     const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
 
-    m_device_time_proj.resize(m_param_num_cuda_streams);
-    for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
+    m_device_time_proj.resize(num_beams);
+    for (size_t i = 0; i < num_beams; i++) {
         m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes)) ); 
     }
 
