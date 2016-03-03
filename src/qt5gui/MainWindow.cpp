@@ -328,6 +328,31 @@ void MainWindow::createMenus() {
     connect(set_parameter_act, &QAction::triggered, this, &MainWindow::onSetSimulatorParameter);
     simulateMenu->addAction(set_parameter_act);
     
+    auto print_debug_act = new QAction(tr("Print debug info"), this);
+    connect(print_debug_act, &QAction::triggered, this, [&]() {
+        if (m_sim) {
+            std::vector<std::string> keys;
+            keys.push_back("stream_numbers");
+            keys.push_back("kernel_memset_ms");
+            keys.push_back("fixed_projection_kernel_ms");
+            keys.push_back("spline_projection_kernel_ms");
+            keys.push_back("kernel_forward_fft_ms");
+            keys.push_back("kernel_multiply_fft_ms");
+            keys.push_back("kernel_inverse_fft_ms");
+            keys.push_back("kernel_demodulate_ms");
+            keys.push_back("kernel_memcpy_ms");
+            for (const auto& key : keys) {
+                try {
+                    qDebug() << "=== key:" << key.c_str() << "===";
+                    qDebug() << QVector<double>::fromStdVector(m_sim->get_debug_data(key));
+                } catch (std::runtime_error& e) {
+                    qDebug() << "FAILED";
+                }
+            }
+        }
+    });
+    about_menu->addAction(print_debug_act);
+
     // Actions in about menu
     auto about_scatterers_act = new QAction(tr("Scatterers details"), this);
     connect(about_scatterers_act, &QAction::triggered, this, &MainWindow::onAboutScatterers);
