@@ -232,6 +232,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
     // in-place batched forward FFT
     cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_FORWARD));
+    // m_debug_data["kernel_forward_fft_ms"].push_back(elapsed_ms);
 
     // Multiply kernel
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
@@ -243,17 +244,13 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         // multiply with FFT of impulse response w/Hilbert transform
         int threads_per_line = 128;
         launch_MultiplyFftKernel(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, m_device_excitation_fft->data(), m_num_time_samples);
-        //if (m_store_kernel_details) {
-        //    const auto elapsed_ms = static_cast<double>(event_timer->stop());
-        //    m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
-        //    event_timer->restart();
-        //}
+        //m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
     }
 
 
     // in-place batched backward FFT
     cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_INVERSE))
-
+    // m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
 
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
@@ -267,36 +264,9 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
             event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(cur_stream));
             event_timer->restart();
         }
-        /*
-        // in-place forward FFT
-        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
-        if (m_store_kernel_details) {
-            const auto elapsed_ms = static_cast<double>(event_timer->stop());
-            m_debug_data["kernel_forward_fft_ms"].push_back(elapsed_ms);
-            event_timer->restart();
-        }
-        
-        // multiply with FFT of impulse response w/Hilbert transform
-        int threads_per_line = 128;
-        launch_MultiplyFftKernel(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, m_device_excitation_fft->data(), m_num_time_samples);
-        if (m_store_kernel_details) {
-            const auto elapsed_ms = static_cast<double>(event_timer->stop());
-            m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
-            event_timer->restart();
-        }
-
-        // in-place inverse FFT
-        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
-        if (m_store_kernel_details) {
-            const auto elapsed_ms = static_cast<double>(event_timer->stop());
-            m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
-            event_timer->restart();
-        }
-        */
-
-        int threads_per_line = 128;
 
         // IQ demodulation (+decimate?)
+        int threads_per_line = 128;
         const auto f_demod = m_excitation.demod_freq;
         const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
         const float PI = static_cast<float>(4.0*std::atan(1));
