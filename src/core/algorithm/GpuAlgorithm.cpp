@@ -234,6 +234,31 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
     }
     cudaErrorCheck( cudaDeviceSynchronize() );
 
+    // in-place batched forward FFT
+    cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_FORWARD));
+
+    // Multiply kernel
+    for (int beam_no = 0; beam_no < num_lines; beam_no++) {
+        size_t stream_no = beam_no % m_param_num_cuda_streams;
+        auto cur_stream = m_stream_wrappers[stream_no]->get();
+        
+        auto rf_ptr = m_device_time_proj->data() + beam_no*m_num_time_samples;
+
+        // multiply with FFT of impulse response w/Hilbert transform
+        int threads_per_line = 128;
+        launch_MultiplyFftKernel(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, m_device_excitation_fft->data(), m_num_time_samples);
+        //if (m_store_kernel_details) {
+        //    const auto elapsed_ms = static_cast<double>(event_timer->stop());
+        //    m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
+        //    event_timer->restart();
+        //}
+    }
+
+
+    // in-place batched backward FFT
+    cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_INVERSE))
+
+
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
@@ -246,7 +271,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
             event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(cur_stream));
             event_timer->restart();
         }
-
+        /*
         // in-place forward FFT
         cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
         if (m_store_kernel_details) {
@@ -271,6 +296,9 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
             m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
             event_timer->restart();
         }
+        */
+
+        int threads_per_line = 128;
 
         // IQ demodulation (+decimate?)
         const auto f_demod = m_excitation.demod_freq;
@@ -315,18 +343,19 @@ void GpuAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     // setup pre-computed convolution kernel and Hilbert transformer.
     m_device_excitation_fft = DeviceBufferRAII<complex>::u_ptr(new DeviceBufferRAII<complex>(rf_line_bytes));
     std::cout << "Number of excitation samples: " << m_excitation.samples.size() << std::endl;
+    
     // convert to complex with zero imaginary part.
     std::vector<std::complex<float> > temp(m_num_time_samples);
     for (size_t i = 0; i < m_excitation.samples.size(); i++) {
         temp[i] = std::complex<float>(m_excitation.samples[i], 0.0f);
     }
     cudaErrorCheck( cudaMemcpy(m_device_excitation_fft->data(), temp.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
-    //dump_device_memory((std::complex<float>*)m_device_excitation_fft.data(), m_num_time_samples, "complex_exitation.txt");
 
-    m_fft_plan = CufftPlanRAII::u_ptr(new CufftPlanRAII(m_num_time_samples, CUFFT_C2C, 1));
+    // create a temporary plan for computing forward FFT of excitation
+    auto excitation_fft_plan = CufftPlanRAII::u_ptr(new CufftPlanRAII(m_num_time_samples, CUFFT_C2C, 1));
 
     // compute FFT of excitation signal and add the Hilbert transform
-    cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), m_device_excitation_fft->data(), m_device_excitation_fft->data(), CUFFT_FORWARD) );
+    cufftErrorCheck( cufftExecC2C(excitation_fft_plan->get(), m_device_excitation_fft->data(), m_device_excitation_fft->data(), CUFFT_FORWARD) );
     auto mask = discrete_hilbert_mask<std::complex<float> >(m_num_time_samples);
     DeviceBufferRAII<complex> device_hilbert_mask(rf_line_bytes);
     cudaErrorCheck( cudaMemcpy(device_hilbert_mask.data(), mask.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
@@ -334,7 +363,6 @@ void GpuAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     cudaStream_t cuda_stream = 0;
     launch_ScaleSignalKernel(m_num_time_samples/128, 128, cuda_stream, m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
     launch_MultiplyFftKernel(m_num_time_samples/128, 128, cuda_stream, m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
-    //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 
 
@@ -351,6 +379,17 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     }
 
     size_t num_beams = m_scan_seq->get_num_lines();
+
+    if (m_num_beams_allocated != num_beams) {
+        std::cout << "Reconfiguring cuFFT batched plan\n";
+        std::cout << "m_num_time_samples is " << m_num_time_samples << std::endl;
+        const auto num_samples = static_cast<int>(m_num_time_samples);
+        const auto batch = static_cast<int>(num_beams);
+        const int rank = 1;
+        int dims[] = {m_num_time_samples};
+        m_fft_plan = CufftBatchedPlanRAII::u_ptr(new CufftBatchedPlanRAII(rank, dims, num_samples, CUFFT_C2C, batch));
+    }
+
     // avoid reallocating memory if not necessary.
     if (m_num_beams_allocated < static_cast<int>(num_beams)) {
         std::cout << "Allocating HOST and DEVICE memory: had previously allocated memory for " << m_num_beams_allocated << " beams.\n";

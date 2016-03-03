@@ -110,7 +110,7 @@ protected:
     size_t                                              m_num_time_samples;
 
     // The cuFFT plan used for all transforms.
-    CufftPlanRAII::u_ptr                                m_fft_plan;
+    CufftBatchedPlanRAII::u_ptr                         m_fft_plan;
 
     DeviceBufferRAII<complex>::u_ptr                    m_device_time_proj;   
     std::vector<HostPinnedBufferRAII<std::complex<float>>::u_ptr>     m_host_rf_lines;
@@ -118,7 +118,8 @@ protected:
     // precomputed excitation FFT with Hilbert mask applied.
     DeviceBufferRAII<complex>::u_ptr                    m_device_excitation_fft;
 
-    // the value -1 means not allocated
+    // The number of RF lines memory is allocated for, and also cuFFT batched
+    // transform plan is configure for. The value -1 means not allocated yet.
     int                                                 m_num_beams_allocated;
     
     // it is only possible to change CUDA device before any operations
