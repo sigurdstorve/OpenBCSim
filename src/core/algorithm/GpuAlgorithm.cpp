@@ -198,7 +198,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
         auto scanline = m_scan_seq->get_scanline(beam_no);
         int threads_per_line = 128;
-        auto rf_ptr = m_device_time_proj[beam_no]->data();
+        auto rf_ptr = m_device_time_proj->data() + beam_no*m_num_time_samples;
 
         // clear time projections (safer than cudaMemsetAsync)
         const auto complex_zero = make_cuComplex(0.0f, 0.0f);
@@ -229,8 +229,22 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
             if (m_store_kernel_details) {
                 const auto elapsed_ms = static_cast<double>(event_timer->stop());
                 m_debug_data["spline_projection_kernel_ms"].push_back(elapsed_ms);
-                event_timer->restart();
             }
+        }
+    }
+    cudaErrorCheck( cudaDeviceSynchronize() );
+
+    for (int beam_no = 0; beam_no < num_lines; beam_no++) {
+        size_t stream_no = beam_no % m_param_num_cuda_streams;
+        auto cur_stream = m_stream_wrappers[stream_no]->get();
+
+        // compute current offset into device buffer
+        auto rf_ptr = m_device_time_proj->data() + beam_no*m_num_time_samples;
+        
+        std::unique_ptr<EventTimerRAII> event_timer;
+        if (m_store_kernel_details) {
+            event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(cur_stream));
+            event_timer->restart();
         }
 
         // in-place forward FFT
@@ -242,6 +256,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         }
         
         // multiply with FFT of impulse response w/Hilbert transform
+        int threads_per_line = 128;
         launch_MultiplyFftKernel(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, m_device_excitation_fft->data(), m_num_time_samples);
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
@@ -347,10 +362,7 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
     const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
 
-    m_device_time_proj.resize(num_beams);
-    for (size_t i = 0; i < num_beams; i++) {
-        m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes)) ); 
-    }
+    m_device_time_proj = DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes*num_beams));
 
     // allocate host memory for all RF lines
     m_host_rf_lines.resize(num_beams);

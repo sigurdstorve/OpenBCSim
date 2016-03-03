@@ -112,7 +112,7 @@ protected:
     // The cuFFT plan used for all transforms.
     CufftPlanRAII::u_ptr                                m_fft_plan;
 
-    std::vector<DeviceBufferRAII<complex>::u_ptr>       m_device_time_proj;   
+    DeviceBufferRAII<complex>::u_ptr                    m_device_time_proj;   
     std::vector<HostPinnedBufferRAII<std::complex<float>>::u_ptr>     m_host_rf_lines;
 
     // precomputed excitation FFT with Hilbert mask applied.
