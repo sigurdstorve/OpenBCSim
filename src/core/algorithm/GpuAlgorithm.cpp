@@ -198,7 +198,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
         auto scanline = m_scan_seq->get_scanline(beam_no);
         int threads_per_line = 128;
-        auto rf_ptr = m_device_time_proj[stream_no]->data();
+        auto rf_ptr = m_device_time_proj[beam_no]->data();
 
         // clear time projections (safer than cudaMemsetAsync)
         const auto complex_zero = make_cuComplex(0.0f, 0.0f);
