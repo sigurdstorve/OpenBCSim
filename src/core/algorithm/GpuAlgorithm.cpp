@@ -177,10 +177,6 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
     }
     
-    // no delay compenasation is needed when returning the projections only
-    size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
-    const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
-    
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
@@ -321,6 +317,10 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         }
     }
     cudaErrorCheck( cudaDeviceSynchronize() );
+
+    // no delay compenasation is needed when returning the projections only
+    size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
+    const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
 
     // TODO: eliminate unneccessary data copying: it would e.g. be better to
     // only copy what is needed in the above kernel.
