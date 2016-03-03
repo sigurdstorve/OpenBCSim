@@ -92,11 +92,11 @@ protected:
 
     void copy_scatterers_to_device(FixedScatterers::s_ptr scatterers);
     
-    void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks);
+    void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer);
 
     void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 
-    void spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks);
+    void spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer);
 
 protected:
     typedef cufftComplex complex;

@@ -215,7 +215,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
         // project fixed scatterers
         if (m_num_fixed_scatterers > 0) {
-            fixed_projection_kernel(stream_no, scanline, num_blocks_fixed);
+            fixed_projection_kernel(stream_no, scanline, num_blocks_fixed, m_device_time_proj[stream_no]->data());
             if (m_store_kernel_details) {
                 const auto elapsed_ms = static_cast<double>(event_timer->stop());
                 m_debug_data["fixed_projection_kernel_ms"].push_back(elapsed_ms);
@@ -225,7 +225,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
         // project spline scatterers
         if (m_num_spline_scatterers > 0) {
-            spline_projection_kernel(stream_no, scanline, num_blocks_spline);
+            spline_projection_kernel(stream_no, scanline, num_blocks_spline, m_device_time_proj[stream_no]->data());
             if (m_store_kernel_details) {
                 const auto elapsed_ms = static_cast<double>(event_timer->stop());
                 m_debug_data["spline_projection_kernel_ms"].push_back(elapsed_ms);
@@ -549,7 +549,7 @@ void GpuAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) 
     m_num_fixed_scatterers = num_scatterers;
 }
 
-void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
+void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
 
     //dim3 grid_size(num_blocks, 1, 1);
@@ -570,7 +570,7 @@ void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanli
     params.sigma_lateral     = m_analytical_sigma_lat;
     params.sigma_elevational = m_analytical_sigma_ele;
     params.sound_speed       = m_param_sound_speed;
-    params.res               = m_device_time_proj[stream_no]->data();
+    params.res               = res_buffer;
     params.demod_freq        = m_excitation.demod_freq;
     params.num_scatterers    = m_num_fixed_scatterers;
     params.lut_tex           = m_device_beam_profile->get();
@@ -670,7 +670,7 @@ void GpuAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers)
     m_common_knots = scatterers->knot_vector;
 }
 
-void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
+void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
             
     // evaluate the basis functions and upload to constant memory.
@@ -721,7 +721,7 @@ void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanl
     params.cs_idx_start               = cs_idx_start;
     params.cs_idx_end                 = cs_idx_end;
     params.NUM_SPLINES                = m_num_spline_scatterers;
-    params.res                        = m_device_time_proj[stream_no]->data();
+    params.res                        = res_buffer;
     params.eval_basis_offset_elements = eval_basis_offset_elements;
     params.demod_freq                 = m_excitation.demod_freq;
     params.lut_tex                    = m_device_beam_profile->get();
