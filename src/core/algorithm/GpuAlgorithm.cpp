@@ -215,7 +215,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
         // project fixed scatterers
         if (m_num_fixed_scatterers > 0) {
-            fixed_projection_kernel(stream_no, scanline, num_blocks_fixed, m_device_time_proj[stream_no]->data());
+            fixed_projection_kernel(stream_no, scanline, num_blocks_fixed, rf_ptr);
             if (m_store_kernel_details) {
                 const auto elapsed_ms = static_cast<double>(event_timer->stop());
                 m_debug_data["fixed_projection_kernel_ms"].push_back(elapsed_ms);
@@ -225,7 +225,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
         // project spline scatterers
         if (m_num_spline_scatterers > 0) {
-            spline_projection_kernel(stream_no, scanline, num_blocks_spline, m_device_time_proj[stream_no]->data());
+            spline_projection_kernel(stream_no, scanline, num_blocks_spline, rf_ptr);
             if (m_store_kernel_details) {
                 const auto elapsed_ms = static_cast<double>(event_timer->stop());
                 m_debug_data["spline_projection_kernel_ms"].push_back(elapsed_ms);
