@@ -70,7 +70,8 @@ bool Scanline::is_normalized() const {
 }
 
 ScanSequence::ScanSequence(float line_length)
-    : line_length(line_length)
+    : line_length(line_length),
+      all_timestamps_equal(false)
 {
 }
 

@@ -2,6 +2,7 @@
 #include <QVBoxLayout>
 #include <QComboBox>
 #include <QStackedWidget>
+#include <QCheckBox>
 #include "ScanseqWidget.hpp"
 #include "SectorScanseqWidget.hpp"
 #include "LinearScanseqWidget.hpp"
@@ -23,8 +24,12 @@ ScanseqWidget::ScanseqWidget(QWidget* parent, Qt::WindowFlags f)
     combo_box->addItem(tr("Linear Scan"));
     connect(combo_box, SIGNAL(activated(int)), m_stacked_widget, SLOT(setCurrentIndex(int)));
 
+    m_equal_times_cb = new QCheckBox("Equal times?");
+    m_equal_times_cb->setChecked(true);
+
     layout->addWidget(m_stacked_widget);
     layout->addWidget(combo_box);
+    layout->addWidget(m_equal_times_cb);
 
     setLayout(layout);
 }
@@ -38,3 +43,6 @@ bcsim::ScanGeometry::ptr ScanseqWidget::get_geometry(int& num_lines) const {
     return temp->get_geometry(num_lines);
 }
 
+bool ScanseqWidget::all_timestamps_equal() const {
+    return m_equal_times_cb->isChecked();
+}

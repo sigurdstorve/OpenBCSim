@@ -3,6 +3,7 @@
 #include "../../utils/ScanGeometry.hpp"
 
 class QStackedWidget;
+class QCheckBox;
 
 namespace detail {
 
@@ -10,6 +11,7 @@ namespace detail {
 class IScanseqEditor {
 public:
     virtual bcsim::ScanGeometry::ptr get_geometry(int& num_lines) const = 0;
+
 };
 
 }
@@ -22,6 +24,10 @@ public:
     // Returns scansequence and number of lines.
     bcsim::ScanGeometry::ptr get_geometry(int& num_lines) const;
 
+    // Returns the status of checkbox "equal timestamps"
+    bool all_timestamps_equal() const;
+
 protected:
     QStackedWidget*     m_stacked_widget;
+    QCheckBox*          m_equal_times_cb;
 };

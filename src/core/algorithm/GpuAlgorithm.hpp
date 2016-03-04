@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 #include "BaseAlgorithm.hpp"
+#include "GpuScatterers.hpp"
 
 namespace bcsim {
 
@@ -90,13 +91,9 @@ protected:
     // to ensure that calls to device beam profile RAII wrapper does not cause segfault.
     void create_dummy_lut_profile();
 
-    void copy_scatterers_to_device(FixedScatterers::s_ptr scatterers);
-    
-    void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks);
+    void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer, DeviceFixedScatterers::s_ptr dataset);
 
-    void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
-
-    void spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks);
+    void spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer, DeviceSplineScatterers::s_ptr dataset);
 
 protected:
     typedef cufftComplex complex;
@@ -110,15 +107,16 @@ protected:
     size_t                                              m_num_time_samples;
 
     // The cuFFT plan used for all transforms.
-    CufftPlanRAII::u_ptr                                m_fft_plan;
+    CufftBatchedPlanRAII::u_ptr                         m_fft_plan;
 
-    std::vector<DeviceBufferRAII<complex>::u_ptr>       m_device_time_proj;   
+    DeviceBufferRAII<complex>::u_ptr                    m_device_time_proj;   
     std::vector<HostPinnedBufferRAII<std::complex<float>>::u_ptr>     m_host_rf_lines;
 
     // precomputed excitation FFT with Hilbert mask applied.
     DeviceBufferRAII<complex>::u_ptr                    m_device_excitation_fft;
 
-    // the value -1 means not allocated
+    // The number of RF lines memory is allocated for, and also cuFFT batched
+    // transform plan is configure for. The value -1 means not allocated yet.
     int                                                 m_num_beams_allocated;
     
     // it is only possible to change CUDA device before any operations
@@ -149,29 +147,12 @@ protected:
     float   m_lut_e_min;
     float   m_lut_e_max;
 
-    // TEMPORARY: WILL BE REMOVED WHEN SUPPORT FOR ARBITRARY NUMER OF SCATTERER COLLECTIONS
-    // HAS BEEN IMPLEMENTED (FIXED AND SPLINE)
+    DeviceFixedScatterersCollection     m_device_fixed_datasets;
+    DeviceSplineScatterersCollection    m_device_spline_datasets;
 
-    // always times equal to the number of scatterers in device memory
-    size_t    m_num_spline_scatterers;
-    size_t    m_num_fixed_scatterers;
-
-    // device memory for fixed scatterers
-    DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_ys;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_zs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_as;
-
-    // device memory for control points for all spline scatterers.
-    DeviceBufferRAII<float>::u_ptr      m_device_control_xs;
-    DeviceBufferRAII<float>::u_ptr      m_device_control_ys;
-    DeviceBufferRAII<float>::u_ptr      m_device_control_zs;
-    DeviceBufferRAII<float>::u_ptr      m_device_control_as; // one for each scatterer spline.
-    
-    // The knot vector common to all splines.
-    std::vector<float>                  m_common_knots;
-    int                                 m_num_cs;
-    int                                 m_spline_degree;
+    // optimization to reduce memory bandwidth usage when all lines
+    // in a scan have the same timestamp.
+    DeviceFixedScatterersCollection     m_device_rendered_spline_datasets;
 };
     
 }   // end namespace

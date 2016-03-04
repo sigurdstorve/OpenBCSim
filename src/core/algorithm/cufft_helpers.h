@@ -59,4 +59,21 @@ private:
     cufftHandle plan;
 };
 
+class CufftBatchedPlanRAII {
+public:
+    typedef std::unique_ptr<CufftBatchedPlanRAII> u_ptr;
+
+    CufftBatchedPlanRAII(int rank, int* dims, int num_samples, cufftType type, int batch) {
+        cufftErrorCheck(cufftPlanMany(&plan, rank, dims, NULL, 1, num_samples, NULL, 1, num_samples, type, batch));
+    }
+    ~CufftBatchedPlanRAII() {
+        cufftDestroy(plan);
+    }
+
+    cufftHandle get() {
+        return plan;
+    }
+private:
+    cufftHandle plan;
+};
 

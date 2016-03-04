@@ -76,7 +76,7 @@ public:
     void doSimulation();
 
 private slots:
-    void newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines);
+    void newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines, bool equal_timestamps);
     
     // Configure current simulator with new scatterers.
     // Ask user for a h5 file with scatterers.

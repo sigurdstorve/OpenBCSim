@@ -50,9 +50,7 @@ GpuAlgorithm::GpuAlgorithm()
       m_num_time_samples(8192),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
-      m_store_kernel_details(false),
-      m_num_fixed_scatterers(0),  // TODO: remove
-      m_num_spline_scatterers(0)  // TODO: remove
+      m_store_kernel_details(false)
 {
     // ensure that CUDA device properties is stored
     save_cuda_device_properties();
@@ -165,22 +163,16 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         throw std::runtime_error("No beam profile is configured");
     }
 
-    // precompute the number of blocks needed to project all scatterers and check that
-    // it is not more than what is supported by the device.
-    // TODO: It is probably better to compute this when setting scatterers..
-    const int num_blocks_fixed = round_up_div(m_num_fixed_scatterers, m_param_threads_per_block);
-    if (num_blocks_fixed > m_cur_device_prop.maxGridSize[0]) {
-        throw std::runtime_error("required number of x-blocks is larger than device supports (fixed scatterers)");
+    // TODO: If all beams have the same timestamp, first render to fixed scatterers
+    // in device memory and then simulate with the fixed algorithm
+    bool use_optimized_spline_kernel = false;
+    if (m_scan_seq->all_timestamps_equal && (m_device_spline_datasets.get_num_datasets() > 0)) {
+        const auto timestamp = m_scan_seq->get_scanline(0).get_timestamp();
+        m_device_rendered_spline_datasets.render(m_device_spline_datasets, timestamp);
+        use_optimized_spline_kernel = true;
+        cudaErrorCheck(cudaDeviceSynchronize());
     }
-    const int num_blocks_spline = round_up_div(m_num_spline_scatterers, m_param_threads_per_block);
-    if (num_blocks_spline > m_cur_device_prop.maxGridSize[0]) {
-        throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
-    }
-    
-    // no delay compenasation is needed when returning the projections only
-    size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
-    const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
-    
+
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
@@ -198,7 +190,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
         auto scanline = m_scan_seq->get_scanline(beam_no);
         int threads_per_line = 128;
-        auto rf_ptr = m_device_time_proj[stream_no]->data();
+        auto rf_ptr = m_device_time_proj->data() + beam_no*m_num_time_samples;
 
         // clear time projections (safer than cudaMemsetAsync)
         const auto complex_zero = make_cuComplex(0.0f, 0.0f);
@@ -214,8 +206,15 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         }
 
         // project fixed scatterers
-        if (m_num_fixed_scatterers > 0) {
-            fixed_projection_kernel(stream_no, scanline, num_blocks_fixed);
+        for (size_t dset_idx = 0; dset_idx < m_device_fixed_datasets.get_num_datasets(); dset_idx++) {
+            const auto device_dataset = m_device_fixed_datasets.get_dataset(dset_idx);
+            const auto num_scatterers = device_dataset->get_num_scatterers();
+            const int num_blocks = round_up_div(num_scatterers, m_param_threads_per_block);
+            if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
+                throw std::runtime_error("required number of x-blocks is larger than device supports (fixed scatterers)");
+            }
+            fixed_projection_kernel(stream_no, scanline, num_blocks, rf_ptr, device_dataset);
+
             if (m_store_kernel_details) {
                 const auto elapsed_ms = static_cast<double>(event_timer->stop());
                 m_debug_data["fixed_projection_kernel_ms"].push_back(elapsed_ms);
@@ -224,40 +223,100 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         }
 
         // project spline scatterers
-        if (m_num_spline_scatterers > 0) {
-            spline_projection_kernel(stream_no, scanline, num_blocks_spline);
-            if (m_store_kernel_details) {
-                const auto elapsed_ms = static_cast<double>(event_timer->stop());
-                m_debug_data["spline_projection_kernel_ms"].push_back(elapsed_ms);
-                event_timer->restart();
+        if (use_optimized_spline_kernel) {
+            for (size_t dset_idx = 0; dset_idx < m_device_rendered_spline_datasets.get_num_datasets(); dset_idx++) {
+                const auto device_dataset = m_device_rendered_spline_datasets.get_dataset(dset_idx);
+                const auto num_scatterers = device_dataset->get_num_scatterers();
+                const int num_blocks = round_up_div(num_scatterers, m_param_threads_per_block);
+                if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
+                    throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
+                }
+                fixed_projection_kernel(stream_no, scanline, num_blocks, rf_ptr, device_dataset);
+            }
+        } else {
+            for (size_t dset_idx = 0; dset_idx < m_device_spline_datasets.get_num_datasets(); dset_idx++) {
+                const auto device_dataset = m_device_spline_datasets.get_dataset(dset_idx);
+                const auto num_scatterers = device_dataset->get_num_scatterers();
+                const int num_blocks = round_up_div(num_scatterers, m_param_threads_per_block);
+                if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
+                    throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
+                }
+                spline_projection_kernel(stream_no, scanline, num_blocks, rf_ptr, device_dataset);
+    
+                if (m_store_kernel_details) {
+                    const auto elapsed_ms = static_cast<double>(event_timer->stop());
+                    m_debug_data["spline_projection_kernel_ms"].push_back(elapsed_ms);
+                }
             }
         }
+    }
 
-        // in-place forward FFT
-        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_FORWARD) );
+    // block to ensure that all operations are completed
+    cudaErrorCheck( cudaDeviceSynchronize() );
+
+    std::unique_ptr<EventTimerRAII> event_timer;
+    if (m_store_kernel_details) {
+        event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(0));
+        event_timer->restart();
+    }
+
+    // in-place batched forward FFT, using default stream 0
+    cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_FORWARD));
+    if (m_store_kernel_details) {
+        const auto elapsed_ms = static_cast<double>(event_timer->stop());
+        m_debug_data["kernel_forward_fft_ms"].push_back(elapsed_ms);
+    }
+    cudaErrorCheck( cudaDeviceSynchronize() );
+
+    // Multiply kernel
+    for (int beam_no = 0; beam_no < num_lines; beam_no++) {
+        size_t stream_no = beam_no % m_param_num_cuda_streams;
+        auto cur_stream = m_stream_wrappers[stream_no]->get();
+        
+        std::unique_ptr<EventTimerRAII> event_timer;
         if (m_store_kernel_details) {
-            const auto elapsed_ms = static_cast<double>(event_timer->stop());
-            m_debug_data["kernel_forward_fft_ms"].push_back(elapsed_ms);
+            event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(cur_stream));
             event_timer->restart();
         }
-        
+
+        auto rf_ptr = m_device_time_proj->data() + beam_no*m_num_time_samples;
+
         // multiply with FFT of impulse response w/Hilbert transform
+        int threads_per_line = 128;
         launch_MultiplyFftKernel(m_num_time_samples/threads_per_line, threads_per_line, cur_stream, rf_ptr, m_device_excitation_fft->data(), m_num_time_samples);
         if (m_store_kernel_details) {
             const auto elapsed_ms = static_cast<double>(event_timer->stop());
             m_debug_data["kernel_multiply_fft_ms"].push_back(elapsed_ms);
-            event_timer->restart();
         }
+    }
 
-        // in-place inverse FFT
-        cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), rf_ptr, rf_ptr, CUFFT_INVERSE) );
+    // in-place batched backward FFT, using default stream 0
+    if (m_store_kernel_details) {
+        event_timer->restart();
+    }
+    cudaErrorCheck( cudaDeviceSynchronize() );
+    cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_INVERSE));
+    if (m_store_kernel_details) {
+        const auto elapsed_ms = static_cast<double>(event_timer->stop());
+        m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
+    }
+    cudaErrorCheck( cudaDeviceSynchronize() );
+
+    for (int beam_no = 0; beam_no < num_lines; beam_no++) {
+        size_t stream_no = beam_no % m_param_num_cuda_streams;
+        auto cur_stream = m_stream_wrappers[stream_no]->get();
+
+        // compute current offset into device buffer
+        auto rf_ptr = m_device_time_proj->data() + beam_no*m_num_time_samples;
+        
+        std::unique_ptr<EventTimerRAII> event_timer;
         if (m_store_kernel_details) {
-            const auto elapsed_ms = static_cast<double>(event_timer->stop());
-            m_debug_data["kernel_inverse_fft_ms"].push_back(elapsed_ms);
+            event_timer = std::unique_ptr<EventTimerRAII>(new EventTimerRAII(cur_stream));
             event_timer->restart();
         }
 
         // IQ demodulation (+decimate?)
+        int threads_per_line = 128;
         const auto f_demod = m_excitation.demod_freq;
         const float norm_f_demod = f_demod/m_excitation.sampling_frequency;
         const float PI = static_cast<float>(4.0*std::atan(1));
@@ -278,6 +337,10 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         }
     }
     cudaErrorCheck( cudaDeviceSynchronize() );
+
+    // no delay compenasation is needed when returning the projections only
+    size_t delay_compensation_num_samples = static_cast<size_t>(m_excitation.center_index);
+    const auto num_return_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
 
     // TODO: eliminate unneccessary data copying: it would e.g. be better to
     // only copy what is needed in the above kernel.
@@ -300,18 +363,19 @@ void GpuAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     // setup pre-computed convolution kernel and Hilbert transformer.
     m_device_excitation_fft = DeviceBufferRAII<complex>::u_ptr(new DeviceBufferRAII<complex>(rf_line_bytes));
     std::cout << "Number of excitation samples: " << m_excitation.samples.size() << std::endl;
+    
     // convert to complex with zero imaginary part.
     std::vector<std::complex<float> > temp(m_num_time_samples);
     for (size_t i = 0; i < m_excitation.samples.size(); i++) {
         temp[i] = std::complex<float>(m_excitation.samples[i], 0.0f);
     }
     cudaErrorCheck( cudaMemcpy(m_device_excitation_fft->data(), temp.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
-    //dump_device_memory((std::complex<float>*)m_device_excitation_fft.data(), m_num_time_samples, "complex_exitation.txt");
 
-    m_fft_plan = CufftPlanRAII::u_ptr(new CufftPlanRAII(m_num_time_samples, CUFFT_C2C, 1));
+    // create a temporary plan for computing forward FFT of excitation
+    auto excitation_fft_plan = CufftPlanRAII::u_ptr(new CufftPlanRAII(m_num_time_samples, CUFFT_C2C, 1));
 
     // compute FFT of excitation signal and add the Hilbert transform
-    cufftErrorCheck( cufftExecC2C(m_fft_plan->get(), m_device_excitation_fft->data(), m_device_excitation_fft->data(), CUFFT_FORWARD) );
+    cufftErrorCheck( cufftExecC2C(excitation_fft_plan->get(), m_device_excitation_fft->data(), m_device_excitation_fft->data(), CUFFT_FORWARD) );
     auto mask = discrete_hilbert_mask<std::complex<float> >(m_num_time_samples);
     DeviceBufferRAII<complex> device_hilbert_mask(rf_line_bytes);
     cudaErrorCheck( cudaMemcpy(device_hilbert_mask.data(), mask.data(), rf_line_bytes, cudaMemcpyHostToDevice) );
@@ -319,7 +383,6 @@ void GpuAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
     cudaStream_t cuda_stream = 0;
     launch_ScaleSignalKernel(m_num_time_samples/128, 128, cuda_stream, m_device_excitation_fft->data(), 1.0f/m_num_time_samples, m_num_time_samples);
     launch_MultiplyFftKernel(m_num_time_samples/128, 128, cuda_stream, m_device_excitation_fft->data(), device_hilbert_mask.data(), m_num_time_samples);
-    //dump_device_memory((std::complex<float>*) m_device_excitation_fft->data(), m_num_time_samples, "complex_excitation_fft.txt");
 }
 
 
@@ -336,29 +399,33 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     }
 
     size_t num_beams = m_scan_seq->get_num_lines();
+
     // avoid reallocating memory if not necessary.
-    if (m_num_beams_allocated < static_cast<int>(num_beams)) {
-        std::cout << "Allocating HOST and DEVICE memory: had previously allocated memory for " << m_num_beams_allocated << " beams.\n";
-    } else {
-        return;
+    if (m_num_beams_allocated != num_beams) {
+        std::cout << "Reconfiguring cuFFT batched plan\n";
+        std::cout << "m_num_time_samples is " << m_num_time_samples << std::endl;
+        const auto num_samples = static_cast<int>(m_num_time_samples);
+        const auto batch = static_cast<int>(num_beams);
+        const int rank = 1;
+        int dims[] = {m_num_time_samples};
+        m_fft_plan = CufftBatchedPlanRAII::u_ptr(new CufftBatchedPlanRAII(rank, dims, num_samples, CUFFT_C2C, batch));
+        std::cout << "batch = " << batch << std::endl;
+
+        // allocate host and device memory related to RF lines
+        const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
+        const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
+
+        std::cout << "Reallocating HOST and DEVICE memory\n";
+        m_device_time_proj = DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes*num_beams));
+
+        // allocate host memory for all RF lines
+        m_host_rf_lines.resize(num_beams);
+        for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
+            m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<std::complex<float>>::u_ptr( new HostPinnedBufferRAII<std::complex<float>>(host_iq_line_bytes)) );
+        }
+
+        m_num_beams_allocated = static_cast<int>(num_beams);
     }
-
-    // allocate host and device memory related to RF lines
-    const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
-    const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
-
-    m_device_time_proj.resize(m_param_num_cuda_streams);
-    for (size_t i = 0; i < m_param_num_cuda_streams; i++) {
-        m_device_time_proj[i]    = std::move(DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes)) ); 
-    }
-
-    // allocate host memory for all RF lines
-    m_host_rf_lines.resize(num_beams);
-    for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<std::complex<float>>::u_ptr( new HostPinnedBufferRAII<std::complex<float>>(host_iq_line_bytes)) );
-    }
-
-    m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
 void GpuAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
@@ -477,79 +544,24 @@ void GpuAlgorithm::create_dummy_lut_profile() {
 }
 
 void GpuAlgorithm::clear_fixed_scatterers() {
-    m_num_fixed_scatterers = 0;
+    m_device_fixed_datasets.clear();
 }
 
 void GpuAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
-    // TODO: Remove temporary limitation that old fixed scatterers are replaced.
-    copy_scatterers_to_device(fixed_scatterers);
+    m_device_fixed_datasets.add(fixed_scatterers);
+    m_can_change_cuda_device = false;
 }
 
 void GpuAlgorithm::clear_spline_scatterers() {
-    m_num_spline_scatterers = 0;
+    m_device_spline_datasets.clear();
 }
 
 void GpuAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
-    // TODO: Remove temporary limitation that old spline scatterers are replaced.
-    copy_scatterers_to_device(spline_scatterers);
-}
-
-void GpuAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
     m_can_change_cuda_device = false;
-    
-    const size_t num_scatterers = scatterers->num_scatterers();
-    size_t points_common_bytes = num_scatterers*sizeof(float);
-
-    // temporary host memory for scatterer points
-    HostPinnedBufferRAII<float> host_temp(points_common_bytes);
-
-    // no point in reallocating if we already have allocated memory and the number of bytes
-    // is the same.
-    bool reallocate_device_mem = true;
-    if (m_device_point_xs && m_device_point_ys && m_device_point_zs && m_device_point_as) {
-        if (   (m_device_point_xs->get_num_bytes() == points_common_bytes)
-            && (m_device_point_ys->get_num_bytes() == points_common_bytes)
-            && (m_device_point_zs->get_num_bytes() == points_common_bytes)
-            && (m_device_point_as->get_num_bytes() == points_common_bytes))
-        {
-            reallocate_device_mem = false;
-        }
-    }
-    if (reallocate_device_mem) {
-        m_device_point_xs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-        m_device_point_ys = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-        m_device_point_zs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-        m_device_point_as = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-    }
-
-    // x values
-    for (size_t i = 0; i < num_scatterers; i++) {
-        host_temp.data()[i] = scatterers->scatterers[i].pos.x;
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_point_xs->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-
-    // y values
-    for (size_t i = 0; i < num_scatterers; i++) {
-        host_temp.data()[i] = scatterers->scatterers[i].pos.y;
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_point_ys->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-
-    // z values
-    for (size_t i = 0; i < num_scatterers; i++) {
-        host_temp.data()[i] = scatterers->scatterers[i].pos.z;
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_point_zs->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-
-    // a values
-    for (size_t i = 0; i < num_scatterers; i++) {
-        host_temp.data()[i] = scatterers->scatterers[i].amplitude;
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_point_as->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-
-    m_num_fixed_scatterers = num_scatterers;
+    m_device_spline_datasets.add(spline_scatterers);
 }
 
-void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
+void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer, DeviceFixedScatterers::s_ptr dataset) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
 
     //dim3 grid_size(num_blocks, 1, 1);
@@ -557,10 +569,10 @@ void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanli
 
     // prepare struct with parameters
     FixedAlgKernelParams params;
-    params.point_xs          = m_device_point_xs->data();
-    params.point_ys          = m_device_point_ys->data();
-    params.point_zs          = m_device_point_zs->data();
-    params.point_as          = m_device_point_as->data();
+    params.point_xs          = dataset->get_xs_ptr();
+    params.point_ys          = dataset->get_ys_ptr();
+    params.point_zs          = dataset->get_zs_ptr();
+    params.point_as          = dataset->get_as_ptr();
     params.rad_dir           = to_float3(scanline.get_direction());
     params.lat_dir           = to_float3(scanline.get_lateral_dir());
     params.ele_dir           = to_float3(scanline.get_elevational_dir());
@@ -570,9 +582,9 @@ void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanli
     params.sigma_lateral     = m_analytical_sigma_lat;
     params.sigma_elevational = m_analytical_sigma_ele;
     params.sound_speed       = m_param_sound_speed;
-    params.res               = m_device_time_proj[stream_no]->data();
+    params.res               = res_buffer;
     params.demod_freq        = m_excitation.demod_freq;
-    params.num_scatterers    = m_num_fixed_scatterers;
+    params.num_scatterers    = dataset->get_num_scatterers(),
     params.lut_tex           = m_device_beam_profile->get();
     params.lut.r_min         = m_lut_r_min;
     params.lut.r_max         = m_lut_r_max;
@@ -615,70 +627,18 @@ void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanli
     }
 }
 
-void GpuAlgorithm::copy_scatterers_to_device(SplineScatterers::s_ptr scatterers) {
-    m_can_change_cuda_device = false;
-    m_num_spline_scatterers = scatterers->num_scatterers();
-    
-    if (m_num_spline_scatterers == 0) {
-        throw std::runtime_error("No scatterers");
-    }
-    m_spline_degree = scatterers->spline_degree;
-    m_num_cs = scatterers->get_num_control_points();
-
-    if (m_spline_degree > MAX_SPLINE_DEGREE) {
-        throw std::runtime_error("maximum spline degree supported is " + std::to_string(MAX_SPLINE_DEGREE));
-    }
-
-    std::cout << "Num spline scatterers: " << m_num_spline_scatterers << std::endl;
-    std::cout << "Allocating memory on host for reorganizing spline data\n";
-
-
-    // device memory to hold x, y, z components of all spline control points and amplitudes of all splines.
-    const size_t total_num_cs = m_num_spline_scatterers*m_num_cs;
-    const size_t cs_num_bytes = total_num_cs*sizeof(float);
-    const size_t amplitudes_num_bytes = m_num_spline_scatterers*sizeof(float);
-    m_device_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_device_control_ys = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_device_control_zs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(cs_num_bytes));
-    m_device_control_as = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(amplitudes_num_bytes));
-        
-    // store the control points with correct memory layout of the host
-    std::vector<float> host_control_xs(total_num_cs);
-    std::vector<float> host_control_ys(total_num_cs);
-    std::vector<float> host_control_zs(total_num_cs);
-    std::vector<float> host_control_as(m_num_spline_scatterers); // only one amplitude for each scatterer.
-
-    for (size_t spline_no = 0; spline_no < m_num_spline_scatterers; spline_no++) {
-        host_control_as[spline_no] = scatterers->amplitudes[spline_no];
-        for (size_t i = 0; i < m_num_cs; i++) {
-            const size_t offset = spline_no + i*m_num_spline_scatterers;
-            host_control_xs[offset] = scatterers->control_points[spline_no][i].x;
-            host_control_ys[offset] = scatterers->control_points[spline_no][i].y;
-            host_control_zs[offset] = scatterers->control_points[spline_no][i].z;
-        }
-    }
-    
-    // copy control points to GPU memory.
-    cudaErrorCheck( cudaMemcpy(m_device_control_xs->data(), host_control_xs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_device_control_ys->data(), host_control_ys.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    cudaErrorCheck( cudaMemcpy(m_device_control_zs->data(), host_control_zs.data(), cs_num_bytes, cudaMemcpyHostToDevice) );
-    
-    // copy amplitudes to GPU memory.
-    cudaErrorCheck( cudaMemcpy(m_device_control_as->data(), host_control_as.data(), amplitudes_num_bytes, cudaMemcpyHostToDevice) );
-
-    // Store the knot vector.
-    m_common_knots = scatterers->knot_vector;
-}
-
-void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks) {
+void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer, DeviceSplineScatterers::s_ptr dataset) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
-            
+    const auto cur_knots = dataset->get_knots();
+    const auto num_cs    = dataset->get_num_cs();
+    const auto spline_degree = dataset->get_spline_degree();
+
     // evaluate the basis functions and upload to constant memory.
-    const auto num_nonzero = m_spline_degree+1;
+    const auto num_nonzero = spline_degree+1;
     size_t eval_basis_offset_elements = num_nonzero*stream_no;
-    std::vector<float> host_basis_functions(m_num_cs);
-    for (int i = 0; i < m_num_cs; i++) {
-        host_basis_functions[i] = bspline_storve::bsplineBasis(i, m_spline_degree, scanline.get_timestamp(), m_common_knots);
+    std::vector<float> host_basis_functions(num_cs);
+    for (int i = 0; i < num_cs; i++) {
+        host_basis_functions[i] = bspline_storve::bsplineBasis(i, spline_degree, scanline.get_timestamp(), cur_knots);
     }
 
     //dim3 grid_size(num_blocks, 1, 1);
@@ -686,9 +646,9 @@ void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanl
 
     // compute sum limits (inclusive)
     int cs_idx_start, cs_idx_end;
-    std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(m_common_knots,
+    std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(cur_knots,
                                                                               scanline.get_timestamp(),
-                                                                              m_spline_degree);
+                                                                              spline_degree);
     if (!sanity_check_spline_lower_upper_bound(host_basis_functions, cs_idx_start, cs_idx_end)) {
         throw std::runtime_error("b-spline basis bounds failed sanity check");
     }
@@ -705,10 +665,10 @@ void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanl
 
     // prepare a struct of arguments
     SplineAlgKernelParams params;
-    params.control_xs                 = m_device_control_xs->data();
-    params.control_ys                 = m_device_control_ys->data();
-    params.control_zs                 = m_device_control_zs->data();
-    params.control_as                 = m_device_control_as->data();
+    params.control_xs                 = dataset->get_xs_ptr();
+    params.control_ys                 = dataset->get_ys_ptr();
+    params.control_zs                 = dataset->get_zs_ptr();
+    params.control_as                 = dataset->get_as_ptr();
     params.rad_dir                    = to_float3(scanline.get_direction());
     params.lat_dir                    = to_float3(scanline.get_lateral_dir());
     params.ele_dir                    = to_float3(scanline.get_elevational_dir());
@@ -720,8 +680,8 @@ void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanl
     params.sound_speed                = m_param_sound_speed;
     params.cs_idx_start               = cs_idx_start;
     params.cs_idx_end                 = cs_idx_end;
-    params.NUM_SPLINES                = m_num_spline_scatterers;
-    params.res                        = m_device_time_proj[stream_no]->data();
+    params.NUM_SPLINES                = dataset->get_num_scatterers(),
+    params.res                        = res_buffer;
     params.eval_basis_offset_elements = eval_basis_offset_elements;
     params.demod_freq                 = m_excitation.demod_freq;
     params.lut_tex                    = m_device_beam_profile->get();
@@ -766,7 +726,9 @@ void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanl
 }
 
 size_t GpuAlgorithm::get_total_num_scatterers() const {
-    return m_num_fixed_scatterers+m_num_spline_scatterers;
+    const auto total_num_fixed  = m_device_fixed_datasets.get_total_num_scatterers();
+    const auto total_num_spline = m_device_spline_datasets.get_total_num_scatterers();
+    return total_num_fixed+total_num_spline;
 }
 
 std::string GpuAlgorithm::get_parameter(const std::string& key) const {
