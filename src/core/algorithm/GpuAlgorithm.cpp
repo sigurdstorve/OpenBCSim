@@ -400,6 +400,7 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
 
     size_t num_beams = m_scan_seq->get_num_lines();
 
+    // avoid reallocating memory if not necessary.
     if (m_num_beams_allocated != num_beams) {
         std::cout << "Reconfiguring cuFFT batched plan\n";
         std::cout << "m_num_time_samples is " << m_num_time_samples << std::endl;
@@ -408,28 +409,23 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
         const int rank = 1;
         int dims[] = {m_num_time_samples};
         m_fft_plan = CufftBatchedPlanRAII::u_ptr(new CufftBatchedPlanRAII(rank, dims, num_samples, CUFFT_C2C, batch));
+        std::cout << "batch = " << batch << std::endl;
+
+        // allocate host and device memory related to RF lines
+        const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
+        const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
+
+        std::cout << "Reallocating HOST and DEVICE memory\n";
+        m_device_time_proj = DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes*num_beams));
+
+        // allocate host memory for all RF lines
+        m_host_rf_lines.resize(num_beams);
+        for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
+            m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<std::complex<float>>::u_ptr( new HostPinnedBufferRAII<std::complex<float>>(host_iq_line_bytes)) );
+        }
+
+        m_num_beams_allocated = static_cast<int>(num_beams);
     }
-
-    // avoid reallocating memory if not necessary.
-    if (m_num_beams_allocated < static_cast<int>(num_beams)) {
-        std::cout << "Allocating HOST and DEVICE memory: had previously allocated memory for " << m_num_beams_allocated << " beams.\n";
-    } else {
-        return;
-    }
-
-    // allocate host and device memory related to RF lines
-    const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
-    const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
-
-    m_device_time_proj = DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes*num_beams));
-
-    // allocate host memory for all RF lines
-    m_host_rf_lines.resize(num_beams);
-    for (size_t beam_no = 0; beam_no < num_beams; beam_no++) {
-        m_host_rf_lines[beam_no] = std::move(HostPinnedBufferRAII<std::complex<float>>::u_ptr( new HostPinnedBufferRAII<std::complex<float>>(host_iq_line_bytes)) );
-    }
-
-    m_num_beams_allocated = static_cast<int>(num_beams);
 }
 
 void GpuAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
