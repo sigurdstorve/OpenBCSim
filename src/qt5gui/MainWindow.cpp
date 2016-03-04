@@ -164,7 +164,7 @@ MainWindow::MainWindow() {
 
     int num_lines;
     auto geometry = m_scanseq_widget->get_geometry(num_lines);
-    newScansequence(geometry, num_lines);
+    newScansequence(geometry, num_lines, m_scanseq_widget->all_timestamps_equal());
 
     // refresh thread setup
     qRegisterMetaType<refresh_worker::WorkTask::ptr>();
@@ -477,7 +477,8 @@ void MainWindow::createNewSimulator(const QString sim_type) {
     // configure scanseq
     int num_lines;
     auto scan_geometry = m_scanseq_widget->get_geometry(num_lines);
-    newScansequence(scan_geometry, num_lines);
+    auto equal_timestamps = m_scanseq_widget->all_timestamps_equal();
+    newScansequence(scan_geometry, num_lines, equal_timestamps);
         
     // use Gaussian beam profile by default
     const auto sigma_lateral     = m_beamprofile_widget->get_lateral_sigma();
@@ -539,7 +540,7 @@ void MainWindow::loadScatterers(const QString h5_file) {
     updateOpenGlVisualization();
 }
 
-void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines) {
+void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines, bool equal_timestamps) {
     const auto cur_time = m_sim_time_manager->get_time();
 
     // Get probe origin and orientation corresponding to current simulation time.
@@ -552,6 +553,8 @@ void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_
     m_scan_geometry = new_geometry;
     //qDebug() << "Probe orientation: " << rot_angles.x << rot_angles.y << rot_angles.z;
     auto new_scanseq = bcsim::OrientScanSequence(bcsim::CreateScanSequence(new_geometry, new_num_lines, cur_time), rot_angles, probe_origin);
+
+    new_scanseq->all_timestamps_equal = equal_timestamps;
 
     m_sim->set_scan_sequence(new_scanseq);
     m_cur_scanseq = new_scanseq;
@@ -576,7 +579,7 @@ void MainWindow::doSimulation() {
     // recreate scanseq to ensure correct time and probe info in case of dynamic probe.
     int new_num_scanlines;
     auto new_scan_geometry = m_scanseq_widget->get_geometry(new_num_scanlines);
-    newScansequence(new_scan_geometry, new_num_scanlines);
+    newScansequence(new_scan_geometry, new_num_scanlines, m_scanseq_widget->all_timestamps_equal());
     
     typedef std::vector<std::vector<std::complex<float>>> IQ_Frame;
     
