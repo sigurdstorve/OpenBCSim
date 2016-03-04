@@ -161,6 +161,10 @@ public:
 
     }
 
+    void clear() {
+        m_fixed_datasets.clear();
+    }
+
     size_t get_total_num_scatterers() const {
         size_t sum = 0;
         for (size_t i = 0; i < m_fixed_datasets.size(); i++) {
