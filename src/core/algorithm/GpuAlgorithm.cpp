@@ -179,8 +179,8 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
     
     // TODO: If all beams have the same timestamp, first render to fixed scatterers
     // in device memory and then simulate with the fixed algorithm
-    if (m_scan_seq->all_timestamps_equal) {
-        std::cout << "TODO: Use optimized kernel\n";
+    if (m_scan_seq->all_timestamps_equal && (m_num_spline_scatterers > 0)) {
+        std::cout << "TODO: Evaluate splines to a fixed scatterer dataset\n";
     }
 
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
