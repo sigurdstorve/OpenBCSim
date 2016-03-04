@@ -149,6 +149,10 @@ protected:
 
     DeviceFixedScatterersCollection     m_device_fixed_datasets;
     DeviceSplineScatterersCollection    m_device_spline_datasets;
+
+    // optimization to reduce memory bandwidth usage when all lines
+    // in a scan have the same timestamp.
+    DeviceFixedScatterersCollection     m_device_rendered_spline_datasets;
 };
     
 }   // end namespace

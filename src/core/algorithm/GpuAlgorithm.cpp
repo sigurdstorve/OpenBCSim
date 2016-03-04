@@ -165,8 +165,12 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
     // TODO: If all beams have the same timestamp, first render to fixed scatterers
     // in device memory and then simulate with the fixed algorithm
+    bool use_optimized_spline_kernel = false;
     if (m_scan_seq->all_timestamps_equal && (m_device_spline_datasets.get_num_datasets() > 0)) {
-        std::cout << "TODO: Evaluate splines to a fixed scatterer dataset\n";
+        const auto timestamp = m_scan_seq->get_scanline(0).get_timestamp();
+        m_device_rendered_spline_datasets.render(m_device_spline_datasets, timestamp);
+        use_optimized_spline_kernel = true;
+        cudaErrorCheck(cudaDeviceSynchronize());
     }
 
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
@@ -209,8 +213,8 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
             if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
                 throw std::runtime_error("required number of x-blocks is larger than device supports (fixed scatterers)");
             }
-            
             fixed_projection_kernel(stream_no, scanline, num_blocks, rf_ptr, device_dataset);
+
             if (m_store_kernel_details) {
                 const auto elapsed_ms = static_cast<double>(event_timer->stop());
                 m_debug_data["fixed_projection_kernel_ms"].push_back(elapsed_ms);
@@ -219,18 +223,31 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         }
 
         // project spline scatterers
-        for (size_t dset_idx = 0; dset_idx < m_device_spline_datasets.get_num_datasets(); dset_idx++) {
-            const auto device_dataset = m_device_spline_datasets.get_dataset(dset_idx);
-            const auto num_scatterers = device_dataset->get_num_scatterers();
-            const int num_blocks = round_up_div(num_scatterers, m_param_threads_per_block);
-            if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
-                throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
+        if (use_optimized_spline_kernel) {
+            for (size_t dset_idx = 0; dset_idx < m_device_rendered_spline_datasets.get_num_datasets(); dset_idx++) {
+                const auto device_dataset = m_device_rendered_spline_datasets.get_dataset(dset_idx);
+                const auto num_scatterers = device_dataset->get_num_scatterers();
+                const int num_blocks = round_up_div(num_scatterers, m_param_threads_per_block);
+                //std::cout << "num_scatterers is " << num_scatterers << std::endl;
+                if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
+                    throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
+                }
+                fixed_projection_kernel(stream_no, scanline, num_blocks, rf_ptr, device_dataset);
             }
-            
-            spline_projection_kernel(stream_no, scanline, num_blocks, rf_ptr, device_dataset);
-            if (m_store_kernel_details) {
-                const auto elapsed_ms = static_cast<double>(event_timer->stop());
-                m_debug_data["spline_projection_kernel_ms"].push_back(elapsed_ms);
+        } else {
+            for (size_t dset_idx = 0; dset_idx < m_device_spline_datasets.get_num_datasets(); dset_idx++) {
+                const auto device_dataset = m_device_spline_datasets.get_dataset(dset_idx);
+                const auto num_scatterers = device_dataset->get_num_scatterers();
+                const int num_blocks = round_up_div(num_scatterers, m_param_threads_per_block);
+                if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
+                    throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
+                }
+                spline_projection_kernel(stream_no, scanline, num_blocks, rf_ptr, device_dataset);
+    
+                if (m_store_kernel_details) {
+                    const auto elapsed_ms = static_cast<double>(event_timer->stop());
+                    m_debug_data["spline_projection_kernel_ms"].push_back(elapsed_ms);
+                }
             }
         }
     }
