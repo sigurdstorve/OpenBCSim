@@ -266,6 +266,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         const auto elapsed_ms = static_cast<double>(event_timer->stop());
         m_debug_data["kernel_forward_fft_ms"].push_back(elapsed_ms);
     }
+    cudaErrorCheck( cudaDeviceSynchronize() );
 
     // Multiply kernel
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
@@ -293,6 +294,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
     if (m_store_kernel_details) {
         event_timer->restart();
     }
+    cudaErrorCheck( cudaDeviceSynchronize() );
     cufftErrorCheck(cufftExecC2C(m_fft_plan->get(), m_device_time_proj->data(), m_device_time_proj->data(), CUFFT_INVERSE));
     if (m_store_kernel_details) {
         const auto elapsed_ms = static_cast<double>(event_timer->stop());
