@@ -139,7 +139,7 @@ public:
 
     // update an existing dataset (will only reallocate memory if the new size is
     // different from the previous)
-    void update(bcsim::FixedScatterers::s_ptr scatterer, size_t dset_idx) {
+    void update(bcsim::FixedScatterers::s_ptr host_scatterers, size_t dset_idx) {
         if (dset_idx >= m_fixed_datasets.size()) throw std::runtime_error("Illegal dataset index");
         throw std::runtime_error("TODO");
         /*
