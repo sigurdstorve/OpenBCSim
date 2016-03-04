@@ -1,6 +1,9 @@
 #include <stdexcept>
+#include <tuple>
 #include "common_definitions.h" // for MAX_SPLINE_DEGREE
 #include "GpuScatterers.hpp"
+#include "cuda_kernels_c_interface.h"
+#include "../bspline.hpp"
 
 namespace bcsim {
 
@@ -39,6 +42,83 @@ void DeviceFixedScatterersCollection::add(bcsim::FixedScatterers::s_ptr host_sca
     auto new_device_scatterers = std::make_shared<DeviceFixedScatterers>(host_scatterers->num_scatterers());
     transfer_to_device(host_scatterers, new_device_scatterers);
     m_fixed_datasets.push_back(new_device_scatterers);
+}
+
+void DeviceFixedScatterersCollection::render(const DeviceSplineScatterersCollection& spline_datasets, float timestamp) {
+    const auto current_num_datasets = get_num_datasets();
+    const auto needed_num_datasets  = spline_datasets.get_num_datasets();
+
+    // cache the number of splines in each spline dataset
+    std::vector<size_t> spline_counts(needed_num_datasets);
+    for (size_t dset_idx = 0; dset_idx < needed_num_datasets; dset_idx++) {
+        spline_counts[dset_idx] = spline_datasets.get_dataset(dset_idx)->get_num_scatterers();
+    }
+
+    bool must_check_capacity = true;
+    if (current_num_datasets != needed_num_datasets) {
+        std::cout << "number of datasets doesn not match. recreating\n";
+        clear();
+        for (size_t dset_idx = 0; dset_idx < needed_num_datasets; dset_idx++) {
+            std::cout << "Making empty fixed dataset with capacity of " << spline_counts[dset_idx] << " scatterers\n";
+            m_fixed_datasets.push_back(std::make_shared<DeviceFixedScatterers>(spline_counts[dset_idx]));
+        }
+        must_check_capacity = false;
+    }
+
+    if (must_check_capacity) {
+        // reallocate if size doesn't match
+        for (size_t dset_idx = 0; dset_idx < current_num_datasets; dset_idx++) {
+            const auto num_splines = spline_counts[dset_idx];
+            const auto cur_num_scatterers = m_fixed_datasets[dset_idx]->get_num_scatterers();
+            if (cur_num_scatterers != num_splines) {
+                std::cout << "Need different number of splines. Reallocating...";
+                m_fixed_datasets[dset_idx] = std::make_shared<DeviceFixedScatterers>(num_splines);
+            }
+        }
+    }
+
+    // at this point everything is ready for updating scatterers
+    for (size_t dset_idx = 0; dset_idx < spline_datasets.get_num_datasets(); dset_idx++) {
+        cudaStream_t stream_no = 0; // TODO: use streams to overlap transfers
+
+        const auto spline_dataset = spline_datasets.get_dataset(dset_idx);
+        const auto cur_knots = spline_dataset->get_knots();
+        const auto num_cs    = spline_dataset->get_num_cs();
+        const auto spline_degree = spline_dataset->get_spline_degree();
+
+        // evaluate the basis functions and upload to constant memory.
+        const auto num_nonzero = spline_degree+1;
+        std::vector<float> host_basis_functions(num_cs);
+        for (int i = 0; i < num_cs; i++) {
+            host_basis_functions[i] = bspline_storve::bsplineBasis(i, spline_degree, timestamp, cur_knots);
+        }
+
+        // compute sum limits (inclusive)
+        int cs_idx_start, cs_idx_end;
+        std::tie(cs_idx_start, cs_idx_end) = bspline_storve::get_lower_upper_inds(cur_knots, timestamp, spline_degree);
+
+        if (cs_idx_end-cs_idx_start+1 != num_nonzero) {
+            throw std::logic_error("illegal number of non-zero basis functions");
+        }
+
+        if(!splineAlg1_updateConstantMemory(host_basis_functions.data() + cs_idx_start, num_nonzero*sizeof(float))) {
+            throw std::runtime_error("Failed to upload basis functions to constant memory");
+        }
+        const auto num_splines = spline_dataset->get_num_scatterers();
+        int num_threads = 128; // per block
+        int num_blocks = round_up_div(num_splines, 128);
+        stream_no = 0;
+        launch_RenderSplineKernel(num_blocks, num_threads, stream_no,
+                                  spline_dataset->get_xs_ptr(),
+                                  spline_dataset->get_ys_ptr(),
+                                  spline_dataset->get_zs_ptr(),
+                                  m_fixed_datasets[dset_idx]->get_xs_ptr(),
+                                  m_fixed_datasets[dset_idx]->get_ys_ptr(),
+                                  m_fixed_datasets[dset_idx]->get_zs_ptr(),
+                                  cs_idx_start, cs_idx_end, num_splines);
+        // copy amplitudes [TODO: these can be reused]
+        cudaErrorCheck(cudaMemcpy(m_fixed_datasets[dset_idx]->get_as_ptr(), spline_dataset->get_as_ptr(), num_splines*sizeof(float), cudaMemcpyDeviceToDevice));
+    }
 }
 
 void DeviceFixedScatterersCollection::transfer_to_device(bcsim::FixedScatterers::s_ptr host_scatterers,

@@ -5,6 +5,9 @@
 
 namespace bcsim {
 
+// forward-decl.
+class DeviceSplineScatterersCollection;
+
 // Device memory for a fixed-scatterer dataset.
 class DeviceFixedScatterers {
 public:
@@ -37,6 +40,9 @@ class DeviceFixedScatterersCollection {
 public:
     // create a new dataset and fill it with data (will allocate memory on device)
     void add(bcsim::FixedScatterers::s_ptr host_scatterers);
+
+    // reset and make fixed scatterer datasets from evaluating all spline datasets
+    void render(const DeviceSplineScatterersCollection& spline_datasets, float timestamp);
 
     void transfer_to_device(bcsim::FixedScatterers::s_ptr host_scatterers,
                             DeviceFixedScatterers::s_ptr device_scatterers);
