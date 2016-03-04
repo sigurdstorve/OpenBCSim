@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cuda_helpers.h"
 #include "cufft_helpers.h"
 #include "BaseAlgorithm.hpp"
+#include "common_definitions.h" // for MAX_NUM_CUDA_STREAMS and MAX_SPLINE_DEGREE
 
 namespace bcsim {
 
