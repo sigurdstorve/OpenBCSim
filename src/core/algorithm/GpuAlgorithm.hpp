@@ -420,9 +420,7 @@ protected:
 
     void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer, DeviceFixedScatterers::s_ptr dataset);
 
-    void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
-
-    void spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer);
+    void spline_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer, DeviceSplineScatterers::s_ptr dataset);
 
 protected:
     typedef cufftComplex complex;
@@ -476,24 +474,8 @@ protected:
     float   m_lut_e_min;
     float   m_lut_e_max;
 
-    // TEMPORARY: WILL BE REMOVED WHEN SUPPORT FOR ARBITRARY NUMER OF SCATTERER COLLECTIONS
-    // HAS BEEN IMPLEMENTED (FIXED AND SPLINE)
-
-    // always times equal to the number of scatterers in device memory
-    size_t    m_num_spline_scatterers;
-
     DeviceFixedScatterersCollection     m_device_fixed_datasets;
-
-    // device memory for control points for all spline scatterers.
-    DeviceBufferRAII<float>::u_ptr      m_device_control_xs;
-    DeviceBufferRAII<float>::u_ptr      m_device_control_ys;
-    DeviceBufferRAII<float>::u_ptr      m_device_control_zs;
-    DeviceBufferRAII<float>::u_ptr      m_device_control_as; // one for each scatterer spline.
-    
-    // The knot vector common to all splines.
-    std::vector<float>                  m_common_knots;
-    int                                 m_num_cs;
-    int                                 m_spline_degree;
+    DeviceSplineScatterersCollection    m_device_spline_datasets;
 };
     
 }   // end namespace
