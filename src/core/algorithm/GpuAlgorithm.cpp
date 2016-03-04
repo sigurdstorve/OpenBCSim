@@ -228,7 +228,6 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
                 const auto device_dataset = m_device_rendered_spline_datasets.get_dataset(dset_idx);
                 const auto num_scatterers = device_dataset->get_num_scatterers();
                 const int num_blocks = round_up_div(num_scatterers, m_param_threads_per_block);
-                //std::cout << "num_scatterers is " << num_scatterers << std::endl;
                 if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
                     throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
                 }
