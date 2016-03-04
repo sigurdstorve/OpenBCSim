@@ -235,9 +235,7 @@ protected:
     // to ensure that calls to device beam profile RAII wrapper does not cause segfault.
     void create_dummy_lut_profile();
 
-    void copy_scatterers_to_device(FixedScatterers::s_ptr scatterers);
-    
-    void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer);
+    void fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer, DeviceFixedScatterers::s_ptr dataset);
 
     void copy_scatterers_to_device(SplineScatterers::s_ptr scatterers);
 
@@ -300,13 +298,8 @@ protected:
 
     // always times equal to the number of scatterers in device memory
     size_t    m_num_spline_scatterers;
-    size_t    m_num_fixed_scatterers;
 
-    // device memory for fixed scatterers
-    DeviceBufferRAII<float>::u_ptr      m_device_point_xs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_ys;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_zs;
-    DeviceBufferRAII<float>::u_ptr      m_device_point_as;
+    DeviceFixedScatterersCollection     m_device_fixed_datasets;
 
     // device memory for control points for all spline scatterers.
     DeviceBufferRAII<float>::u_ptr      m_device_control_xs;

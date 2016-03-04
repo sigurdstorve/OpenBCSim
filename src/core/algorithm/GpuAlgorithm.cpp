@@ -51,7 +51,6 @@ GpuAlgorithm::GpuAlgorithm()
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
       m_store_kernel_details(false),
-      m_num_fixed_scatterers(0),  // TODO: remove
       m_num_spline_scatterers(0)  // TODO: remove
 {
     // ensure that CUDA device properties is stored
@@ -165,13 +164,6 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         throw std::runtime_error("No beam profile is configured");
     }
 
-    // precompute the number of blocks needed to project all scatterers and check that
-    // it is not more than what is supported by the device.
-    // TODO: It is probably better to compute this when setting scatterers..
-    const int num_blocks_fixed = round_up_div(m_num_fixed_scatterers, m_param_threads_per_block);
-    if (num_blocks_fixed > m_cur_device_prop.maxGridSize[0]) {
-        throw std::runtime_error("required number of x-blocks is larger than device supports (fixed scatterers)");
-    }
     const int num_blocks_spline = round_up_div(m_num_spline_scatterers, m_param_threads_per_block);
     if (num_blocks_spline > m_cur_device_prop.maxGridSize[0]) {
         throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
@@ -216,8 +208,15 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         }
 
         // project fixed scatterers
-        if (m_num_fixed_scatterers > 0) {
-            fixed_projection_kernel(stream_no, scanline, num_blocks_fixed, rf_ptr);
+        for (size_t dset_idx = 0; dset_idx < m_device_fixed_datasets.get_num_datasets(); dset_idx++) {
+            const auto device_dataset = m_device_fixed_datasets.get_dataset(dset_idx);
+            const auto num_scatterers = device_dataset->get_num_scatterers();
+            const int num_blocks = round_up_div(num_scatterers, m_param_threads_per_block);
+            if (num_blocks > m_cur_device_prop.maxGridSize[0]) {
+                throw std::runtime_error("required number of x-blocks is larger than device supports (fixed scatterers)");
+            }
+            
+            fixed_projection_kernel(stream_no, scanline, num_blocks, rf_ptr, device_dataset);
             if (m_store_kernel_details) {
                 const auto elapsed_ms = static_cast<double>(event_timer->stop());
                 m_debug_data["fixed_projection_kernel_ms"].push_back(elapsed_ms);
@@ -530,12 +529,12 @@ void GpuAlgorithm::create_dummy_lut_profile() {
 }
 
 void GpuAlgorithm::clear_fixed_scatterers() {
-    m_num_fixed_scatterers = 0;
+    m_device_fixed_datasets.clear();
 }
 
 void GpuAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
-    // TODO: Remove temporary limitation that old fixed scatterers are replaced.
-    copy_scatterers_to_device(fixed_scatterers);
+    m_device_fixed_datasets.add(fixed_scatterers);
+    m_can_change_cuda_device = false;
 }
 
 void GpuAlgorithm::clear_spline_scatterers() {
@@ -547,62 +546,7 @@ void GpuAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scattere
     copy_scatterers_to_device(spline_scatterers);
 }
 
-void GpuAlgorithm::copy_scatterers_to_device(FixedScatterers::s_ptr scatterers) {
-    m_can_change_cuda_device = false;
-    
-    const size_t num_scatterers = scatterers->num_scatterers();
-    size_t points_common_bytes = num_scatterers*sizeof(float);
-
-    // temporary host memory for scatterer points
-    HostPinnedBufferRAII<float> host_temp(points_common_bytes);
-
-    // no point in reallocating if we already have allocated memory and the number of bytes
-    // is the same.
-    bool reallocate_device_mem = true;
-    if (m_device_point_xs && m_device_point_ys && m_device_point_zs && m_device_point_as) {
-        if (   (m_device_point_xs->get_num_bytes() == points_common_bytes)
-            && (m_device_point_ys->get_num_bytes() == points_common_bytes)
-            && (m_device_point_zs->get_num_bytes() == points_common_bytes)
-            && (m_device_point_as->get_num_bytes() == points_common_bytes))
-        {
-            reallocate_device_mem = false;
-        }
-    }
-    if (reallocate_device_mem) {
-        m_device_point_xs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-        m_device_point_ys = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-        m_device_point_zs = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-        m_device_point_as = std::move(DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(points_common_bytes)));
-    }
-
-    // x values
-    for (size_t i = 0; i < num_scatterers; i++) {
-        host_temp.data()[i] = scatterers->scatterers[i].pos.x;
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_point_xs->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-
-    // y values
-    for (size_t i = 0; i < num_scatterers; i++) {
-        host_temp.data()[i] = scatterers->scatterers[i].pos.y;
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_point_ys->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-
-    // z values
-    for (size_t i = 0; i < num_scatterers; i++) {
-        host_temp.data()[i] = scatterers->scatterers[i].pos.z;
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_point_zs->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-
-    // a values
-    for (size_t i = 0; i < num_scatterers; i++) {
-        host_temp.data()[i] = scatterers->scatterers[i].amplitude;
-    }
-    cudaErrorCheck( cudaMemcpy(m_device_point_as->data(), host_temp.data(), points_common_bytes, cudaMemcpyHostToDevice) );
-
-    m_num_fixed_scatterers = num_scatterers;
-}
-
-void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer) {
+void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanline, int num_blocks, cuComplex* res_buffer, DeviceFixedScatterers::s_ptr dataset) {
     auto cur_stream = m_stream_wrappers[stream_no]->get();
 
     //dim3 grid_size(num_blocks, 1, 1);
@@ -610,10 +554,10 @@ void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanli
 
     // prepare struct with parameters
     FixedAlgKernelParams params;
-    params.point_xs          = m_device_point_xs->data();
-    params.point_ys          = m_device_point_ys->data();
-    params.point_zs          = m_device_point_zs->data();
-    params.point_as          = m_device_point_as->data();
+    params.point_xs          = dataset->get_xs_ptr();
+    params.point_ys          = dataset->get_ys_ptr();
+    params.point_zs          = dataset->get_zs_ptr();
+    params.point_as          = dataset->get_as_ptr();
     params.rad_dir           = to_float3(scanline.get_direction());
     params.lat_dir           = to_float3(scanline.get_lateral_dir());
     params.ele_dir           = to_float3(scanline.get_elevational_dir());
@@ -625,7 +569,7 @@ void GpuAlgorithm::fixed_projection_kernel(int stream_no, const Scanline& scanli
     params.sound_speed       = m_param_sound_speed;
     params.res               = res_buffer;
     params.demod_freq        = m_excitation.demod_freq;
-    params.num_scatterers    = m_num_fixed_scatterers;
+    params.num_scatterers    = dataset->get_num_scatterers(),
     params.lut_tex           = m_device_beam_profile->get();
     params.lut.r_min         = m_lut_r_min;
     params.lut.r_max         = m_lut_r_max;
@@ -819,7 +763,7 @@ void GpuAlgorithm::spline_projection_kernel(int stream_no, const Scanline& scanl
 }
 
 size_t GpuAlgorithm::get_total_num_scatterers() const {
-    return m_num_fixed_scatterers+m_num_spline_scatterers;
+    return m_device_fixed_datasets.get_total_num_scatterers()+m_num_spline_scatterers;
 }
 
 std::string GpuAlgorithm::get_parameter(const std::string& key) const {
