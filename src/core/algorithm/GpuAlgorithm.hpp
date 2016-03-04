@@ -75,7 +75,7 @@ public:
     }
 
     float* get_as_ptr() const {
-        as->data();
+        return as->data();
     }
 
 private:
