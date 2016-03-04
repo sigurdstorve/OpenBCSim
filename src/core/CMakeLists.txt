@@ -27,6 +27,7 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/GpuAlgorithm.cpp
      algorithm/common_definitions.h
      algorithm/GpuScatterers.hpp
+     algorithm/GpuScatterers.cpp
      )
 
 # Made static in order to avoid DLL interface-related issues
