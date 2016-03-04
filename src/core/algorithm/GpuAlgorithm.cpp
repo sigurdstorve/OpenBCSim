@@ -177,6 +177,12 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         throw std::runtime_error("required number of x-blocks is larger than device supports (spline scatterers)");
     }
     
+    // TODO: If all beams have the same timestamp, first render to fixed scatterers
+    // in device memory and then simulate with the fixed algorithm
+    if (m_scan_seq->all_timestamps_equal) {
+        std::cout << "TODO: Use optimized kernel\n";
+    }
+
     for (int beam_no = 0; beam_no < num_lines; beam_no++) {
         size_t stream_no = beam_no % m_param_num_cuda_streams;
         auto cur_stream = m_stream_wrappers[stream_no]->get();
