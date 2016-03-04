@@ -113,6 +113,11 @@ public:
     // The beam length [m]
     float line_length;
 
+    // If set to true, all scanlines have exactly equal timestamps
+    // which is defined by the timestamp of the first line. This is
+    // needed for knowing when to apply the optimized spline alg.
+    bool all_timestamps_equal;
+
 private:
     std::vector<Scanline> scanlines;
 };
