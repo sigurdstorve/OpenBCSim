@@ -339,13 +339,13 @@ std::vector<std::complex<float>> CpuAlgorithm::simulate_line(const Scanline& lin
 #endif
 
     // add Gaussian noise if desirable.
-    /*
     if (m_param_noise_amplitude > 0.0f) {
-        std::transform(time_proj_signal, time_proj_signal + m_rf_line_num_samples, time_proj_signal, [&](float v) {
-            return v + m_normal_dist(m_random_engine);
+        std::transform(time_proj_signal, time_proj_signal + m_rf_line_num_samples, time_proj_signal, [&](std::complex<float> v) {
+            const auto noise_real = m_normal_dist(m_random_engine);
+            const auto noise_imag = m_normal_dist(m_random_engine);
+            return v + std::complex<float>(noise_real, noise_imag);
         });
     }
-    */
 
     // get the convolver associated with this thread and do FFT-based convolution
     // complex down-shifting to form a proper IQ signal. TODO: consider precomputing the complex exponential
