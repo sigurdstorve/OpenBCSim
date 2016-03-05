@@ -36,11 +36,18 @@ inline void curandAssert(curandStatus_t code, const char* file, int line) {
 
 class CurandGeneratorRAII {
 public:
-    CurandGeneratorRAII() {
-
+    CurandGeneratorRAII(curandRngType_t rng_type) {
+        curandErrorCheck(curandCreateGenerator(&gen, rng_type));
     }
+
     ~CurandGeneratorRAII() {
-
+        curandErrorCheck(curandDestroyGenerator(gen));
     }
 
+    curandGenerator_t get() const {
+        return gen;
+    }
+
+private:
+    curandGenerator_t gen;
 };
