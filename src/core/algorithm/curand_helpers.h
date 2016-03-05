@@ -36,7 +36,7 @@ inline void curandAssert(curandStatus_t code, const char* file, int line) {
 
 class CurandGeneratorRAII {
 public:
-    CurandGeneratorRAII(curandRngType_t rng_type) {
+    CurandGeneratorRAII(curandRngType_t rng_type = CURAND_RNG_PSEUDO_DEFAULT) {
         curandErrorCheck(curandCreateGenerator(&gen, rng_type));
     }
 
