@@ -37,6 +37,7 @@ if (BCSIM_ENABLE_CUDA)
     cuda_add_library(BCSimCUDA
                      algorithm/cuda_helpers.h
                      algorithm/cufft_helpers.h
+                     algorithm/curand_helpers.h
                      algorithm/cuda_debug_utils.h
                      algorithm/cuda_kernels_common.cu
                      algorithm/cuda_kernels_common.cuh
@@ -52,6 +53,7 @@ if (BCSIM_ENABLE_CUDA)
     target_link_libraries(BCSimCUDA
                           ${CUDA_LIBRARIES}
                           ${CUDA_CUFFT_LIBRARIES}
+                          ${CUDA_curand_LIBRARY}
                           )
     target_link_libraries(LibBCSim BCSimCUDA)
 endif()

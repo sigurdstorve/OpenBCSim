@@ -96,3 +96,5 @@ bool splineAlg2_updateConstantMemory(float* src, size_t count, size_t offset, cu
 
 template <bool A, bool B, bool C>
 void launch_SplineAlgKernel(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+
+void launch_AddNoiseKernel(int grid_size, int block_size, cudaStream_t stream, cuComplex* noise, cuComplex* signal, int num_samples);

@@ -50,7 +50,8 @@ GpuAlgorithm::GpuAlgorithm()
       m_num_time_samples(8192),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
-      m_store_kernel_details(false)
+      m_store_kernel_details(false),
+      m_device_random_buffer(nullptr)
 {
     // ensure that CUDA device properties is stored
     save_cuda_device_properties();
@@ -92,8 +93,6 @@ void GpuAlgorithm::set_parameter(const std::string& key, const std::string& valu
             throw std::runtime_error("invalid number of threads per block");            
         }
         m_param_threads_per_block = threads_per_block;
-    } else if (key == "noise_amplitude") {
-        throw std::runtime_error("noise is not yet implemented in GPU algorithms");
     } else if (key == "store_kernel_details") {
         if ((value == "on") || (value == "true")) {
             m_store_kernel_details = true;
@@ -161,6 +160,20 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
     if (m_cur_beam_profile_type == BeamProfileType::NOT_CONFIGURED) {
         throw std::runtime_error("No beam profile is configured");
+    }
+
+    if (m_param_noise_amplitude > 0.0f) {
+        const size_t num_random_numbers = num_lines*m_num_time_samples*2; // for real- and imaginary part.
+        const size_t num_bytes_needed = num_lines*num_random_numbers*sizeof(float);
+        if (num_random_numbers % 2 != 0) throw std::runtime_error("Number of random samples must be even");
+        if ((m_device_random_buffer == nullptr) || (m_device_random_buffer->get_num_bytes() != num_bytes_needed)) {
+            std::cout << "Reallocating device memory for random noise samples" << std::endl;
+            m_device_random_buffer = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(num_bytes_needed));
+        }
+
+        // recreate random numbers
+        curandErrorCheck(curandGenerateNormal(m_device_rng.get(), m_device_random_buffer->data(), num_random_numbers, 0.0f, m_param_noise_amplitude));
+        cudaErrorCheck(cudaDeviceSynchronize());
     }
 
     // TODO: If all beams have the same timestamp, first render to fixed scatterers
@@ -253,6 +266,15 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
     // block to ensure that all operations are completed
     cudaErrorCheck( cudaDeviceSynchronize() );
+
+    if (m_param_noise_amplitude > 0.0f) {
+        const int threads_per_line = 128;
+        const auto num_samples = static_cast<int>(num_lines*m_num_time_samples);
+        const auto complex_ptr = reinterpret_cast<cuComplex*>(m_device_random_buffer->data());
+        cudaStream_t stream = 0;
+        launch_AddNoiseKernel(num_samples/threads_per_line, threads_per_line, stream, complex_ptr, m_device_time_proj->data(), num_samples);
+        cudaErrorCheck(cudaDeviceSynchronize());
+    }
 
     std::unique_ptr<EventTimerRAII> event_timer;
     if (m_store_kernel_details) {

@@ -74,3 +74,6 @@ __global__ void ScaleSignalKernel(cufftComplex* signal, float factor, int num_sa
 // inplace IQ demodulation.
 // normalized_angular_freq = 2*pi*f_demod, where f_demod in [0.0, 0.5]
 __global__ void DemodulateKernel(cuComplex* signal, float normalized_angular_freq, int num_samples);
+
+// add noise to a signal
+__global__ void AddNoiseKernel(cuComplex* signal, cuComplex* noise, int num_samples);
