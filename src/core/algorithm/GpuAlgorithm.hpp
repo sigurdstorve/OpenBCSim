@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cufft_helpers.h"
 #include "BaseAlgorithm.hpp"
 #include "GpuScatterers.hpp"
+#include "curand_helpers.h"
 
 namespace bcsim {
 
@@ -153,6 +154,9 @@ protected:
     // optimization to reduce memory bandwidth usage when all lines
     // in a scan have the same timestamp.
     DeviceFixedScatterersCollection     m_device_rendered_spline_datasets;
+
+    CurandGeneratorRAII                 m_device_rng;
+    DeviceBufferRAII<float>::u_ptr      m_device_random_buffer;
 };
     
 }   // end namespace

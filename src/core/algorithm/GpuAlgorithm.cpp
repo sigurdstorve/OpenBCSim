@@ -50,7 +50,8 @@ GpuAlgorithm::GpuAlgorithm()
       m_num_time_samples(8192),  // TODO: remove this limitation
       m_num_beams_allocated(-1),
       m_param_threads_per_block(128),
-      m_store_kernel_details(false)
+      m_store_kernel_details(false),
+      m_device_random_buffer(nullptr)
 {
     // ensure that CUDA device properties is stored
     save_cuda_device_properties();
