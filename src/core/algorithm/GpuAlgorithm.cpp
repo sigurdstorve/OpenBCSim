@@ -162,6 +162,21 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         throw std::runtime_error("No beam profile is configured");
     }
 
+    if (m_param_noise_amplitude > 0.0f) {
+        std::cout << "Noise is enabled: " << m_param_noise_amplitude << std::endl;
+        const size_t num_random_numbers = num_lines*m_num_time_samples*2; // for real- and imaginary part.
+        const size_t num_bytes_needed = num_lines*num_random_numbers*sizeof(float);
+        if (num_random_numbers % 2 != 0) throw std::runtime_error("Number of random samples must be even");
+        if ((m_device_random_buffer == nullptr) || (m_device_random_buffer->get_num_bytes() != num_bytes_needed)) {
+            std::cout << "Reallocating device memory for random numbers" << std::endl;
+            m_device_random_buffer = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(num_bytes_needed));
+        }
+
+        // recreate random numbers
+        curandErrorCheck(curandGenerateNormal(m_device_rng.get(), m_device_random_buffer->data(), num_random_numbers, 0.0f, m_param_noise_amplitude));
+        cudaErrorCheck(cudaDeviceSynchronize());
+    }
+
     // TODO: If all beams have the same timestamp, first render to fixed scatterers
     // in device memory and then simulate with the fixed algorithm
     bool use_optimized_spline_kernel = false;
