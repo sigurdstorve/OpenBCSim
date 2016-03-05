@@ -63,3 +63,10 @@ __global__ void DemodulateKernel(cuComplex* signal, float w, int num_samples) {
         signal[global_idx] = cuCmulf(signal[global_idx], c);
     }
 }
+
+__global__ void AddNoiseKernel(cuComplex* signal, cuComplex* noise, int num_samples) {
+    const int global_idx = blockIdx.x*blockDim.x + threadIdx.x;
+    if (global_idx < num_samples) {
+        signal[global_idx] = make_cuComplex(signal[global_idx].x+noise[global_idx].x, signal[global_idx].y+noise[global_idx].y);
+    }
+}

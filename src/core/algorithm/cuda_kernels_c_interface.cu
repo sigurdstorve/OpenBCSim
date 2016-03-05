@@ -86,3 +86,7 @@ template void launch_SplineAlgKernel<true,  false, false>(int grid_size, int blo
 template void launch_SplineAlgKernel<true,  false, true >(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
 template void launch_SplineAlgKernel<true,  true,  false>(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
 template void launch_SplineAlgKernel<true,  true,  true >(int grid_size, int block_size, cudaStream_t stream, SplineAlgKernelParams params);
+
+void launch_AddNoiseKernel(int grid_size, int block_size, cudaStream_t stream, cuComplex* noise, cuComplex* signal, int num_samples) {
+    AddNoiseKernel<<<grid_size, block_size, 0, stream>>>(signal, noise, num_samples);
+}
