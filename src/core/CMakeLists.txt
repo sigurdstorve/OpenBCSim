@@ -52,6 +52,7 @@ if (BCSIM_ENABLE_CUDA)
     target_link_libraries(BCSimCUDA
                           ${CUDA_LIBRARIES}
                           ${CUDA_CUFFT_LIBRARIES}
+                          ${CUDA_curand_LIBRARY}
                           )
     target_link_libraries(LibBCSim BCSimCUDA)
 endif()
