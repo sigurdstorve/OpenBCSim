@@ -164,7 +164,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
 
     if (m_param_noise_amplitude > 0.0f) {
         const size_t num_random_numbers = num_lines*m_num_time_samples*2; // for real- and imaginary part.
-        const size_t num_bytes_needed = num_lines*num_random_numbers*sizeof(float);
+        const size_t num_bytes_needed = num_random_numbers*sizeof(float);
         if (num_random_numbers % 2 != 0) throw std::runtime_error("Number of random samples must be even");
         if ((m_device_random_buffer == nullptr) || (m_device_random_buffer->get_num_bytes() != num_bytes_needed)) {
             std::cout << "Reallocating device memory for random noise samples" << std::endl;
