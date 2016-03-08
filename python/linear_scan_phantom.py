@@ -18,6 +18,8 @@ def do_simulation(args):
     if args.use_gpu:
         sim = RfSimulator("gpu")
         sim.set_parameter("gpu_device", "%d"%args.device_no)
+        gpu_name = sim.get_parameter("cur_device_name")
+        print "Using device %d: %s" % (args.device_no, gpu_name)
     else:
         sim = RfSimulator("cpu")
 
