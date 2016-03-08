@@ -113,6 +113,7 @@ if __name__ == "__main__":
     parser.add_argument("--arc_proj", choices=["on", "off"], default="on")
     parser.add_argument("--phase_delay", choices=["on", "off"], default="on")
     parser.add_argument("--enable_cpu", help="Also time CPU impl (slow)", action="store_true")
+    parser.add_argument("--lut_file", help="Use lookup table beam profile", default="")
     args = parser.parse_args()
 
     res_buffer = ResultBuffer()
@@ -148,7 +149,19 @@ if __name__ == "__main__":
         sim.set_excitation(samples, center_index, args.fs, f_demod)
     
         # configure the beam profile
-        sim.set_analytical_beam_profile(1e-3, 1e-3)
+        if args.lut_file != "":
+            with h5py.File(args.lut_file, "r") as lut_f:
+                samples    = np.array(lut_f["beam_profile"].value, dtype="float32")
+                r_ext = lut_f["rad_extent"].value
+                e_ext = lut_f["ele_extent"].value
+                l_ext = lut_f["lat_extent"].value
+            sim.set_lut_beam_profile(float(r_ext[0]), float(r_ext[1]),\
+                                     float(l_ext[0]), float(l_ext[1]),\
+                                     float(e_ext[0]), float(e_ext[1]), samples)
+            res_buffer.add_msg("using lookup-table: %s" % args.lut_file)
+        else:
+            sim.set_analytical_beam_profile(1e-3, 1e-3)
+            res_buffer.add_msg("using analytic beam profile")
 
         res_buffer.add_msg("CASE 1: Linear scan of plaque phantom")
         num_scatterers = reconfigure_scatterers(sim, os.path.join(args.phantom_folder, "carotid_plaque.h5"))
