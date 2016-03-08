@@ -312,6 +312,10 @@ public:
         return m_rf_simulator->get_parameter(key);
     }
 
+    size_t get_total_num_scatterers() const {
+        return m_rf_simulator->get_total_num_scatterers();
+    }
+
 protected:
     IAlgorithm::s_ptr       m_rf_simulator;
     bool                    m_print_debug;
@@ -342,5 +346,6 @@ BOOST_PYTHON_MODULE(pyrfsim) {
         .def("simulate_lines",              &RfSimulatorWrapper::simulate_lines)
         .def("get_debug_data",              &RfSimulatorWrapper::get_debug_data)
         .def("get_parameter",               &RfSimulatorWrapper::get_parameter)
+        .def("get_total_num_scatterers",    &RfSimulatorWrapper::get_total_num_scatterers)
     ;
 }
