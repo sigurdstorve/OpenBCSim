@@ -38,10 +38,10 @@ function sim_lut_hdf5(h5_file, xmit_aperture, receive_aperture, geo)
 
     % store lookup-table and geometry to hdf5 file [using 32-bit floats]
     h5create(h5_file, '/beam_profile', size(intensities), 'DataType', 'single');
-    h5write(h5_file, '/beam_profile', intensities);
+    h5write(h5_file, '/beam_profile', single(intensities));
     h5create(h5_file, '/ele_extent', 2, 'DataType', 'single');
-    h5write(h5_file, '/ele_extent', [geo.y_min, geo.y_max]);
+    h5write(h5_file, '/ele_extent', single([geo.y_min, geo.y_max]));
     h5create(h5_file, '/lat_extent', 2, 'DataType', 'single');
-    h5write(h5_file, '/lat_extent', [geo.x_min, geo.x_max]);
+    h5write(h5_file, '/lat_extent', single([geo.x_min, geo.x_max]));
     h5create(h5_file, '/rad_extent', 2, 'DataType', 'single');
-    h5write(h5_file, '/rad_extent', [geo.z_min, geo.z_max]);
+    h5write(h5_file, '/rad_extent', single([geo.z_min, geo.z_max]));
