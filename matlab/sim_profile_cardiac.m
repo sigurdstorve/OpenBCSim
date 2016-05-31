@@ -19,6 +19,9 @@ fprintf('Probe width is %2.1f mm\n', 1000*probe_width);
 % fixed transmission focus
 tx_focus = 70e-3;
 
+% fixed elevation focus (acoustic lens)
+elevation_focus = 70e-3;
+
 % duration of impulse response
 imp_resp_num_cycles = 2;
 
@@ -31,8 +34,8 @@ h5_file_out = 'beam_profile_cardiac.h5';
 set_sampling(fs);
 set_field('show_times', 5);
 
-% transmission aperture
-tx_aperture = xdc_linear_array(num_elements, el_width, el_height, kerf, 1, 5, [0.0 0.0 tx_focus]);
+% transmission aperture w/fixed elevation focus
+tx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevation_focus, 1, 5, [0.0 0.0 tx_focus]);
 
 % impulse response and excitation for the transmission aperture
 imp_resp_times = 0:(1.0/fs):(imp_resp_num_cycles/center_freq);
@@ -55,7 +58,7 @@ xlabel('Time [s]');
 xdc_excitation(tx_aperture, excitation);
 
 % reception aperture
-rx_aperture = xdc_linear_array(num_elements, el_width, el_height, kerf, 1, 5, [0.0 0.0 tx_focus]);
+rx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevation_focus, 1, 5, [0.0 0.0 tx_focus]);
 xdc_impulse(rx_aperture, imp_resp);
 
 % configure different focal zones for dynamic focusing on reception
