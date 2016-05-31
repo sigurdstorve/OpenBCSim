@@ -37,6 +37,19 @@ h5_file_out = 'beam_profile_cardiac.h5';
 
 set_sampling(fs);
 
+% frequency dependent dB/[MHz cm]
+freq_att = 0.5; 
+
+% compute frequency independent
+freq_att_temp = freq_att*100/1e6;
+att = freq_att_temp*center_freq;
+set_field('att', att);
+set_field('Freq_att', freq_att_temp);
+set_field('att_f0', center_freq);
+
+% configure attenuation
+set_field('use_att', 1);
+
 % transmission aperture w/fixed elevation focus
 tx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevation_focus,...
                                 num_sub_x, num_sub_y, [0.0 0.0 tx_focus]);
