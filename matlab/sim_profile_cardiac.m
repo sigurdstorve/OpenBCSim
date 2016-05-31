@@ -67,21 +67,15 @@ rx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevati
                                 num_sub_x, num_sub_y, [0.0 0.0 tx_focus]);
 xdc_impulse(rx_aperture, imp_resp);
 
-% configure different focal zones for dynamic focusing on reception
-focal_zones = [5e-3:1e-3:150e-3]';
-num_focal_zones = max(size(focal_zones));
-fprintf('Number of focal zones is %d\n', num_focal_zones);
-focus_times = (focal_zones - 10e-3) / c0;
-
 % set apodization
 apodization = hanning(num_elements)';
 xdc_apodization(tx_aperture, 0, apodization);
 xdc_apodization(rx_aperture, 0, apodization);
 
-% focus at this angle
+% focus at this angle - dynamic focus on receive
 theta = 0.0;
 xdc_focus(tx_aperture, 0, [tx_focus*sin(theta) 0.0 tx_focus*cos(theta)]);
-xdc_focus(rx_aperture, focus_times, [focal_zones*sin(theta) zeros(max(size(focal_zones)), 1) focal_zones*cos(theta)]);
+xdc_dynamic_focus(rx_aperture, 0.0, theta, 0.0);
 
 % create geometry struct for volume in which to simulate two-way sensitivity
 geo = struct();
