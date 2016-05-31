@@ -29,8 +29,8 @@ imp_resp_num_cycles = 2;
 excitation_num_cycles = 2;
 
 % number of subdivisions into mathematical elements in x and y
-num_sub_x = 5
-num_sub_y = 25
+num_sub_x = 5;
+num_sub_y = 25;
 
 % name of output file with lookup-table. WARNING: Will be overwritten!
 h5_file_out = 'beam_profile_cardiac.h5';
