@@ -102,7 +102,10 @@ geo.y_max = 2e-2;
 geo.num_y = 128;
 
 delete(h5_file_out);
+tic;
 sim_lut_hdf5(h5_file_out, tx_aperture, rx_aperture, geo);
+elapsed_time = toc;
+fprintf('Simulation time was %f seconds\n', elapsed_time);
 
 xdc_free(tx_aperture);
 xdc_free(rx_aperture);
