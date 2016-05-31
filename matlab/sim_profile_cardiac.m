@@ -88,11 +88,11 @@ geo = struct();
 geo.z_min = 1e-3;
 geo.z_max = 160e-3;
 geo.num_z = 1024;
-geo.x_min = -1.2e-2;
-geo.x_max = 1.2e-2;
+geo.x_min = -2e-2;
+geo.x_max = 2e-2;
 geo.num_x = 128;
-geo.y_min = -1.2e-2;
-geo.y_max = 1.2e-2;
+geo.y_min = -2e-2;
+geo.y_max = 2e-2;
 geo.num_y = 128;
 
 delete(h5_file_out);
