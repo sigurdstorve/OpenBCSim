@@ -36,7 +36,6 @@ num_sub_y = 25;
 h5_file_out = 'beam_profile_cardiac.h5';
 
 set_sampling(fs);
-set_field('show_times', 5);
 
 % transmission aperture w/fixed elevation focus
 tx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevation_focus,...
