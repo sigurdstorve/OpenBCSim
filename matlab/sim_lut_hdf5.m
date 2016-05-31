@@ -25,8 +25,7 @@ function sim_lut_hdf5(h5_file, xmit_aperture, receive_aperture, geo)
         for iy = 1:geo.num_y
             for iz = 1:geo.num_z
                 [p, start_time] = calc_hhp(xmit_aperture, receive_aperture, [xs_(ix) ys_(iy) zs_(iz)]);
-                % TODO: use sum of squares instead of just max value in time dimension?
-                intensities(iy, ix, iz) = max(p);
+                intensities(iy, ix, iz) = rssq(p); % root-sum-of-squares
             end
         end
     end
