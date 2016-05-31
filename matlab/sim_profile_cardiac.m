@@ -39,7 +39,7 @@ set_sampling(fs);
 set_field('show_times', 5);
 
 % transmission aperture w/fixed elevation focus
-tx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevation_focus,
+tx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevation_focus,...
                                 num_sub_x, num_sub_y, [0.0 0.0 tx_focus]);
 
 % impulse response and excitation for the transmission aperture
@@ -63,7 +63,7 @@ xlabel('Time [s]');
 xdc_excitation(tx_aperture, excitation);
 
 % reception aperture
-rx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevation_focus,
+rx_aperture = xdc_focused_array(num_elements, el_width, el_height, kerf, elevation_focus,...
                                 num_sub_x, num_sub_y, [0.0 0.0 tx_focus]);
 xdc_impulse(rx_aperture, imp_resp);
 
