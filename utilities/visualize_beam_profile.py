@@ -13,6 +13,9 @@ if __name__ == "__main__":
     parser.add_argument("--normalize", action="store_true", help="normalize in [0, 1]")
     parser.add_argument("--interp", default="nearest", help="Matplotlib interpolation type")
     parser.add_argument("--dyn_range", help="Dynamic range for plotting", type=int, default=70)
+    parser.add_argument("--ele_extent", help="Override elevational extent for plotting", type=float, nargs="+")
+    parser.add_argument("--lat_extent", help="Override lateral extent for plotting", type=float, nargs="+")
+    parser.add_argument("--rad_extent", help="Override radial extent for plotting", type=float, nargs="+")
     args = parser.parse_args()
     
     with h5py.File(args.h5_file, "r") as f:
@@ -20,6 +23,16 @@ if __name__ == "__main__":
         ele_extent = f["ele_extent"].value
         lat_extent = f["lat_extent"].value
         rad_extent = f["rad_extent"].value
+    
+    if args.ele_extent != None:
+        assert len(args.ele_extent) == 2
+        ele_extent = args.ele_extent
+    if args.lat_extent != None:
+        assert len(args.lat_extent) == 2
+        lat_extent = args.lat_extent
+    if args.rad_extent != None:
+        assert len(args.rad_extent) == 2
+        rad_extent = args.rad_extent
     
     print "Radial extent: %s m" % str(rad_extent)
     print "Lateral extent: %s m" % str(lat_extent)
