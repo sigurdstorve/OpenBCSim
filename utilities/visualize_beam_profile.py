@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 import argparse
+from matplotlib.ticker import FormatStrFormatter
 
 description="""
     Plot simulated beam profile.
@@ -18,6 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("--rad_extent", help="Radial extent to show in plot [mm]", type=float, nargs="+")
     parser.add_argument("--cmap", help="Specify custom colormap name", default="Greys_r")
     parser.add_argument("--db_scale", help="Plot in decibels", action="store_true")
+    parser.add_argument("--save_pdf", help="Save PDF figures", action="store_true")
     args = parser.parse_args()
     
     with h5py.File(args.h5_file, "r") as f:
@@ -54,7 +56,8 @@ if __name__ == "__main__":
     plt.figure()
     plt.ion()
     plt.show()
-        
+    
+    db_ticks = np.linspace(0.0, -args.dyn_range, 5)
     if args.db_scale:
         trans_function = lambda x: 20.0*np.log10(x)
     else:
@@ -67,14 +70,18 @@ if __name__ == "__main__":
     plt.title("Radial-Lateral")
     plt.xlabel("millimeters")
     plt.ylabel("millimeters")
+    cb = plt.colorbar(format=FormatStrFormatter("%2.0f"))
     if args.db_scale:
         plt.clim(0.0, -args.dyn_range)
+        cb.set_label("dB")
+        cb.set_ticks(db_ticks)
     else:
         plt.clim(0.0, 1.0)
-    plt.colorbar()
     plt.gca().set_aspect("equal")
     if args.rad_extent != None: plt.xlim(*args.rad_extent)
     if args.lat_extent != None: plt.ylim(*args.lat_extent)
+    if args.save_pdf:
+        plt.savefig("beam_profile_rad_lat.pdf", bbox_inches="tight", pad_inches=0.1, dpi=300)
     
     # radial-elevational [assumes symmetric lateral/elevational extents]
     plt.figure()
@@ -84,15 +91,19 @@ if __name__ == "__main__":
     plt.title("Radial-Elevational")
     plt.xlabel("millimeters")
     plt.ylabel("millimeters")
+    cb = plt.colorbar(format=FormatStrFormatter("%2.0f"))
     if args.db_scale:
         plt.clim(0.0, -args.dyn_range)
+        cb.set_label("dB")
+        cb.set_ticks(db_ticks)
     else:
         plt.clim(0.0, 1.0)
-    plt.colorbar()
     plt.gca().set_aspect("equal")
     if args.rad_extent != None: plt.xlim(*args.rad_extent)
     if args.ele_extent != None: plt.ylim(*args.ele_extent)
-
+    if args.save_pdf:
+        plt.savefig("beam_profile_rad_ele.pdf", bbox_inches="tight", pad_inches=0.1, dpi=300)
+    
     plt.figure()
     # short-axis plots for all radial distances
     img_extent = [ele_extent[0]*1000, ele_extent[1]*1000, lat_extent[0]*1000, lat_extent[1]*1000]
