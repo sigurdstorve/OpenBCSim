@@ -102,10 +102,11 @@ if __name__ == "__main__":
     if args.rad_extent != None: plt.xlim(*args.rad_extent)
     if args.ele_extent != None: plt.ylim(*args.ele_extent)
 
+    fig.subplots_adjust(hspace=0.5)
     plt.suptitle("Pulse-echo sensitivity")
     ax1.set_xlabel("Radial distance [mm]")
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    fig.subplots_adjust(right=0.93, top=0.88)
+    cbar_ax = fig.add_axes([0.95, 0.15, 0.05, 0.7])
     cb = fig.colorbar(im1, format=FormatStrFormatter("%2.0f"), cax=cbar_ax, ticks=cb_ticks)
     cb.set_clim(-args.dyn_range, 0.0)    
     cb.draw_all() # needed for some reason
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     cb.outline.set_visible(False)
 
     if args.save_pdf:
-        plt.savefig("beam_profile_pulse_echo.pdf", bbox_inches="tight", pad_inches=0.1, dpi=args.pdf_dpi)
+        plt.savefig("beam_profile_pulse_echo.pdf", bbox_inches="tight", pad_inches=0.01, dpi=args.pdf_dpi)
     
     plt.figure()
     # short-axis plots for all radial distances
