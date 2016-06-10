@@ -32,6 +32,7 @@ init_reject = -30
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--h5_iq", help="Hdf5 file with IQ data", default=None)
+    parser.add_argument("--interp_type", help="Interpolation type", default="bilinear")
     args = parser.parse_args()
     
     # input image data assumed to be normalized in [0.0, 1.0]
@@ -64,9 +65,9 @@ if __name__ == "__main__":
     ax0.set_xlim(-0.05, 1.05)
     ax0.set_ylim(-4, 260)
 
-    im_in  = ax1.imshow(img_data, aspect="auto", interpolation="nearest", cmap="Greys_r", vmin=0.0, vmax=1.0)
+    im_in  = ax1.imshow(img_data, aspect="auto", interpolation=args.interp_type, cmap="Greys_r", vmin=0.0, vmax=1.0)
     fig.colorbar(im_in, label="Input")
-    im_out = ax2.imshow(formula(img_data, init_dyn_range, init_reject), aspect="auto", interpolation="nearest", cmap="Greys_r", vmin=0.0, vmax=255.0) 
+    im_out = ax2.imshow(formula(img_data, init_dyn_range, init_reject), aspect="auto", interpolation=args.interp_type, cmap="Greys_r", vmin=0.0, vmax=255.0) 
     fig.colorbar(im_out, label="Output")
 
     ax_dyn_range = plt.axes([0.25, 0.05, 0.65, 0.03])
