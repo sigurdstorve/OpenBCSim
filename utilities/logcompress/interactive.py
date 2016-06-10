@@ -11,11 +11,23 @@ description="""
     input and output.
 """
 
+def clamp(v, low=0.0, high=255.0):
+    """ Clamp a scalar or array to [0.0, 255.0]. """
+    res = v
+    if isinstance(res, np.ndarray):
+        res[res < low]  = low
+        res[res > high] = high
+    else:
+        if res < low: res = low
+        if res > high: res = high
+    return res
+
 # This defines the non-linear gain curve (compression curve)
 # f:[0.0, 1.0] -> [0.0, 255.0] 
 def formula(in_value, dyn_range, reject):
     db_value = 20.0*np.log10(in_value+1e-12)
     db_value = 255.0*(db_value - reject) / dyn_range
+    return clamp(db_value)
 
     # clamp to [0.0, 255.0]
     if isinstance(in_value, np.ndarray):
