@@ -29,15 +29,11 @@ def formula(in_value, dyn_range, reject):
     db_value = 255.0*(db_value - reject) / dyn_range
     return clamp(db_value)
 
-    # clamp to [0.0, 255.0]
-    if isinstance(in_value, np.ndarray):
-        db_value[db_value < 0.0]   = 0.0
-        db_value[db_value > 255.0] = 255.0
-    else:
-        if db_value < 0.0: db_value = 0.0
-        if db_value > 255.0: db_value = 255.0
-    return db_value
-
+def formula_OLD(in_value, dyn_range, reject):
+    temp = 20.0*np.log10(reject*in_value)
+    temp = (255.0/dyn_range)*(temp + dyn_range)
+    return clamp(temp)
+    
 init_dyn_range = 40.0
 init_reject = -30
 
