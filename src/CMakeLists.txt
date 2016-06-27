@@ -23,6 +23,8 @@ option(BCSIM_BUILD_BENCHMARK_CODE
 
 include_directories(${PROJECT_SOURCE_DIR})
 
+find_package(Boost REQUIRED)
+
 # set compiler defines according to configuration options
 if (BCSIM_ENABLE_OPENMP)
     add_definitions(-DBCSIM_ENABLE_OPENMP)
