@@ -40,57 +40,6 @@ void BaseScattererModel::precompute_template(trianglemesh3d::ITriangleMesh3d::u_
 		m_cube_points.push_back(static_cast<GLfloat>(template_model->vertex_data()[i]));
 		m_cube_normals.push_back(static_cast<GLfloat>(template_model->normal_data()[i]));
 	}
-	/*
-    // triangle 1
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);       ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    // triangle 2
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    // triangle 3
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    // triangle 4
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    // triangle 5
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);       ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    // triangle 6
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);       ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    // triangle 7
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);       ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    // triangle 8
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);        ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    // triangle 9
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    // triangle 10
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);        ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    // triangle 11
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    // triangle 12
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    */
-
 }
 
 
