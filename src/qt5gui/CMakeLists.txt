@@ -18,6 +18,8 @@ if (BCSIM_ENABLE_QWT)
     add_definitions(-DBCSIM_ENABLE_QWT)
 endif()
 
+add_subdirectory(trianglemesh3d)
+
 add_executable(BCSimGUI
                main.cpp
                MainWindow.cpp
