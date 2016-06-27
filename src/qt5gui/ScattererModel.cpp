@@ -30,10 +30,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <random>
 #include "ScattererModel.hpp"
 
-void BaseScattererModel::precomputeCube() {
+void BaseScattererModel::precompute_template(trianglemesh3d::ITriangleMesh3d::u_ptr template_model) {
     QVector<GLfloat> ps; // points
     QVector<GLfloat> ns; // normals
 
+	// do data conversion
+	const auto num_vertices = template_model->num_vertices();
+	for (size_t i = 0; i < 3*num_vertices; i++) {
+		m_cube_points.push_back(static_cast<GLfloat>(template_model->vertex_data()[i]));
+		m_cube_normals.push_back(static_cast<GLfloat>(template_model->normal_data()[i]));
+	}
+	/*
     // triangle 1
     ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
     ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);       ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
@@ -82,9 +89,8 @@ void BaseScattererModel::precomputeCube() {
     ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
     ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
     ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-        
-    m_cube_points = ps;
-    m_cube_normals = ns;
+    */
+
 }
 
 

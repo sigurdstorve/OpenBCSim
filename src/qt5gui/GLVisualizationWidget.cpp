@@ -110,7 +110,9 @@ void GLVisualizationWidget::updateTimestamp(float new_timestamp) {
 }
 
 void GLVisualizationWidget::setScattererSplines(const std::vector<SplineCurve<float, bcsim::vector3> >& splines) {
-    auto temp = new SplineScattererModel;
+	const auto obj_file = "d:/test_cube_tri.obj";	// TEMP
+	auto mesh3d = trianglemesh3d::LoadTriangleMesh3d(obj_file, trianglemesh3d::Mesh3dFileType::WAVEFRONT_OBJ);
+	auto temp = new SplineScattererModel(std::move(mesh3d));
     temp->setSplines(splines);
 
     m_scatterer_model = QSharedPointer<IScattererModel>(temp);
@@ -120,7 +122,9 @@ void GLVisualizationWidget::setScattererSplines(const std::vector<SplineCurve<fl
 }
 
 void GLVisualizationWidget::setFixedScatterers(const std::vector<bcsim::vector3>& scatterers) {
-    auto temp = new FixedScattererModel;
+	const auto obj_file = "d:/test_cube_tri.obj";	// TEMP
+	auto mesh3d = trianglemesh3d::LoadTriangleMesh3d(obj_file, trianglemesh3d::Mesh3dFileType::WAVEFRONT_OBJ);
+	auto temp = new FixedScattererModel(std::move(mesh3d));
     temp->setPoints(scatterers);
 
     m_scatterer_model = QSharedPointer<IScattererModel>(temp);

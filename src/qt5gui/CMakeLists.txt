@@ -68,6 +68,7 @@ target_link_libraries(BCSimGUI
                       LibBCSimUtils # BCSimCUDA also?
                       hdf5-static
                       hdf5_cpp-static
+                      trianglemesh3d
                       )
 if (BCSIM_ENABLE_QWT)
     target_link_libraries(BCSimGUI ${QWT_LIBRARIES})

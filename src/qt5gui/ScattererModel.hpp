@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVector3D>
 #include "SplineCurve.hpp"
 #include "../core/LibBCSim.hpp"
+#include "trianglemesh3d/TriangleMesh3d.hpp"
 
 // Interface for something capable of returning data for consumption by OpenGL
 class IScattererModel {
@@ -53,13 +54,13 @@ public:
 // Functionality which is common for both SplineScattererModel and FixedScattererModel.
 class BaseScattererModel {
 public:
-    BaseScattererModel() {
-        precomputeCube();
+    BaseScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr scatterer_template) {
+		precompute_template(std::move(scatterer_template));
     }
 
 protected:
-    // Precompute vertices and normals of a cube.
-    void precomputeCube();
+    // Precompute vertices and normals of a template scatterer model.
+	void precompute_template(trianglemesh3d::ITriangleMesh3d::u_ptr scatterer_template);
 
     // Creates random normalized normal vectors.
     QVector<QVector3D> generateRandomNormalVectors(int num_vectors);
@@ -89,8 +90,8 @@ public:
 class SplineScattererModel : public  IScattererModel,
                              private BaseScattererModel {
 public:
-    SplineScattererModel() {
-    }
+    SplineScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr template_model)
+		: BaseScattererModel(std::move(template_model)) {  }
 
     virtual const GLfloat* constData() const {
         return m_data.constData();
@@ -120,8 +121,8 @@ private:
 class FixedScattererModel : public  IScattererModel,
                             private BaseScattererModel {
 public:
-    FixedScattererModel() {
-    }
+    FixedScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr template_model)
+		: BaseScattererModel(std::move(template_model))	{ }
 
     virtual const GLfloat* constData() const {
         return m_data.constData();
