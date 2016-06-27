@@ -13,8 +13,7 @@ endif()
 include_directories(${NumPy_INCLUDE_DIR})
 
 # Handle Boost.Python
-find_package(Boost COMPONENTS python system REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+find_package(Boost REQUIRED COMPONENTS python system)
 
 add_library(pyrfsim
             SHARED
@@ -24,8 +23,11 @@ add_library(pyrfsim
             )
 target_link_libraries(pyrfsim
                       ${PYTHON_LIBRARIES}
-                      ${Boost_LIBRARIES}
+                      Boost::python
+                      Boost::system
                       LibBCSim
+                      hdf5-static
+                      hdf5_cpp-static
                       )
 set_target_properties(pyrfsim PROPERTIES PREFIX "")
 if (WIN32)

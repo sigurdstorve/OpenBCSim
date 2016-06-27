@@ -1,16 +1,3 @@
-# Handle HDF5
-set(HDF5_USE_STATIC_LIBRARIES False CACHE BOOL "HDF5 use static libraries")
-find_package(HDF5 COMPONENTS C CXX REQUIRED)
-if (NOT ${HDF5_FOUND})
-    message(FATAL "Unable to locate HDF5!")
-endif()
-include_directories(${HDF5_INCLUDE_DIRS})
-add_definitions(${HDF5_DEFINITIONS})
-
-# Handle Boost
-find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-
 set(UTILS_LIBRARY_SOURCE_FILES "")
 list(APPEND UTILS_LIBRARY_SOURCE_FILES
      BCSimConvenience.hpp
@@ -29,7 +16,11 @@ list(APPEND UTILS_LIBRARY_SOURCE_FILES
      )
 
 add_library(LibBCSimUtils STATIC ${UTILS_LIBRARY_SOURCE_FILES})
-target_link_libraries(LibBCSimUtils ${HDF5_LIBRARIES})
+target_link_libraries(LibBCSimUtils
+                      hdf5-static
+                      hdf5_cpp-static
+                      Boost::boost
+                      )
 
 install(TARGETS LibBCSimUtils DESTINATION lib)
 install(FILES HDFConvenience.hpp    DESTINATION include)
