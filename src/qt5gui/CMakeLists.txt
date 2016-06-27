@@ -8,6 +8,7 @@ option(BCSIM_ENABLE_QWT "Enable Qwt for plots" ON)
 # in CMake cache to the location of Qt5WidgetsConfig.cmake
 # Easiest: set CMAKE_PREFIX_PATH env.var to the install
 # prefix of Qt5.
+find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5OpenGL)
 
@@ -57,6 +58,7 @@ add_executable(BCSimGUI
 
 # Use the Widgets module from Qt5
 target_link_libraries(BCSimGUI
+                      Qt5::Core
                       Qt5::Widgets
                       Qt5::OpenGL
                       Boost::boost
