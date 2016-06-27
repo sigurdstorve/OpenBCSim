@@ -40,8 +40,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QCheckBox>
 #include <QMessageBox>
 
-GLVisualizationWidget::GLVisualizationWidget(QWidget* parent)
-    : QWidget(parent)
+GLVisualizationWidget::GLVisualizationWidget(const QString& scatterer_obj_file, QWidget* parent)
+    : QWidget(parent),
+	  m_scatterer_obj_file(scatterer_obj_file)
 {
     glWidget = new GLScattererWidget;
     xSlider = createSlider();
@@ -110,7 +111,8 @@ void GLVisualizationWidget::updateTimestamp(float new_timestamp) {
 }
 
 void GLVisualizationWidget::setScattererSplines(const std::vector<SplineCurve<float, bcsim::vector3> >& splines) {
-    auto temp = new SplineScattererModel;
+	auto mesh3d = trianglemesh3d::LoadTriangleMesh3d(m_scatterer_obj_file.toStdString(), trianglemesh3d::Mesh3dFileType::WAVEFRONT_OBJ);
+	auto temp = new SplineScattererModel(std::move(mesh3d));
     temp->setSplines(splines);
 
     m_scatterer_model = QSharedPointer<IScattererModel>(temp);
@@ -120,7 +122,8 @@ void GLVisualizationWidget::setScattererSplines(const std::vector<SplineCurve<fl
 }
 
 void GLVisualizationWidget::setFixedScatterers(const std::vector<bcsim::vector3>& scatterers) {
-    auto temp = new FixedScattererModel;
+	auto mesh3d = trianglemesh3d::LoadTriangleMesh3d(m_scatterer_obj_file.toStdString(), trianglemesh3d::Mesh3dFileType::WAVEFRONT_OBJ);
+	auto temp = new FixedScattererModel(std::move(mesh3d));
     temp->setPoints(scatterers);
 
     m_scatterer_model = QSharedPointer<IScattererModel>(temp);

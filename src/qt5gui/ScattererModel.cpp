@@ -30,61 +30,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <random>
 #include "ScattererModel.hpp"
 
-void BaseScattererModel::precomputeCube() {
+void BaseScattererModel::precompute_template(trianglemesh3d::ITriangleMesh3d::u_ptr template_model) {
     QVector<GLfloat> ps; // points
     QVector<GLfloat> ns; // normals
 
-    // triangle 1
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);       ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    // triangle 2
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    // triangle 3
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    // triangle 4
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(-1.0f);
-    // triangle 5
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);      ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);       ns.push_back(-1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    // triangle 6
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);       ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(-1.0f); ns.push_back(0.0f);
-    // triangle 7
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    ps.push_back(-1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);       ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    // triangle 8
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);        ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    // triangle 9
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(-1.0f);       ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(1.0f); ns.push_back(0.0f); ns.push_back(0.0f);
-    // triangle 10
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);        ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    // triangle 11
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(-1.0f);       ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(1.0f); ns.push_back(0.0f);
-    // triangle 12
-    ps.push_back(1.0f); ps.push_back(1.0f); ps.push_back(1.0f);         ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    ps.push_back(-1.0f); ps.push_back(1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-    ps.push_back(1.0f); ps.push_back(-1.0f); ps.push_back(1.0f);        ns.push_back(0.0f); ns.push_back(0.0f); ns.push_back(1.0f);
-        
-    m_cube_points = ps;
-    m_cube_normals = ns;
+	// do data conversion
+	const auto num_vertices = template_model->num_vertices();
+	for (size_t i = 0; i < 3*num_vertices; i++) {
+		m_cube_points.push_back(static_cast<GLfloat>(template_model->vertex_data()[i]));
+		m_cube_normals.push_back(static_cast<GLfloat>(template_model->normal_data()[i]));
+	}
 }
 
 
@@ -96,7 +51,7 @@ void SplineScattererModel::setTimestamp(float timestamp) {
     m_data.reserve(num_splines*2*3);
     
     // Evaluate all splines in timestamp
-    const float radius = 0.1e-3;
+    const float radius = 1.2e-3;
     for (size_t i = 0; i < num_splines; i++) {
         // Evaluate scatterer position
         bcsim::vector3 p = RenderCurve<float, bcsim::vector3>(m_splines[i], timestamp);
@@ -116,20 +71,6 @@ void SplineScattererModel::setTimestamp(float timestamp) {
 void SplineScattererModel::setSplines(const std::vector<SplineCurve<float, bcsim::vector3> >& splines) {
     size_t num_splines = splines.size();
     m_splines = splines;
-    m_scatterer_normals = generateRandomNormalVectors(num_splines);
-}
-
-QVector<QVector3D> BaseScattererModel::generateRandomNormalVectors(int num_vectors) {
-    QVector<QVector3D> res(num_vectors);
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-0.2, 0.2);
-    for (int i = 0; i < num_vectors; i++) {
-        auto v = QVector3D(dis(gen), dis(gen), dis(gen));
-        v.normalize();
-        res[i] = v;
-    }
-    return res;
 }
 
 void FixedScattererModel::setPoints(const std::vector<bcsim::vector3>& points) {
@@ -140,7 +81,7 @@ void FixedScattererModel::setPoints(const std::vector<bcsim::vector3>& points) {
     m_data.reserve(num_points*2*3);
     
     // Evaluate all splines in timestamp
-    const float radius = 0.1e-3;
+    const float radius = 1.2e-3;
     for (size_t i = 0; i < num_points; i++) {
         auto p = points[i];
         

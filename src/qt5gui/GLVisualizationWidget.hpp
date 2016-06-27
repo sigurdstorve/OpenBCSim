@@ -42,7 +42,7 @@ class QCheckBox;
 class GLVisualizationWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit GLVisualizationWidget(QWidget* parent = 0);
+    GLVisualizationWidget(const QString& scatterer_obj_file, QWidget* parent = 0);
 
     // Set new scatterers of "spline" type.
     void setScattererSplines(const std::vector<SplineCurve<float, bcsim::vector3> >& scatterer);
@@ -71,5 +71,7 @@ private:
 
     // for controlling rendering of point scatterers
     QCheckBox*              m_render_sb;
+
+	QString					m_scatterer_obj_file;
 };
 

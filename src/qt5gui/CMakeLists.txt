@@ -18,6 +18,8 @@ if (BCSIM_ENABLE_QWT)
     add_definitions(-DBCSIM_ENABLE_QWT)
 endif()
 
+add_subdirectory(trianglemesh3d)
+
 add_executable(BCSimGUI
                main.cpp
                MainWindow.cpp
@@ -66,6 +68,7 @@ target_link_libraries(BCSimGUI
                       LibBCSimUtils # BCSimCUDA also?
                       hdf5-static
                       hdf5_cpp-static
+                      trianglemesh3d
                       )
 if (BCSIM_ENABLE_QWT)
     target_link_libraries(BCSimGUI ${QWT_LIBRARIES})
