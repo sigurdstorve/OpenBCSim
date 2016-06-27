@@ -71,20 +71,6 @@ void SplineScattererModel::setTimestamp(float timestamp) {
 void SplineScattererModel::setSplines(const std::vector<SplineCurve<float, bcsim::vector3> >& splines) {
     size_t num_splines = splines.size();
     m_splines = splines;
-    m_scatterer_normals = generateRandomNormalVectors(num_splines);
-}
-
-QVector<QVector3D> BaseScattererModel::generateRandomNormalVectors(int num_vectors) {
-    QVector<QVector3D> res(num_vectors);
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-0.2, 0.2);
-    for (int i = 0; i < num_vectors; i++) {
-        auto v = QVector3D(dis(gen), dis(gen), dis(gen));
-        v.normalize();
-        res[i] = v;
-    }
-    return res;
 }
 
 void FixedScattererModel::setPoints(const std::vector<bcsim::vector3>& points) {

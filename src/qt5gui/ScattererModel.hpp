@@ -114,7 +114,6 @@ public:
 private:
     // Vertex and normal data that will be passed to VBO
     QVector<GLfloat>                                m_data;
-    QVector<QVector3D>                              m_scatterer_normals;
     std::vector<SplineCurve<float, bcsim::vector3> > m_splines;
 };
 
@@ -142,6 +141,4 @@ public:
 private:
     // Vertex and normal data that will be passed to VBO
     QVector<GLfloat>                                m_data;
-    QVector<QVector3D>                              m_scatterer_normals;
-
 };
