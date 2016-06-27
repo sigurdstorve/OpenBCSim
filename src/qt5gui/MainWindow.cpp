@@ -96,7 +96,12 @@ MainWindow::MainWindow() {
     setCentralWidget(window);
 
     if (m_settings->value("enable_gl_widget", true).toBool()) {
-        m_gl_vis_widget = new GLVisualizationWidget;
+		const auto obj_file = m_settings->value("scatterer_obj_file").toString();
+		if (!QFileInfo::exists(obj_file)) {
+			qDebug() << "Scatterer .obj file does not exist.";
+			onExit();
+		}
+		m_gl_vis_widget = new GLVisualizationWidget(obj_file);
         h_layout->addWidget(m_gl_vis_widget);
     }
 
