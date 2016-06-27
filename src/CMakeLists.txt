@@ -23,6 +23,21 @@ option(BCSIM_BUILD_BENCHMARK_CODE
 
 include_directories(${PROJECT_SOURCE_DIR})
 
+find_package(Boost REQUIRED)
+
+if (BCSIM_BUILD_UTILS OR BCSIM_BUILD_QT5_GUI)
+    # Note: Using the new-style find_package() from HDF5 which
+    # makes available imported targets.
+    # Then it is no longer needed to do manually do include_directories()
+    find_package(HDF5 REQUIRED)
+    if (NOT HDF5_FOUND)
+        message(FATAL "Unable to locate HDF5")
+    endif()
+    if (NOT HDF5_BUILD_CPP_LIB)
+        message(FATAL "Unable to locate HDF5 c++ component")
+    endif()
+endif()
+
 # set compiler defines according to configuration options
 if (BCSIM_ENABLE_OPENMP)
     add_definitions(-DBCSIM_ENABLE_OPENMP)

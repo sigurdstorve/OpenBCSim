@@ -1,6 +1,5 @@
-# Handle boost
-find_package(Boost COMPONENTS unit_test_framework REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+
 add_executable(all_tests
                ../core/fft.hpp
                ../core/fft.cpp
@@ -13,7 +12,9 @@ add_executable(all_tests
                test_main.cpp
                )
 target_link_libraries(all_tests
-                      ${Boost_LIBRARIES}
-                      ${HDF5_LIBRARIES}
+                      Boost::boost
+                      Boost::unit_testing_framework
+                      hdf5-static
+                      hdf5_cpp-static
                       )
 install(TARGETS all_tests DESTINATION bin)
