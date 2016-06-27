@@ -51,7 +51,7 @@ void SplineScattererModel::setTimestamp(float timestamp) {
     m_data.reserve(num_splines*2*3);
     
     // Evaluate all splines in timestamp
-    const float radius = 0.1e-3;
+    const float radius = 1.2e-3;
     for (size_t i = 0; i < num_splines; i++) {
         // Evaluate scatterer position
         bcsim::vector3 p = RenderCurve<float, bcsim::vector3>(m_splines[i], timestamp);
@@ -81,7 +81,7 @@ void FixedScattererModel::setPoints(const std::vector<bcsim::vector3>& points) {
     m_data.reserve(num_points*2*3);
     
     // Evaluate all splines in timestamp
-    const float radius = 0.1e-3;
+    const float radius = 1.2e-3;
     for (size_t i = 0; i < num_points; i++) {
         auto p = points[i];
         
