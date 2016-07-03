@@ -152,7 +152,7 @@ private:
     // Use Graphics View Framework for visualizing ultrasound data
     DisplayWidget*                  m_display_widget;
 
-    std::unique_ptr<QSettings>      m_settings;
+    std::shared_ptr<QSettings>      m_settings;
     GaussianBeamProfileWidget*      m_beamprofile_widget;
     ExcitationSignalWidget*         m_excitation_signal_widget;
     SimulationParamsWidget*         m_simulation_params_widget;
