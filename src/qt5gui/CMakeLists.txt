@@ -37,6 +37,7 @@ set(BCSimGUI_SOURCES
     ProbeWidget.cpp
     GrayscaleTransformWidget.cpp
     DisplayWidget.cpp
+    QFileAdapter.cpp
     )
 
 set(BCSimGUI_HEADERS
@@ -60,6 +61,7 @@ set(BCSimGUI_HEADERS
     RefreshWorker.hpp
     ScopedCpuTimer.hpp
     DisplayWidget.hpp
+    QFileAdapter.hpp
     )
 
 add_executable(BCSimGUI
