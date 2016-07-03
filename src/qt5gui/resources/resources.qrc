@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <!-- 3D sphere model used to visualize scatterers -->
+        <file>scatterer_sphere_trimesh.obj</file>
+        
+        <!-- INI file with settings for BCSimGui application -->
+        <file>settings.ini</file>
+        
+        <!-- TODO: shaders -->
+    </qresource>
+</RCC>
