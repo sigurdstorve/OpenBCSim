@@ -122,6 +122,7 @@ void GLScattererWidget::initializeGL() {
 
     glClearColor(0, 0, 0, m_transparent ? 0 : 1);
     
+    // Make shader program for scatterers
     m_program = std::make_unique<QOpenGLShaderProgram>();
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/scatterer_vshader.glsl")) {
         throw std::runtime_error("Failed to compile vertex shader");
@@ -133,6 +134,20 @@ void GLScattererWidget::initializeGL() {
     m_program->bindAttributeLocation("normal", 1);
     if (!m_program->link()) {
         throw std::runtime_error("Failed to link shader program");
+    }
+
+    // Make shader program for scan sequence
+    m_scanseq_program = std::make_unique<QOpenGLShaderProgram>();
+    if (!m_scanseq_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/scanseq_vshader.glsl")) {
+        throw std::runtime_error("Failed to compile scanseq vertex shader");
+    }
+    if (!m_scanseq_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/scanseq_fshader.glsl")) {
+        throw std::runtime_error("Failed to compile scanseq fragment shader");
+    }
+    m_scanseq_program->bindAttributeLocation("vertex", 0);
+    m_scanseq_program->bindAttributeLocation("normal", 1);
+    if (!m_scanseq_program->link()) {
+        throw std::runtime_error("Failed to link scanseq shader program");
     }
     
     m_program->bind();
