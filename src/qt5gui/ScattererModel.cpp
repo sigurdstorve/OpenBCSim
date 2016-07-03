@@ -51,16 +51,15 @@ void SplineScattererModel::setTimestamp(float timestamp) {
     m_data.reserve(num_splines*2*3);
     
     // Evaluate all splines in timestamp
-    const float radius = 1.2e-3;
     for (size_t i = 0; i < num_splines; i++) {
         // Evaluate scatterer position
         bcsim::vector3 p = RenderCurve<float, bcsim::vector3>(m_splines[i], timestamp);
         
         // Add a correctly positioned cube in each scatterer position
         for (size_t i = 0; i < m_cube_points.size()/3; i++) {
-            m_data.push_back(m_cube_points[3*i]  *radius + p.x);
-            m_data.push_back(m_cube_points[3*i+1]*radius + p.y);
-            m_data.push_back(m_cube_points[3*i+2]*radius + p.z);
+            m_data.push_back(m_cube_points[3*i]  *m_scatterer_radius + p.x);
+            m_data.push_back(m_cube_points[3*i+1]*m_scatterer_radius + p.y);
+            m_data.push_back(m_cube_points[3*i+2]*m_scatterer_radius + p.z);
             m_data.push_back(m_cube_normals[3*i]);
             m_data.push_back(m_cube_normals[3*i+1]);
             m_data.push_back(m_cube_normals[3*i+2]);
@@ -81,15 +80,14 @@ void FixedScattererModel::setPoints(const std::vector<bcsim::vector3>& points) {
     m_data.reserve(num_points*2*3);
     
     // Evaluate all splines in timestamp
-    const float radius = 1.2e-3;
     for (size_t i = 0; i < num_points; i++) {
         auto p = points[i];
         
         // Add a correctly positioned cube in each scatterer position
         for (size_t i = 0; i < m_cube_points.size()/3; i++) {
-            m_data.push_back(m_cube_points[3*i]  *radius + p.x);
-            m_data.push_back(m_cube_points[3*i+1]*radius + p.y);
-            m_data.push_back(m_cube_points[3*i+2]*radius + p.z);
+            m_data.push_back(m_cube_points[3*i]  *m_scatterer_radius + p.x);
+            m_data.push_back(m_cube_points[3*i+1]*m_scatterer_radius + p.y);
+            m_data.push_back(m_cube_points[3*i+2]*m_scatterer_radius + p.z);
             m_data.push_back(m_cube_normals[3*i]);
             m_data.push_back(m_cube_normals[3*i+1]);
             m_data.push_back(m_cube_normals[3*i+2]);
