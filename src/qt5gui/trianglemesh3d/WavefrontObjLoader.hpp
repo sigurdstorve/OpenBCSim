@@ -24,7 +24,8 @@ std::istream& operator>>(std::istream& is, TriFace& t);
 
 class WavefrontObjLoader : public ITriangleMesh3d {
 public:
-	explicit WavefrontObjLoader(const std::string& obj_file);
+	// Load 3D mesh from an input stream.
+	WavefrontObjLoader(std::istream& obj_stream);
 
     virtual size_t num_vertices() const override;
 
@@ -33,7 +34,7 @@ public:
     virtual const double* normal_data() const override;
         
 private:
-	void parse_lines();
+	void parse_lines(std::istream& obj_stream);
 	void process_text_line(const std::string& line);
 	void dispatch_command(const std::string& command, std::stringstream& rest);
 	void process_vertex_data(std::istream& rest);   // throws

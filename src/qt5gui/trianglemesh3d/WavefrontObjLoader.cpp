@@ -4,22 +4,20 @@
 #include "WavefrontObjLoader.hpp"
 namespace trianglemesh3d {
 
-WavefrontObjLoader::WavefrontObjLoader(const std::string& obj_file)
-	: m_obj_file(obj_file)
-{
-	parse_lines();
-    expand_vertices_and_normals();
+WavefrontObjLoader::WavefrontObjLoader(std::istream& obj_stream) {
+	parse_lines(obj_stream);
+	expand_vertices_and_normals();
 
-    // clear unused members
-    m_parsed_normals.clear();
-    m_parsed_tri_faces.clear();
-    m_parsed_vertices.clear();
+	// clear unused members
+	m_parsed_normals.clear();
+	m_parsed_tri_faces.clear();
+	m_parsed_vertices.clear();
 }
 
-void WavefrontObjLoader::parse_lines() {
-	std::ifstream in_file(m_obj_file, std::ios::in);
+
+void WavefrontObjLoader::parse_lines(std::istream& obj_stream) {
 	std::string current_line;
-	while (std::getline(in_file, current_line)) {
+	while (std::getline(obj_stream, current_line)) {
 		process_text_line(current_line);
 	}
 }

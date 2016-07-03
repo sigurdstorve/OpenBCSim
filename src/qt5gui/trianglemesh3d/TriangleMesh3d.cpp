@@ -1,18 +1,22 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
+#include <fstream>
 #include "TriangleMesh3d.hpp"
 #include "WavefrontObjLoader.hpp"
 namespace trianglemesh3d {
 
 ITriangleMesh3d::u_ptr LoadTriangleMesh3d(const std::string& filename, Mesh3dFileType type) {
+	return LoadTriangleMesh3d(std::ifstream(filename, std::ios::in), type);
+}
+
+ITriangleMesh3d::u_ptr LoadTriangleMesh3d(std::istream& in_stream, Mesh3dFileType type) {
 	switch (type) {
 	case Mesh3dFileType::WAVEFRONT_OBJ:
-		return std::make_unique<WavefrontObjLoader>(filename);
+		return std::make_unique<WavefrontObjLoader>(in_stream);
 	default:
 		throw std::logic_error(std::string(__FILE__) + " no handler for file type");
 	}
-
 }
 
 std::ostream& operator<<(std::ostream& os, const ITriangleMesh3d& mesh) {
