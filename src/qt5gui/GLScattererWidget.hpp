@@ -85,9 +85,6 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) Q_DECL_OVERRIDE;
 
 private:
-    void setupVertexAttribs();
-
-private:
     QOpenGLShaderProgram*           m_program;
     int                             m_projMatrixLoc;
     int                             m_mvMatrixLoc;
