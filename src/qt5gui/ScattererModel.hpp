@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SplineCurve.hpp"
 #include "../core/LibBCSim.hpp"
 #include "trianglemesh3d/TriangleMesh3d.hpp"
+#include "IConfig.hpp"
 
 // Interface for something capable of returning data for consumption by OpenGL
 class IScattererModel {
@@ -54,7 +55,8 @@ public:
 // Functionality which is common for both SplineScattererModel and FixedScattererModel.
 class BaseScattererModel {
 public:
-    BaseScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr scatterer_template) {
+    BaseScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr scatterer_template, IConfig::s_ptr& cfg) {
+        m_scatterer_radius = cfg->get_double("scatterer_radius", 1.2e-3);
 		precompute_template(std::move(scatterer_template));
     }
 
@@ -69,6 +71,7 @@ protected:
     // Precomputed data for a cube with unit radius
     QVector<GLfloat>                                m_cube_points;
     QVector<GLfloat>                                m_cube_normals;
+    double                                          m_scatterer_radius;
 };
 
 // Dummy empty model.
@@ -90,8 +93,8 @@ public:
 class SplineScattererModel : public  IScattererModel,
                              private BaseScattererModel {
 public:
-    SplineScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr template_model)
-		: BaseScattererModel(std::move(template_model)) {  }
+    SplineScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr template_model, IConfig::s_ptr& cfg)
+		: BaseScattererModel(std::move(template_model), cfg) {  }
 
     virtual const GLfloat* constData() const {
         return m_data.constData();
@@ -120,8 +123,8 @@ private:
 class FixedScattererModel : public  IScattererModel,
                             private BaseScattererModel {
 public:
-    FixedScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr template_model)
-		: BaseScattererModel(std::move(template_model))	{ }
+    FixedScattererModel(trianglemesh3d::ITriangleMesh3d::u_ptr template_model, IConfig::s_ptr& cfg)
+		: BaseScattererModel(std::move(template_model), cfg)	{ }
 
     virtual const GLfloat* constData() const {
         return m_data.constData();
