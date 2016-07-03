@@ -41,8 +41,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QCheckBox>
 #include <QMessageBox>
 
-GLVisualizationWidget::GLVisualizationWidget(const QString& scatterer_obj_file, QWidget* parent)
+GLVisualizationWidget::GLVisualizationWidget(const QString& scatterer_obj_file, IConfig::s_ptr& cfg, QWidget* parent)
     : QWidget(parent),
+      m_cfg(cfg),
 	  m_scatterer_obj_file(scatterer_obj_file)
 {
     glWidget = new GLScattererWidget;
@@ -118,7 +119,7 @@ void GLVisualizationWidget::setScattererSplines(const std::vector<SplineCurve<fl
     qfileadapter::InputAdapter adapter(input_qfile);
 	auto mesh3d = trianglemesh3d::LoadTriangleMesh3d(adapter(), trianglemesh3d::Mesh3dFileType::WAVEFRONT_OBJ);
 	qDebug() << "Loaded 3D model with" << mesh3d->num_vertices() << " vertices";
-	auto temp = new SplineScattererModel(std::move(mesh3d));
+	auto temp = new SplineScattererModel(std::move(mesh3d), m_cfg);
     temp->setSplines(splines);
 
     m_scatterer_model = QSharedPointer<IScattererModel>(temp);
@@ -133,7 +134,7 @@ void GLVisualizationWidget::setFixedScatterers(const std::vector<bcsim::vector3>
     input_qfile.open(QIODevice::ReadOnly);
     qfileadapter::InputAdapter adapter(input_qfile);
     auto mesh3d = trianglemesh3d::LoadTriangleMesh3d(adapter(), trianglemesh3d::Mesh3dFileType::WAVEFRONT_OBJ);
-	auto temp = new FixedScattererModel(std::move(mesh3d));
+	auto temp = new FixedScattererModel(std::move(mesh3d), m_cfg);
     temp->setPoints(scatterers);
 
     m_scatterer_model = QSharedPointer<IScattererModel>(temp);
