@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
+#include <memory>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions> // provides cross-platform access to the OpenGL ES 2.0 API.
 #include <QOpenGLVertexArrayObject>
@@ -85,7 +86,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) Q_DECL_OVERRIDE;
 
 private:
-    QOpenGLShaderProgram*           m_program;
+    std::unique_ptr<QOpenGLShaderProgram> m_program;
     int                             m_projMatrixLoc;
     int                             m_mvMatrixLoc;
     int                             m_normalMatrixLoc;

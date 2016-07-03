@@ -41,8 +41,7 @@ GLScattererWidget::GLScattererWidget(QWidget* parent)
       m_xRot(0),
       m_yRot(0),
       m_zRot(0),
-      m_camera_z(static_cast<int>(-0.18f*256)),
-      m_program(0)
+      m_camera_z(static_cast<int>(-0.18f*256))
 {
     m_scatterer_data = QSharedPointer<IScattererModel>(new EmptyScattererModel);
     m_scanseq_data   = QSharedPointer<ScanSeqModel>(new ScanSeqModel);
@@ -110,8 +109,6 @@ void GLScattererWidget::cleanup() {
     makeCurrent();
     m_scatterers_vbo.destroy();
     m_scanseq_vbo.destroy();
-    delete m_program;
-    m_program = 0;
     doneCurrent();
 }
 
@@ -125,7 +122,7 @@ void GLScattererWidget::initializeGL() {
 
     glClearColor(0, 0, 0, m_transparent ? 0 : 1);
     
-    m_program = new QOpenGLShaderProgram; // TODO: Use smart-pointer?
+    m_program = std::make_unique<QOpenGLShaderProgram>();
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/scatterer_vshader.glsl")) {
         throw std::runtime_error("Failed to compile vertex shader");
     }
