@@ -134,7 +134,9 @@ void GLScattererWidget::initializeGL() {
     }
     m_program->bindAttributeLocation("vertex", 0);
     m_program->bindAttributeLocation("normal", 1);
-    m_program->link();
+    if (!m_program->link()) {
+        throw std::runtime_error("Failed to link shader program");
+    }
     
     m_program->bind();
     m_projMatrixLoc =   m_program->uniformLocation("projMatrix");
