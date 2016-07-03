@@ -227,7 +227,7 @@ void MainWindow::onLoadIniSettings() {
     } else {
         qDebug() << "Unable to find " << ini_file << ". Using default settings.";
     }
-    m_settings = std::make_unique<QSettings>(ini_file, QSettings::IniFormat);
+    m_settings = std::make_shared<QSettings>(ini_file, QSettings::IniFormat);
 }
 
 
