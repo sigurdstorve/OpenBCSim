@@ -29,4 +29,8 @@ std::ostream& operator<<(std::ostream& os, const ITriangleMesh3d& mesh);
 // Load model from a file.
 ITriangleMesh3d::u_ptr LoadTriangleMesh3d(const std::string& filename, Mesh3dFileType type);
 
+// Load model from an input stream. This is useful in case the model file is
+// not a file on disk, but e.g. a Qt resource file embedded in an executable.
+ITriangleMesh3d::u_ptr LoadTriangleMesh3d(std::istream& in_stream, Mesh3dFileType type);
+
 }   // end namespace

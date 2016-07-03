@@ -1,5 +1,6 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 option(BCSIM_ENABLE_QWT "Enable Qwt for plots" OFF)
 
@@ -20,42 +21,53 @@ endif()
 
 add_subdirectory(trianglemesh3d)
 
+set(BCSimGUI_SOURCES
+    main.cpp
+    MainWindow.cpp
+    utils.cpp
+    GLScattererWidget.cpp
+    GLVisualizationWidget.cpp
+    ScattererModel.cpp
+    scanseq/SectorScanseqWidget.cpp
+    scanseq/LinearScanseqWidget.cpp
+    scanseq/ScanseqWidget.cpp
+    BeamProfileWidget.cpp
+    ExcitationSignalWidget.cpp
+    SimulationParamsWidget.cpp
+    ProbeWidget.cpp
+    GrayscaleTransformWidget.cpp
+    DisplayWidget.cpp
+    QFileAdapter.cpp
+    )
+
+set(BCSimGUI_HEADERS
+    MainWindow.hpp
+    utils.hpp
+    GLScattererWidget.hpp
+    GLVisualizationWidget.hpp
+    ScattererModel.hpp
+    SplineCurve.hpp
+    ScanSeqModel.hpp
+    scanseq/SectorScanseqWidget.hpp
+    scanseq/LinearScanseqWidget.hpp
+    scanseq/ScanseqWidget.hpp
+    BeamProfileWidget.hpp
+    ExcitationSignalWidget.hpp
+    SimulationParamsWidget.hpp
+    ProbeWidget.hpp
+    SimTimeManager.hpp
+    SimTimeWidget.hpp
+    GrayscaleTransformWidget.hpp
+    RefreshWorker.hpp
+    ScopedCpuTimer.hpp
+    DisplayWidget.hpp
+    QFileAdapter.hpp
+    )
+
 add_executable(BCSimGUI
-               main.cpp
-               MainWindow.cpp
-               MainWindow.hpp
-               utils.hpp
-               utils.cpp
-               GLScattererWidget.cpp
-               GLScattererWidget.hpp
-               GLVisualizationWidget.cpp
-               GLVisualizationWidget.hpp
-               ScattererModel.hpp
-               ScattererModel.cpp
-               SplineCurve.hpp
-               ScanSeqModel.hpp
-               scanseq/SectorScanseqWidget.hpp
-               scanseq/SectorScanseqWidget.cpp
-               scanseq/LinearScanseqWidget.hpp
-               scanseq/LinearScanseqWidget.cpp
-               scanseq/ScanseqWidget.hpp
-               scanseq/ScanseqWidget.cpp
-               BeamProfileWidget.hpp
-               BeamProfileWidget.cpp
-               ExcitationSignalWidget.hpp
-               ExcitationSignalWidget.cpp
-               SimulationParamsWidget.hpp
-               SimulationParamsWidget.cpp
-               ProbeWidget.hpp
-               ProbeWidget.cpp
-               SimTimeManager.hpp
-               SimTimeWidget.hpp
-               GrayscaleTransformWidget.hpp
-               GrayscaleTransformWidget.cpp
-               RefreshWorker.hpp
-               ScopedCpuTimer.hpp
-               DisplayWidget.hpp
-               DisplayWidget.cpp
+               ${BCSimGUI_SOURCES}
+               ${BCSimGUI_HEADERS}
+               resources/resources.qrc
                )
 
 # Use the Widgets module from Qt5
