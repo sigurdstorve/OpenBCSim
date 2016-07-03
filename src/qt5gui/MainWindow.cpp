@@ -68,6 +68,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SimTimeWidget.hpp"
 #include "GrayscaleTransformWidget.hpp"
 #include "RefreshWorker.hpp"
+#include "QSettingsConfigAdapter.hpp"
 
 MainWindow::MainWindow() {
     onLoadIniSettings();
