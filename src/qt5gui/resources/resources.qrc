@@ -10,5 +10,9 @@
         <!-- vertex & fragment shaders for drawing scatterers -->
         <file>scatterer_vshader.glsl</file>
         <file>scatterer_fshader.glsl</file>
+        
+        <!-- vertex & fragment shaders for drawing scansequence -->
+        <file>scanseq_vshader.glsl</file>
+        <file>scanseq_fshader.glsl</file>
     </qresource>
 </RCC>
