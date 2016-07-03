@@ -221,7 +221,9 @@ MainWindow::MainWindow() {
 
 void MainWindow::onLoadIniSettings() {
     // TODO: Use smart pointer to avoid memleak.
-    const QString ini_file("settings.ini");
+    const QString ini_file(":/settings.ini");
+	// TODO: Check if a settings file exists in user location, which
+	// should override the default settings.
     QFileInfo ini_file_info(ini_file);
     if (ini_file_info.exists()) {
         qDebug() << "Found " << ini_file << ". Using settings from this file";
