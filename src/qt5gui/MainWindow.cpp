@@ -101,7 +101,8 @@ MainWindow::MainWindow() {
 			qDebug() << "Scatterer .obj file does not exist.";
 			onExit();
 		}
-		m_gl_vis_widget = new GLVisualizationWidget(obj_file);
+        IConfig::s_ptr cfg_adapter = std::make_shared<QSettingsConfigAdapter>(m_settings);
+		m_gl_vis_widget = new GLVisualizationWidget(obj_file, cfg_adapter);
         h_layout->addWidget(m_gl_vis_widget);
     }
 
