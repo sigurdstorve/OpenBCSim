@@ -65,6 +65,7 @@ set(BCSimGUI_HEADERS
 add_executable(BCSimGUI
                ${BCSimGUI_SOURCES}
                ${BCSimGUI_HEADERS}
+               resources/resources.qrc
                )
 
 # Use the Widgets module from Qt5
