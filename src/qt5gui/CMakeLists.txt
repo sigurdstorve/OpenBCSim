@@ -1,7 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
-option(BCSIM_ENABLE_QWT "Enable Qwt for plots" ON)
+option(BCSIM_ENABLE_QWT "Enable Qwt for plots" OFF)
 
 # In order for this to work, Qt5 must be found below the
 # CMAKE_PREFIX_PATH, or the Qt5<Module>_DIR must be set
