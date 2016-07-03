@@ -42,7 +42,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFileDialog>
 #include <QDebug>
 #include <QStatusBar>
-#include <QSettings>
 #include <QInputDialog>
 #include <QTimer>
 #include <QGraphicsPixmapItem>
@@ -220,17 +219,15 @@ MainWindow::MainWindow() {
 }
 
 void MainWindow::onLoadIniSettings() {
-    // TODO: Use smart pointer to avoid memleak.
     const QString ini_file(":/settings.ini");
 	// TODO: Check if a settings file exists in user location, which
 	// should override the default settings.
-    QFileInfo ini_file_info(ini_file);
-    if (ini_file_info.exists()) {
+    if (QFile::exists(ini_file)) {
         qDebug() << "Found " << ini_file << ". Using settings from this file";
     } else {
         qDebug() << "Unable to find " << ini_file << ". Using default settings.";
     }
-    m_settings = new QSettings("settings.ini", QSettings::IniFormat);
+    m_settings = std::make_unique<QSettings>(ini_file, QSettings::IniFormat);
 }
 
 

@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMainWindow>
 #include <QSlider>
 #include <QDebug>
+#include <QSettings>
 #include "../core/LibBCSim.hpp"
 #include "SimTimeManager.hpp"
 #include "../utils/ScanGeometry.hpp"
@@ -42,7 +43,6 @@ class DisplayWidget;
 class GLVisualizationWidget;
 class QwtPlot;
 class QwtPlotCurve;
-class QSettings;
 class ScanseqWidget;
 class GaussianBeamProfileWidget;
 class ExcitationSignalWidget;
@@ -152,7 +152,7 @@ private:
     // Use Graphics View Framework for visualizing ultrasound data
     DisplayWidget*                  m_display_widget;
 
-    QSettings*                      m_settings;
+    std::unique_ptr<QSettings>      m_settings;
     GaussianBeamProfileWidget*      m_beamprofile_widget;
     ExcitationSignalWidget*         m_excitation_signal_widget;
     SimulationParamsWidget*         m_simulation_params_widget;
