@@ -150,8 +150,6 @@ void GLScattererWidget::initializeGL() {
         throw std::runtime_error("Failed to link scanseq shader program");
     }
     
-    m_program->bind();
-    
     // Make sure there is a VAO when one is needed. 
     m_vao.create();
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
@@ -178,10 +176,10 @@ void GLScattererWidget::initializeGL() {
     m_camera.setToIdentity();
     m_camera.translate(0, 0, m_camera_z/256.0f);
     emit cameraZChanged(m_camera_z);
+
     // Light position is fixed. This value is used in the fragment shader
+    m_program->bind();
     m_program->setUniformValue(m_program->uniformLocation("lightPos"), QVector3D(0, 0, 70));
-    
-    // ???
     m_program->release();
 
     // Set light position for scanseq also
@@ -202,38 +200,43 @@ void GLScattererWidget::paintGL() {
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
     
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
-    m_program->bind();
-    m_program->setUniformValue(m_program->uniformLocation("projMatrix"), m_proj);
-    m_program->setUniformValue(m_program->uniformLocation("mvMatrix"), m_camera*m_world);
-    QMatrix3x3 normalMatrix = m_world.normalMatrix();
-    m_program->setUniformValue(m_program->uniformLocation("normalMatrix"), normalMatrix);
 
-    // Why do this when we inhertit QOpenGLFunctions???
-    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
-
-    // Draw scatterers
+    if (!m_program->bind()) {
+        throw std::runtime_error("Failed to bind scatterer program");
+    }
     m_scatterers_vbo.bind();
 
-    // This probably defines the memory layout.
-    // Remeber that "vertex"~0 and "normal"~1
+    m_program->setUniformValue(m_program->uniformLocation("projMatrix"), m_proj);
+    m_program->setUniformValue(m_program->uniformLocation("mvMatrix"), m_camera*m_world);
+    m_program->setUniformValue(m_program->uniformLocation("normalMatrix"), m_world.normalMatrix());
+    
+    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+    // Remember that "vertex"~0 and "normal"~1
     f->glEnableVertexAttribArray(0);
     f->glEnableVertexAttribArray(1);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), 0);
     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), reinterpret_cast<void*>(3*sizeof(GLfloat)));
     glDrawArrays(GL_TRIANGLES, 0, m_scatterer_data->vertexCount());
-
     m_scatterers_vbo.release();
+    m_program->release();
 
     // Draw scan sequence
+    if (!m_scanseq_program->bind()) {
+        throw std::runtime_error("Failed to bind scanseq program");
+    }
     m_scanseq_vbo.bind();
+
+    m_scanseq_program->setUniformValue(m_scanseq_program->uniformLocation("projMatrix"), m_proj);
+    m_scanseq_program->setUniformValue(m_scanseq_program->uniformLocation("mvMatrix"), m_camera*m_world);
+    m_scanseq_program->setUniformValue(m_scanseq_program->uniformLocation("normalMatrix"), m_world.normalMatrix());
+    
     f->glEnableVertexAttribArray(0);
     f->glEnableVertexAttribArray(1);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), 0);
     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), reinterpret_cast<void*>(3*sizeof(GLfloat)));
     glDrawArrays(GL_TRIANGLES, 0, m_scanseq_data->vertexCount());
     m_scanseq_vbo.release();
-
-    m_program->release();
+    m_scanseq_program->release();
 }
 
 void GLScattererWidget::resizeGL(int w, int h) {
