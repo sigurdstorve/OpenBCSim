@@ -218,7 +218,7 @@ void GLScattererWidget::paintGL() {
     f->glEnableVertexAttribArray(1);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), 0);
     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), reinterpret_cast<void*>(3*sizeof(GLfloat)));
-    glDrawArrays(GL_LINES, 0, m_scanseq_data->vertexCount());
+    glDrawArrays(GL_TRIANGLES, 0, m_scanseq_data->vertexCount());
     m_scanseq_vbo.release();
 
     m_program->release();
