@@ -184,6 +184,10 @@ void GLScattererWidget::initializeGL() {
     // ???
     m_program->release();
 
+    // Set light position for scanseq also
+    m_scanseq_program->bind();
+    m_scanseq_program->setUniformValue(m_scanseq_program->uniformLocation("lightPos"), QVector3D(0, 0, 70));
+    m_scanseq_program->release();
 }
 
 void GLScattererWidget::paintGL() {
