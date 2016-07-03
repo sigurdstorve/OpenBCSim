@@ -96,7 +96,7 @@ MainWindow::MainWindow() {
     setCentralWidget(window);
 
     if (m_settings->value("enable_gl_widget", true).toBool()) {
-		const auto obj_file = m_settings->value("scatterer_obj_file").toString();
+		const QString obj_file(":/scatterer_sphere_trimesh.obj");
 		if (!QFileInfo::exists(obj_file)) {
 			qDebug() << "Scatterer .obj file does not exist.";
 			onExit();
