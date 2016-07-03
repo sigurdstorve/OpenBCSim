@@ -105,7 +105,7 @@ private:
     // Data related to scatterers
     QSharedPointer<IScattererModel> m_scatterer_data;
     QOpenGLVertexArrayObject        m_vao;
-    QOpenGLBuffer                   m_logoVbo;
+    QOpenGLBuffer                   m_scatterers_vbo;
     
     // Data related to scan sequence
     QSharedPointer<ScanSeqModel>    m_scanseq_data;

@@ -108,7 +108,7 @@ void GLScattererWidget::setCameraZ(int value) {
 
 void GLScattererWidget::cleanup() {
     makeCurrent();
-    m_logoVbo.destroy();
+    m_scatterers_vbo.destroy();
     m_scanseq_vbo.destroy();
     delete m_program;
     m_program = 0;
@@ -149,13 +149,13 @@ void GLScattererWidget::initializeGL() {
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
 
     // Setup our vertex buffer object for scatterers
-    if (!m_logoVbo.create()) {
+    if (!m_scatterers_vbo.create()) {
         throw std::runtime_error("Unable to create VBO for scatterers");
     }
-    if (!m_logoVbo.bind()) {
+    if (!m_scatterers_vbo.bind()) {
         throw std::runtime_error("Unable to bind VBO for scatterers");
     }
-    m_logoVbo.allocate(m_scatterer_data->constData(), m_scatterer_data->count()*sizeof(GLfloat));
+    m_scatterers_vbo.allocate(m_scatterer_data->constData(), m_scatterer_data->count()*sizeof(GLfloat));
     
     // Setup out vertex buffer object for scanseq
     if (!m_scanseq_vbo.create()) {
@@ -200,7 +200,7 @@ void GLScattererWidget::paintGL() {
     QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
 
     // Draw scatterers
-    m_logoVbo.bind();
+    m_scatterers_vbo.bind();
 
     // This probably defines the memory layout.
     // Remeber that "vertex"~0 and "normal"~1
@@ -210,7 +210,7 @@ void GLScattererWidget::paintGL() {
     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), reinterpret_cast<void*>(3*sizeof(GLfloat)));
     glDrawArrays(GL_TRIANGLES, 0, m_scatterer_data->vertexCount());
 
-    m_logoVbo.release();
+    m_scatterers_vbo.release();
 
     // Draw scan sequence
     m_scanseq_vbo.bind();
@@ -249,9 +249,9 @@ void GLScattererWidget::mouseMoveEvent(QMouseEvent* event) {
 
 void GLScattererWidget::updateFromModel() {
     // Copy updated vertices
-    m_logoVbo.bind();
-    m_logoVbo.allocate(m_scatterer_data->constData(), m_scatterer_data->count()*sizeof(GLfloat));
-    m_logoVbo.release();
+    m_scatterers_vbo.bind();
+    m_scatterers_vbo.allocate(m_scatterer_data->constData(), m_scatterer_data->count()*sizeof(GLfloat));
+    m_scatterers_vbo.release();
     
     // TODO: Should this be here or should the caller do it?
     update();    
