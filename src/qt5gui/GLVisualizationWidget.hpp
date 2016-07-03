@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QWidget>
 #include "SplineCurve.hpp"
 #include "../core/LibBCSim.hpp"  // for vector3
+#include "IConfig.hpp"
 
 class QSlider;
 class GLScattererWidget;
@@ -42,7 +43,7 @@ class QCheckBox;
 class GLVisualizationWidget : public QWidget {
     Q_OBJECT
 public:
-    GLVisualizationWidget(const QString& scatterer_obj_file, QWidget* parent = 0);
+    GLVisualizationWidget(const QString& scatterer_obj_file, IConfig::s_ptr& cfg, QWidget* parent = 0);
 
     // Set new scatterers of "spline" type.
     void setScattererSplines(const std::vector<SplineCurve<float, bcsim::vector3> >& scatterer);
@@ -73,5 +74,6 @@ private:
     QCheckBox*              m_render_sb;
 
 	QString					m_scatterer_obj_file;
+    IConfig::s_ptr          m_cfg;
 };
 
