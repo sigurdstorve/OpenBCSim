@@ -88,10 +88,6 @@ protected:
 private:
     std::unique_ptr<QOpenGLShaderProgram> m_program;
     std::unique_ptr<QOpenGLShaderProgram> m_scanseq_program;
-    int                             m_projMatrixLoc;
-    int                             m_mvMatrixLoc;
-    int                             m_normalMatrixLoc;
-    int                             m_lightPosLoc;
     QMatrix4x4                      m_proj;
     QMatrix4x4                      m_camera;
     QMatrix4x4                      m_world;

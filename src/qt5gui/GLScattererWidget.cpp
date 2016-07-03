@@ -151,10 +151,6 @@ void GLScattererWidget::initializeGL() {
     }
     
     m_program->bind();
-    m_projMatrixLoc =   m_program->uniformLocation("projMatrix");
-    m_mvMatrixLoc =     m_program->uniformLocation("mvMatrix");
-    m_normalMatrixLoc = m_program->uniformLocation("normalMatrix");
-    m_lightPosLoc =     m_program->uniformLocation("lightPos");
     
     // Make sure there is a VAO when one is needed. 
     m_vao.create();
@@ -183,7 +179,7 @@ void GLScattererWidget::initializeGL() {
     m_camera.translate(0, 0, m_camera_z/256.0f);
     emit cameraZChanged(m_camera_z);
     // Light position is fixed. This value is used in the fragment shader
-    m_program->setUniformValue(m_lightPosLoc, QVector3D(0, 0, 70));
+    m_program->setUniformValue(m_program->uniformLocation("lightPos"), QVector3D(0, 0, 70));
     
     // ???
     m_program->release();
@@ -203,10 +199,10 @@ void GLScattererWidget::paintGL() {
     
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
     m_program->bind();
-    m_program->setUniformValue(m_projMatrixLoc, m_proj);
-    m_program->setUniformValue(m_mvMatrixLoc, m_camera*m_world);
+    m_program->setUniformValue(m_program->uniformLocation("projMatrix"), m_proj);
+    m_program->setUniformValue(m_program->uniformLocation("mvMatrix"), m_camera*m_world);
     QMatrix3x3 normalMatrix = m_world.normalMatrix();
-    m_program->setUniformValue(m_normalMatrixLoc, normalMatrix);
+    m_program->setUniformValue(m_program->uniformLocation("normalMatrix"), normalMatrix);
 
     // Why do this when we inhertit QOpenGLFunctions???
     QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
