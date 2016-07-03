@@ -38,20 +38,31 @@ public:
     }
 
     void setScanSequence(bcsim::ScanSequence::s_ptr scan_seq) {
+        // This is a HACK which works because the scanlines are ordered
+        // TODO: solve in a better way!
+
         m_data.clear();
-        const float line_length = scan_seq->line_length;
-        for (int line_no = 0; line_no < scan_seq->get_num_lines(); line_no++) {
-            auto scanline = scan_seq->get_scanline(line_no);
-            const auto temp_origin = scanline.get_origin();
-            const float x0 = temp_origin.x;
-            const float y0 = temp_origin.y;
-            const float z0 = temp_origin.z;
-            const QVector3D start(x0, y0, z0);
-            const auto temp_direction = scanline.get_direction();
-            const QVector3D end(x0+temp_direction.x*line_length,
-                                y0+temp_direction.y*line_length,
-                                z0+temp_direction.z*line_length);
-            add_line(start, end);
+        const auto line_length = scan_seq->line_length;
+        const auto num_lines = scan_seq->get_num_lines();
+        
+        for (int line_no = 0; line_no < num_lines-1; line_no++) {
+            auto line0 = scan_seq->get_scanline(line_no);
+            auto line1 = scan_seq->get_scanline(line_no + 1);
+
+            // HACK: If they start in the same origo, we will draw a triangle
+            // If not, we will draw a quad as two triangles.
+
+            const auto o0 = line0.get_origin();
+            const auto o1 = line1.get_origin();
+            const auto ur0 = line0.get_direction();
+            const auto ur1 = line1.get_direction();
+            if ((line0.get_origin() - line1.get_origin()).norm() < 1e-6) {
+                // assume sector scan
+                add_triangle(o0, o0 + ur0*line_length, o0 + ur1*line_length, line0.get_elevational_dir());
+            } else {
+                // assume linear scan
+                add_quad(o0, o0 + ur0*line_length, o1 + ur1*line_length, o1, line0.get_elevational_dir());
+            }
         }
     }
 
@@ -67,19 +78,31 @@ public:
         return m_data.constData();
     }
 private:
-    void add_line(const QVector3D& start, const QVector3D& end) {
-        add(start);
-        add(end);
+    void add_triangle(const bcsim::vector3& p0,
+                      const bcsim::vector3& p1,
+                      const bcsim::vector3& p2,
+                      const bcsim::vector3& normal) {
+        add_vertex(p0, normal);
+        add_vertex(p1, normal);
+        add_vertex(p2, normal);
     }
 
-    void add(const QVector3D& point) {
-        m_data.push_back(point.x());
-        m_data.push_back(point.y());
-        m_data.push_back(point.z());
-        // Dummy normal vector
-        m_data.push_back(1.0f);
-        m_data.push_back(0.0f);
-        m_data.push_back(0.0f);
+    void add_quad(const bcsim::vector3& p0,
+                  const bcsim::vector3& p1,
+                  const bcsim::vector3& p2,
+                  const bcsim::vector3& p3,
+                  const bcsim::vector3& normal) {
+        add_triangle(p0, p1, p3, normal);
+        add_triangle(p3, p1, p2, normal);
+    }
+
+    void add_vertex(const bcsim::vector3& point, const bcsim::vector3& normal) {
+        m_data.push_back(point.x);
+        m_data.push_back(point.y);
+        m_data.push_back(point.z);
+        m_data.push_back(normal.x);
+        m_data.push_back(normal.y);
+        m_data.push_back(normal.z);
     }
 private:
     QVector<GLfloat>    m_data;
