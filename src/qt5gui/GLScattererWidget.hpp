@@ -112,7 +112,6 @@ private:
     
     // Data related to scan sequence
     QSharedPointer<ScanSeqModel>    m_scanseq_data;
-    QOpenGLVertexArrayObject        m_vao_scanseq;
     QOpenGLBuffer                   m_scanseq_vbo;
 };
 
