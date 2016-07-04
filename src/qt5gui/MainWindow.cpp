@@ -281,7 +281,11 @@ void MainWindow::createMenus() {
     save_ultrasound_image_act->setChecked(false);
     connect(save_ultrasound_image_act, &QAction::toggled, [&](bool checked) {
         if (checked) {
-            const QString out_path("d:/temp/dumped_ultrasound_frames"); // TODO: Ask user for path
+            const auto out_path = QFileDialog::getExistingDirectory(this, "Folder to save ultrasound images in", "d:/temp");
+            if (out_path == "") {
+                qDebug() << "No folder selected. Skipping";
+                return;
+            }
             m_ultrasound_image_exporter = std::make_unique<ImageSaver>(out_path);
         } else {
             m_ultrasound_image_exporter = nullptr;
@@ -294,7 +298,11 @@ void MainWindow::createMenus() {
     save_opengl_image_act->setChecked(false);
     connect(save_opengl_image_act, &QAction::toggled, [&](bool checked) {
         if (checked) {
-            const QString out_path("d:/temp/dumped_opengl_frames"); // TODO: Ask user for path
+            const auto out_path = QFileDialog::getExistingDirectory(this, "Folder to save OpenGL images in", "d:/temp");
+            if (out_path == "") {
+                qDebug() << "No folder selected. Skipping";
+                return;
+            } 
             m_opengl_image_exporter = std::make_unique<ImageSaver>(out_path);
         } else {
             m_opengl_image_exporter = 0;
