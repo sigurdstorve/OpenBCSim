@@ -143,6 +143,7 @@ private:
     bcsim::IAlgorithm::s_ptr        m_sim;
     
     ImageSaver::ptr                 m_ultrasound_image_exporter;
+    ImageSaver::ptr                 m_opengl_image_exporter;
 
     // The OpenGL based visualization widget
     GLVisualizationWidget*          m_gl_vis_widget;

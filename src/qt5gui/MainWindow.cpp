@@ -197,6 +197,12 @@ MainWindow::MainWindow() {
         if (temp.auto_normalize) {
             m_grayscale_widget->set_normalization_constant(work_result->updated_normalization_const);
         }
+
+        // store grabbed OpenGL image if enabled
+        if (m_opengl_image_exporter) {
+            const auto written_image = m_opengl_image_exporter->add(m_gl_vis_widget->getGlImage());
+            qDebug() << "Wrote grabbed OpenGL image to " << written_image;
+        }
     });
 
 
@@ -282,6 +288,19 @@ void MainWindow::createMenus() {
         }
     });
     simulateMenu->addAction(save_ultrasound_image_act);
+
+    auto save_opengl_image_act = new QAction(tr("Save OpenGL images"), this);
+    save_opengl_image_act->setCheckable(true);
+    save_opengl_image_act->setChecked(false);
+    connect(save_opengl_image_act, &QAction::toggled, [&](bool checked) {
+        if (checked) {
+            const QString out_path("d:/temp/dumped_opengl_frames"); // TODO: Ask user for path
+            m_opengl_image_exporter = std::make_unique<ImageSaver>(out_path);
+        } else {
+            m_opengl_image_exporter = 0;
+        }
+    });
+    simulateMenu->addAction(save_opengl_image_act);
 
     m_save_iq_act = new QAction(tr("Save IQ data"), this);
     m_save_iq_act->setCheckable(true);
