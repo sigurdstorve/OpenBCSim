@@ -188,13 +188,9 @@ MainWindow::MainWindow() {
 
         m_display_widget->update_bmode(QPixmap::fromImage(result_image), x_min, x_max, y_min, y_max);
 
-        if (m_save_image_act->isChecked()) {
-            // TODO: Have an object that remebers path and can save the geometry file (parameters.txt)
-            const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
-            m_num_simulated_frames++;
-            const QString filename =  img_path + QString("/frame%1.bmp").arg(m_num_simulated_frames, 6, 10, QChar('0'));
-            qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Writing image to" << filename;
-            result_image.save(filename, 0, 100);
+        if (m_ultrasound_image_exporter) {
+            const auto written_image = m_ultrasound_image_exporter->add(result_image);
+            qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Wrote image " << written_image;
         }
         // store updated normalization constant if enabled.
         auto temp = m_grayscale_widget->get_values();
@@ -274,10 +270,18 @@ void MainWindow::createMenus() {
     connect(simulateAct, SIGNAL(triggered()), this, SLOT(onSimulate()));
     simulateMenu->addAction(simulateAct);
 
-    m_save_image_act = new QAction(tr("Save images"), this);
-    m_save_image_act->setCheckable(true);
-    m_save_image_act->setChecked(false);
-    simulateMenu->addAction(m_save_image_act);
+    auto save_ultrasound_image_act = new QAction(tr("Save ultrasound images"), this);
+    save_ultrasound_image_act->setCheckable(true);
+    save_ultrasound_image_act->setChecked(false);
+    connect(save_ultrasound_image_act, &QAction::toggled, [&](bool checked) {
+        if (checked) {
+            const QString out_path("d:/temp/dumped_ultrasound_frames"); // TODO: Ask user for path
+            m_ultrasound_image_exporter = std::make_unique<ImageSaver>(out_path);
+        } else {
+            m_ultrasound_image_exporter = nullptr;
+        }
+    });
+    simulateMenu->addAction(save_ultrasound_image_act);
 
     m_save_iq_act = new QAction(tr("Save IQ data"), this);
     m_save_iq_act->setCheckable(true);
@@ -294,7 +298,8 @@ void MainWindow::createMenus() {
 
     auto save_cartesian_limits_act = new QAction(tr("Save xy extent"), this);
     connect(save_cartesian_limits_act, &QAction::triggered, [&]() {
-        const auto img_path = m_settings->value("img_output_folder", "d:/temp").toString();
+        if (!m_ultrasound_image_exporter) return;
+        const auto img_path = m_ultrasound_image_exporter->get_output_path();
         const auto out_file = img_path + "/parameters.ini";
         QFile f(out_file);
         if (f.open(QIODevice::WriteOnly)) {
@@ -492,7 +497,6 @@ void MainWindow::createNewSimulator(const QString sim_type) {
     m_sim->set_analytical_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(sigma_lateral, sigma_elevational)));
 
     updateOpenGlVisualization();
-    m_num_simulated_frames = 0;
     qDebug() << "Created simulator";
 
 }
