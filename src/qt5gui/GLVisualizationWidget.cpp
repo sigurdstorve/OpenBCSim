@@ -147,3 +147,7 @@ void GLVisualizationWidget::setFixedScatterers(const std::vector<bcsim::vector3>
 void GLVisualizationWidget::setScanSequence(bcsim::ScanSequence::s_ptr scan_seq) {
     glWidget->setScanSequence(scan_seq);
 }
+
+QPixmap GLVisualizationWidget::getGlImage() const {
+    return glWidget->grab();
+}

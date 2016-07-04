@@ -54,6 +54,9 @@ public:
     // Set new scansequence
     void setScanSequence(bcsim::ScanSequence::s_ptr scan_seq);
 
+    // Grab the OpenGL buffer.
+    QPixmap getGlImage() const;
+
 public slots:
     void updateTimestamp(float time);
 
