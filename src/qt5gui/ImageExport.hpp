@@ -1,5 +1,6 @@
 #pragma once
 #include <QString>
+#include <memory>
 
 class QPixmap;
 
@@ -7,15 +8,23 @@ class QPixmap;
 // as Image00001.bmp, Image00002.bmp, ...
 class ImageSaver {
 public:
+    typedef std::unique_ptr<ImageSaver> ptr;
+
+    // create new saver that will put images in output_path.
     explicit ImageSaver(const QString& output_path);
 
+    // set format string to use, eg. "Image%1.bmp"
     void set_format_str(const QString& format_str);
 
-    void add(const QPixmap& pixmap);
+    // returns name of file that was saved
+    const QString add(const QPixmap& pixmap);
 
-    void add(const QImage& image);
+    // returns name of file that was saved
+    const QString add(const QImage& image);
 
     void reset_counter();
+
+    const QString get_output_path() const;
 
 private:
     const QString construct_cur_basename() const;

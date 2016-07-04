@@ -19,16 +19,18 @@ void ImageSaver::reset_counter() {
     m_counter = 0;
 }
 
-void ImageSaver::add(const QPixmap& pixmap) {
+const QString ImageSaver::add(const QPixmap& pixmap) {
     const auto img_file = construct_cur_image_path();
     pixmap.save(img_file, 0, m_quality_factor);
     m_counter++;
+    return img_file;
 }
 
-void ImageSaver::add(const QImage& image) {
+const QString ImageSaver::add(const QImage& image) {
     const auto img_file = construct_cur_image_path();
     image.save(img_file, 0, m_quality_factor);
     m_counter++;
+    return img_file;
 }
 
 const QString ImageSaver::construct_cur_image_path() const {
@@ -38,4 +40,8 @@ const QString ImageSaver::construct_cur_image_path() const {
 
 const QString ImageSaver::construct_cur_basename() const {
     return QString(m_format_str).arg(m_counter, 6, 10, QChar('0'));
+}
+
+const QString ImageSaver::get_output_path() const {
+    return m_output_path;
 }
