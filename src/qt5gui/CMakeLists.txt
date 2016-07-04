@@ -39,6 +39,7 @@ set(BCSimGUI_SOURCES
     DisplayWidget.cpp
     QFileAdapter.cpp
     QSettingsConfigAdapter.cpp
+    ImageExport.cpp
     )
 
 set(BCSimGUI_HEADERS
@@ -65,6 +66,7 @@ set(BCSimGUI_HEADERS
     QFileAdapter.hpp
     IConfig.hpp
     QSettingsConfigAdapter.hpp
+    ImageExport.hpp
     )
 
 add_executable(BCSimGUI

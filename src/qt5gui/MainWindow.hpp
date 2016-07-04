@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../core/LibBCSim.hpp"
 #include "SimTimeManager.hpp"
 #include "../utils/ScanGeometry.hpp"
+#include "ImageExport.hpp"
 
 // Forward decl.
 class DisplayWidget;
@@ -140,11 +141,9 @@ private:
 private:
     // The simulator object.
     bcsim::IAlgorithm::s_ptr        m_sim;
-    // Running count of number of frames simulated since the simulator was created.
-    size_t                          m_num_simulated_frames;
     
-    // True/false checkable menu actions
-    QAction*                        m_save_image_act;
+    ImageSaver::ptr                 m_ultrasound_image_exporter;
+    ImageSaver::ptr                 m_opengl_image_exporter;
 
     // The OpenGL based visualization widget
     GLVisualizationWidget*          m_gl_vis_widget;
