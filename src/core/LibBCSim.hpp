@@ -45,7 +45,7 @@ public:
     typedef std::unique_ptr<IAlgorithm> u_ptr;
     
     virtual ~IAlgorithm() { }
-            
+
     // Set misc. parameters. Available keys depends on the algorithm.
     virtual void set_parameter(const std::string&, const std::string& value)            = 0;
     
@@ -85,6 +85,9 @@ public:
 
     // Get the total number of scatterers (fixed and dynamic)
     virtual size_t get_total_num_scatterers() const = 0;
+
+    // Set log object to use (optional)
+    virtual void set_logger(ILog::ptr log_object) = 0;
 };
 
 // Factory function for creating simulator instances.
