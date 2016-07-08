@@ -41,6 +41,21 @@ namespace bcsim {
 // NOTE: currently only float should be used.
 typedef Vector3D<float> vector3;
 
+// Log service object.
+class ILog {
+public:
+    typedef std::shared_ptr<ILog> ptr;
+    enum class LogType {DEBUG, INFO, WARNING, FATAL};
+    virtual ~ILog() { }
+    virtual void write(LogType type, const std::string& msg) = 0;
+};
+
+class DummyLog : public ILog {
+    virtual void write(LogType type, const std::string& msg) override {
+        // do nothing
+    }
+};
+
 struct Interval {
 public:
     Interval(float t0, float t1) : first(t0), last(t1) { }
