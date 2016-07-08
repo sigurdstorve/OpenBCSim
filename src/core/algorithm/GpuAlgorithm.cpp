@@ -492,8 +492,11 @@ void GpuAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
             }
         }
     }
-    m_device_beam_profile = DeviceBeamProfileRAII::u_ptr(new DeviceBeamProfileRAII(DeviceBeamProfileRAII::TableExtent3D(num_samples_lat, num_samples_ele, num_samples_rad),
-                                                                                    temp_samples));
+    auto log_adapter = [&](const std::string& msg) {
+        m_log_object->write(ILog::DEBUG, msg);
+    };
+    const auto table_extent = DeviceBeamProfileRAII::TableExtent3D(num_samples_lat, num_samples_ele, num_samples_rad);
+    m_device_beam_profile = std::make_unique<DeviceBeamProfileRAII>(table_extent, temp_samples, log_adapter);
     // store spatial extent of profile.
     m_lut_r_min = r_range.first;
     m_lut_r_max = r_range.last;
