@@ -168,6 +168,7 @@ inline int round_up_div(int num, int den) {
 // 3D texture with tri-linear interpolation.
 class DeviceBeamProfileRAII {
 public:
+    typedef std::function<void(const std::string&)> LogCallback;
     typedef std::unique_ptr<DeviceBeamProfileRAII> u_ptr;
     typedef std::shared_ptr<DeviceBeamProfileRAII> s_ptr;
     
@@ -180,14 +181,13 @@ public:
         size_t radial;
     } TableExtent3D;
 
-    DeviceBeamProfileRAII(const TableExtent3D& table_extent, std::vector<float>& host_input_buffer)
-        : texture_object(0),
-          m_log_callback_fn(nullptr)
+    DeviceBeamProfileRAII(const TableExtent3D& table_extent, std::vector<float>& host_input_buffer, LogCallback log_callback_fn=[](const std::string&) { })
+        : texture_object(0)
     {
         auto channel_desc = cudaCreateChannelDesc(32, 0, 0, 0, cudaChannelFormatKindFloat);
         cudaExtent extent = make_cudaExtent(table_extent.lateral, table_extent.elevational, table_extent.radial);
         cudaErrorCheck( cudaMalloc3DArray(&cu_array_3d, &channel_desc, extent, 0) );
-        if (m_log_callback_fn) m_log_callback_fn("DeviceBeamProfileRAII: Allocated 3D array");
+        m_log_callback_fn("DeviceBeamProfileRAII: Allocated 3D array");
         
         // copy input data from host to CUDA 3D array
         cudaMemcpy3DParms par_3d = {0};
@@ -196,7 +196,7 @@ public:
         par_3d.extent = extent;
         par_3d.kind = cudaMemcpyHostToDevice;
         cudaErrorCheck( cudaMemcpy3D(&par_3d) );
-        if (m_log_callback_fn) m_log_callback_fn("DeviceBeamProfileRAII: Copied memory to device");
+        m_log_callback_fn("DeviceBeamProfileRAII: Copied memory to device");
 
         // specify texture
         cudaResourceDesc res_desc;
@@ -217,11 +217,7 @@ public:
         tex_desc.readMode = cudaReadModeElementType;
 
         cudaErrorCheck( cudaCreateTextureObject(&texture_object, &res_desc, &tex_desc, NULL) );
-        if (m_log_callback_fn) m_log_callback_fn("DeviceBeamProfileRAII: Created texture object");
-    }
-
-    void set_log_callback(std::function<void(const std::string&)> log_callback_fn) {
-        m_log_callback_fn = log_callback_fn;
+        m_log_callback_fn("DeviceBeamProfileRAII: Created texture object");
     }
 
     cudaTextureObject_t get() {
@@ -230,13 +226,13 @@ public:
 
     ~DeviceBeamProfileRAII() {
         cudaErrorCheck( cudaDestroyTextureObject(texture_object) );
-        if (m_log_callback_fn) m_log_callback_fn("DeviceBeamProfileRAII: Destroyed texture object");
+        m_log_callback_fn("DeviceBeamProfileRAII: Destroyed texture object");
         cudaErrorCheck( cudaFreeArray(cu_array_3d) );
-        if (m_log_callback_fn) m_log_callback_fn("DeviceBeamProfileRAII: Freed 3D array");
+        m_log_callback_fn("DeviceBeamProfileRAII: Freed 3D array");
     }
 
 private:
     cudaTextureObject_t     texture_object;
     cudaArray*              cu_array_3d;
-    std::function<void(const std::string&)> m_log_callback_fn;
+    LogCallback             m_log_callback_fn;
 };
