@@ -469,6 +469,9 @@ void MainWindow::onSetSimulatorNoise() {
 
 void MainWindow::createNewSimulator(const QString sim_type) {
     m_sim = bcsim::Create(sim_type.toUtf8().constData());
+    
+    m_sim->set_logger(std::make_shared<ConsoleLog>());
+    
     QString window_title_extra;
     if (sim_type == "cpu") {
         const auto num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
