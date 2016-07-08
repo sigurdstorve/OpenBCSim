@@ -56,10 +56,10 @@ void DeviceFixedScatterersCollection::render(const DeviceSplineScatterersCollect
 
     bool must_check_capacity = true;
     if (current_num_datasets != needed_num_datasets) {
-        std::cout << "number of datasets doesn not match. recreating\n";
+        m_log_callback("number of datasets doesn not match, recreating");
         clear();
         for (size_t dset_idx = 0; dset_idx < needed_num_datasets; dset_idx++) {
-            std::cout << "Making empty fixed dataset with capacity of " << spline_counts[dset_idx] << " scatterers\n";
+            m_log_callback("Making empty fixed dataset with capacity of " + std::to_string(spline_counts[dset_idx]) + " scatterers");
             m_fixed_datasets.push_back(std::make_shared<DeviceFixedScatterers>(spline_counts[dset_idx]));
         }
         must_check_capacity = false;
@@ -71,7 +71,7 @@ void DeviceFixedScatterersCollection::render(const DeviceSplineScatterersCollect
             const auto num_splines = spline_counts[dset_idx];
             const auto cur_num_scatterers = m_fixed_datasets[dset_idx]->get_num_scatterers();
             if (cur_num_scatterers != num_splines) {
-                std::cout << "Need different number of splines. Reallocating...";
+                m_log_callback("Need different number of splines. Reallocating...");
                 m_fixed_datasets[dset_idx] = std::make_shared<DeviceFixedScatterers>(num_splines);
             }
         }
@@ -203,7 +203,9 @@ DeviceFixedScatterers::s_ptr DeviceFixedScatterersCollection::get_dataset(size_t
     return m_fixed_datasets[dset_idx];
 }
 
-DeviceSplineScatterers::DeviceSplineScatterers(bcsim::SplineScatterers::s_ptr host_scatterers) {
+DeviceSplineScatterers::DeviceSplineScatterers(bcsim::SplineScatterers::s_ptr host_scatterers, LogCallback log_callback_fn)
+    : m_log_callback_fn(log_callback_fn)
+{
     copy_information(host_scatterers);
     reallocate_device_memory();
     transfer_to_device(host_scatterers);
@@ -223,11 +225,11 @@ void DeviceSplineScatterers::copy_information(bcsim::SplineScatterers::s_ptr hos
     if (m_spline_degree > MAX_SPLINE_DEGREE) {
         throw std::runtime_error("maximum spline degree supported is " + std::to_string(MAX_SPLINE_DEGREE));
     }
-    std::cout << "Num spline scatterers: " << m_num_scatterers << std::endl;
+    m_log_callback_fn("Num spline scatterers: " + std::to_string(m_num_scatterers));
 }
 
 void DeviceSplineScatterers::reallocate_device_memory() {
-    std::cout << "Allocating memory on host for reorganizing spline data\n";
+    m_log_callback_fn("Allocating memory on host for reorganizing spline data");
     const auto num_bytes_xyz = m_num_cs*m_num_scatterers*sizeof(float);
     const auto num_bytes_amp = m_num_scatterers*sizeof(float);
     m_control_xs = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(num_bytes_xyz));
