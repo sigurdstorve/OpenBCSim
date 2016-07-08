@@ -45,7 +45,7 @@ typedef Vector3D<float> vector3;
 class ILog {
 public:
     typedef std::shared_ptr<ILog> ptr;
-    enum class LogType {DEBUG, INFO, WARNING, FATAL};
+    enum LogType {DEBUG, INFO, WARNING, FATAL};
     virtual ~ILog() { }
     virtual void write(LogType type, const std::string& msg) = 0;
 };
