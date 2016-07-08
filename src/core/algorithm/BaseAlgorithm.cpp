@@ -40,7 +40,8 @@ BaseAlgorithm::BaseAlgorithm()
       m_param_use_arc_projection(true),
       m_radial_decimation(1),
       m_enable_phase_delay(false),
-      m_cur_beam_profile_type(BeamProfileType::NOT_CONFIGURED)
+      m_cur_beam_profile_type(BeamProfileType::NOT_CONFIGURED),
+      m_log_object(std::make_shared<DummyLog>())
 {
 }
 
@@ -95,6 +96,11 @@ std::vector<double> BaseAlgorithm::get_debug_data(const std::string& identifier)
 std::string BaseAlgorithm::get_parameter(const std::string& key) const {
     throw std::runtime_error("Illegal key: " + key);
 }
+
+void BaseAlgorithm::set_logger(ILog::ptr log_object) {
+    m_log_object = log_object;
+}
+
 
 }   // end namespace
 
