@@ -1,6 +1,6 @@
 #include <cmath>
 #include <stdexcept>
-#include "DemoPhantoms.hpp"
+#include "EllipsoidGeometry.hpp"
 
 namespace ellipsoid {
 Ellipsoid::Ellipsoid(const Region3D& region) {
