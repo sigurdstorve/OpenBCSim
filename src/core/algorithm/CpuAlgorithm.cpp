@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef BCSIM_ENABLE_OPENMP
     #include <omp.h>
 #endif
+#include <string>
 #include "CpuAlgorithm.hpp"
 #include "../to_string.hpp"
 #include "../LibBCSim.hpp"
@@ -112,7 +113,7 @@ void CpuAlgorithm::projection_loop(SplineScatterers::s_ptr spline_scatterers, co
     int lower_lim = 0;
     int upper_lim = num_control_points-1;
     if (m_param_sum_all_cs) {
-        std::cout << "debug mode: summing over i = " << lower_lim << "..." << upper_lim << std::endl;
+        m_log_object->write(ILog::DEBUG, "In debug mode: summing over i = " + std::to_string(lower_lim) + "..." + std::to_string(upper_lim));
     } else {
         std::tie(lower_lim, upper_lim) = bspline_storve::get_lower_upper_inds(spline_scatterers->knot_vector,
                                                                               line.get_timestamp(),
@@ -213,9 +214,7 @@ void CpuAlgorithm::set_use_specific_num_cores(int num_threads) {
         throw std::runtime_error("Number of cores not supported by computer");
     }
     m_omp_num_threads = num_threads;
-    if (m_param_verbose) {
-        std::cout << "Using " << m_omp_num_threads << " OpenMP threads." << std::endl;
-    }
+    m_log_object->write(ILog::INFO, "Number of OpenMP threads is " + std::to_string(m_omp_num_threads));
     
     // number of convolvers must match number of threads
     configure_convolvers_if_possible();
@@ -282,10 +281,10 @@ void CpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float>> >
     rfLines.resize(num_scanlines);
 
     if (m_param_verbose) {
-        std::cout << "Sound speed: " << m_param_sound_speed << std::endl;
-        std::cout << "Number of scan lines: " << num_scanlines << std::endl;
-        std::cout << "Setting " << m_omp_num_threads << " OpenMP threads." << std::endl;
-        std::cout << "IQ demodulation frequency is " << m_excitation.demod_freq << " Hz." << std::endl;
+        m_log_object->write(ILog::INFO, "Sound speed: " + std::to_string(m_param_sound_speed));
+        m_log_object->write(ILog::INFO, "Number of scan lines: " + std::to_string(num_scanlines));
+        m_log_object->write(ILog::INFO, "Number of OpenMP threads: " + std::to_string(m_omp_num_threads));
+        m_log_object->write(ILog::INFO, "IQ demodulation frequency: " + std::to_string(m_excitation.demod_freq));
     }    
 #ifdef BCSIM_ENABLE_OPENMP
     omp_set_num_threads(m_omp_num_threads);
@@ -294,7 +293,7 @@ void CpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float>> >
     for (int line_no = 0; line_no < num_scanlines; line_no++) {
         const auto& line = m_scan_sequence->get_scanline(line_no);
         if (m_param_verbose) {
-            std::cout << "Line " << line_no << ":\n";
+            m_log_object->write(ILog::INFO, "Simulating line number " + std::to_string(line_no));
         }
         rfLines[line_no] = simulate_line(line);
     }
@@ -308,7 +307,7 @@ std::vector<std::complex<float>> CpuAlgorithm::simulate_line(const Scanline& lin
 #endif
 
     if (m_param_verbose) {
-        std::cout << " thread id:" << thread_idx << "...\n";
+        m_log_object->write(ILog::DEBUG, "Thread ID: " + std::to_string(thread_idx));
     }
     
     // this will have length num_time_samples [which is valid before padding starts]
@@ -371,10 +370,10 @@ std::vector<std::complex<float>> CpuAlgorithm::simulate_line(const Scanline& lin
 void CpuAlgorithm::configure_convolvers_if_possible() {
     if (m_scan_sequence_configured && m_excitation_configured) {
         convolvers.clear();
-        std::cout << "Recreating convolvers\n";
+        m_log_object->write(ILog::INFO, "Recreating convolvers");
         for (int i = 0; i < m_omp_num_threads; i++) {
             if (m_param_verbose) {
-                std::cout << "Creating FFT-convolver " << i << std::endl;
+                m_log_object->write(ILog::DEBUG, "Creating convolver number " + std::to_string(i));
             }
             
             auto convolver = IBeamConvolver::Create(m_rf_line_num_samples, m_excitation);
@@ -399,7 +398,7 @@ void CpuAlgorithm::throw_if_not_configured() {
 }
 
 void CpuAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
-    std::cout << "Setting analytical beam profile for CPU algorithm" << std::endl;
+    m_log_object->write(ILog::INFO, "Setting analytical beam profile for CPU algorithm");
 
     const auto temp = std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile);
     if (!temp) throw std::runtime_error("CpuAlgorithm: failed to cast beam profile");
@@ -409,7 +408,7 @@ void CpuAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
 }
 
 void CpuAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
-    std::cout << "Setting LUT beam profile for CPU algorithm" << std::endl;
+    m_log_object->write(ILog::INFO, "Setting LUT beam profile for CPU algorithm");
 
     const auto temp = std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile);
     if (!temp) throw std::runtime_error("CpuAlgorithm: failed to cast beam profile");
@@ -425,8 +424,8 @@ void CpuAlgorithm::clear_fixed_scatterers() {
 void CpuAlgorithm::add_fixed_scatterers(FixedScatterers::s_ptr fixed_scatterers) {
     m_scatterers_collection.fixed_collections.push_back(fixed_scatterers);
     if (m_param_verbose) {
-        std::cout << "Number of fixed scatterers: " << m_scatterers_collection.total_num_fixed_scatterers() << std::endl;
-        std::cout << "Number of spline scatterers: " << m_scatterers_collection.total_num_spline_scatterers() << std::endl;
+        m_log_object->write(ILog::INFO, "Number of fixed scatterers: " + std::to_string(m_scatterers_collection.total_num_fixed_scatterers()));
+        m_log_object->write(ILog::INFO, "Number of spline scatterers: " + std::to_string(m_scatterers_collection.total_num_spline_scatterers()));
     }
 }
 
@@ -437,8 +436,8 @@ void CpuAlgorithm::clear_spline_scatterers() {
 void CpuAlgorithm::add_spline_scatterers(SplineScatterers::s_ptr spline_scatterers) {
     m_scatterers_collection.spline_collections.push_back(spline_scatterers);
     if (m_param_verbose) {
-        std::cout << "Number of fixed scatterers: " << m_scatterers_collection.total_num_fixed_scatterers() << std::endl;
-        std::cout << "Number of spline scatterers: " << m_scatterers_collection.total_num_spline_scatterers() << std::endl;
+        m_log_object->write(ILog::INFO, "Number of fixed scatterers: " + std::to_string(m_scatterers_collection.total_num_fixed_scatterers()));
+        m_log_object->write(ILog::INFO, "Number of spline scatterers: " + std::to_string(m_scatterers_collection.total_num_spline_scatterers()));
     }
 }
 

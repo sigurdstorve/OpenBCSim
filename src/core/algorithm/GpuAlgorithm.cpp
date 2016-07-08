@@ -121,25 +121,25 @@ void GpuAlgorithm::save_cuda_device_properties() {
     }
     cudaErrorCheck( cudaGetDeviceProperties(&m_cur_device_prop, m_param_cuda_device_no) );
 
-    if (m_param_verbose) {
-        const auto& p = m_cur_device_prop;
-        std::cout << "=== CUDA Device " << m_param_cuda_device_no << ": " << p.name << std::endl;
-        std::cout << "Compute capability: "         << p.major << "." << p.minor << std::endl;
-        std::cout << "ECCEnabled: "                 << p.ECCEnabled                 << std::endl;
-        std::cout << "asyncEngineCount: "           << p.asyncEngineCount           << std::endl;
-        std::cout << "canMapHostMemory: "           << p.canMapHostMemory           << std::endl; 
-        std::cout << "clockRate: "                  << p.clockRate                  << std::endl;
-        std::cout << "computeMode: "                << p.computeMode                << std::endl;
-        std::cout << "concurrentKernels: "          << p.concurrentKernels          << std::endl;
-        std::cout << "integrated: "                 << p.integrated                 << std::endl;
-        std::cout << "kernelExecTimeoutEnabled: "   << p.kernelExecTimeoutEnabled   << std::endl;
-        std::cout << "l2CacheSize: "                << p.l2CacheSize                << std::endl;
-        std::cout << "maxGridSize: [" << p.maxGridSize[0] << "," << p.maxGridSize[1] << "," << p.maxGridSize[2] << "]\n";
-        std::cout << "maxThreadsPerBlock: "         << p.maxThreadsPerBlock         << std::endl;
-        std::cout << "memoryBusWidth: "             << p.memoryBusWidth             << std::endl;
-        std::cout << "multiProcessorCount: "        << p.multiProcessorCount        << std::endl;
-        std::cout << "totalGlobMem: "               << p.totalGlobalMem             << std::endl;
-    }
+    const auto& p = m_cur_device_prop;
+    std::stringstream ss;
+    ss << "=== CUDA Device " << m_param_cuda_device_no << ": " << p.name << std::endl;
+    ss << "Compute capability: "         << p.major << "." << p.minor << std::endl;
+    ss << "ECCEnabled: "                 << p.ECCEnabled                 << std::endl;
+    ss << "asyncEngineCount: "           << p.asyncEngineCount           << std::endl;
+    ss << "canMapHostMemory: "           << p.canMapHostMemory           << std::endl; 
+    ss << "clockRate: "                  << p.clockRate                  << std::endl;
+    ss << "computeMode: "                << p.computeMode                << std::endl;
+    ss << "concurrentKernels: "          << p.concurrentKernels          << std::endl;
+    ss << "integrated: "                 << p.integrated                 << std::endl;
+    ss << "kernelExecTimeoutEnabled: "   << p.kernelExecTimeoutEnabled   << std::endl;
+    ss << "l2CacheSize: "                << p.l2CacheSize                << std::endl;
+    ss << "maxGridSize: [" << p.maxGridSize[0] << "," << p.maxGridSize[1] << "," << p.maxGridSize[2] << "]\n";
+    ss << "maxThreadsPerBlock: "         << p.maxThreadsPerBlock         << std::endl;
+    ss << "memoryBusWidth: "             << p.memoryBusWidth             << std::endl;
+    ss << "multiProcessorCount: "        << p.multiProcessorCount        << std::endl;
+    ss << "totalGlobMem: "               << p.totalGlobalMem             << std::endl;
+    m_log_object->write(ILog::INFO, ss.str());
 }
 
 void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > >&  /*out*/ rf_lines) {
@@ -167,7 +167,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         const size_t num_bytes_needed = num_random_numbers*sizeof(float);
         if (num_random_numbers % 2 != 0) throw std::runtime_error("Number of random samples must be even");
         if ((m_device_random_buffer == nullptr) || (m_device_random_buffer->get_num_bytes() != num_bytes_needed)) {
-            std::cout << "Reallocating device memory for random noise samples" << std::endl;
+            m_log_object->write(ILog::INFO, "Reallocating device memory for random noise samples");
             m_device_random_buffer = DeviceBufferRAII<float>::u_ptr(new DeviceBufferRAII<float>(num_bytes_needed));
         }
 
@@ -198,7 +198,7 @@ void GpuAlgorithm::simulate_lines(std::vector<std::vector<std::complex<float> > 
         }
 
         if (m_param_verbose) {
-            std::cout << "beam_no = " << beam_no << ", stream_no = " << stream_no << std::endl;
+            m_log_object->write(ILog::DEBUG, "beam_no = " + std::to_string(beam_no) + ", stream_no = " + std::to_string(stream_no));
         }
 
         auto scanline = m_scan_seq->get_scanline(beam_no);
@@ -384,8 +384,8 @@ void GpuAlgorithm::set_excitation(const ExcitationSignal& new_excitation) {
 
     // setup pre-computed convolution kernel and Hilbert transformer.
     m_device_excitation_fft = DeviceBufferRAII<complex>::u_ptr(new DeviceBufferRAII<complex>(rf_line_bytes));
-    std::cout << "Number of excitation samples: " << m_excitation.samples.size() << std::endl;
-    
+    m_log_object->write(ILog::INFO, "Number of excitation samples: " + std::to_string(m_excitation.samples.size()));
+
     // convert to complex with zero imaginary part.
     std::vector<std::complex<float> > temp(m_num_time_samples);
     for (size_t i = 0; i < m_excitation.samples.size(); i++) {
@@ -416,7 +416,7 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
     // HACK: Temporarily limited to the hardcoded value for m_num_time_samples
     auto num_rf_samples = compute_num_rf_samples(m_param_sound_speed, m_scan_seq->line_length, m_excitation.sampling_frequency);
     if (num_rf_samples > m_num_time_samples) {
-        std::cout << "num_rf_samples = " << num_rf_samples << std::endl;
+        m_log_object->write(ILog::FATAL, "num_rf_samples required: " + std::to_string(num_rf_samples));
         throw std::runtime_error("Too many RF samples required. TODO: remove limitation");
     }
 
@@ -424,20 +424,20 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
 
     // avoid reallocating memory if not necessary.
     if (m_num_beams_allocated != num_beams) {
-        std::cout << "Reconfiguring cuFFT batched plan\n";
-        std::cout << "m_num_time_samples is " << m_num_time_samples << std::endl;
+        m_log_object->write(ILog::INFO, "Reconfiguring cuFFT batched plan");
+        m_log_object->write(ILog::INFO, "m_num_time_samples: " + std::to_string(m_num_time_samples));
         const auto num_samples = static_cast<int>(m_num_time_samples);
         const auto batch = static_cast<int>(num_beams);
         const int rank = 1;
         int dims[] = {m_num_time_samples};
         m_fft_plan = CufftBatchedPlanRAII::u_ptr(new CufftBatchedPlanRAII(rank, dims, num_samples, CUFFT_C2C, batch));
-        std::cout << "batch = " << batch << std::endl;
+        m_log_object->write(ILog::INFO, "batch = " + std::to_string(batch));
 
         // allocate host and device memory related to RF lines
         const auto device_iq_line_bytes = sizeof(complex)*m_num_time_samples;
         const auto host_iq_line_bytes   = sizeof(std::complex<float>)*m_num_time_samples;
 
-        std::cout << "Reallocating HOST and DEVICE memory\n";
+        m_log_object->write(ILog::INFO, "Reallocating HOST and DEVICE memory");
         m_device_time_proj = DeviceBufferRAII<complex>::u_ptr ( new DeviceBufferRAII<complex>(device_iq_line_bytes*num_beams));
 
         // allocate host memory for all RF lines
@@ -451,7 +451,7 @@ void GpuAlgorithm::set_scan_sequence(ScanSequence::s_ptr new_scan_sequence) {
 }
 
 void GpuAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
-    std::cout << "Setting analytical beam profile for GPU algorithm" << std::endl;
+    m_log_object->write(ILog::INFO, "Setting analytical beam profile for GPU algorithm");
     const auto analytical_profile = std::dynamic_pointer_cast<GaussianBeamProfile>(beam_profile);
     if (!analytical_profile) throw std::runtime_error("GpuAlgorithm: failed to cast beam profile");
     m_cur_beam_profile_type = BeamProfileType::ANALYTICAL;
@@ -461,7 +461,7 @@ void GpuAlgorithm::set_analytical_profile(IBeamProfile::s_ptr beam_profile) {
 }
 
 void GpuAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
-    std::cout << "Setting LUT profile for GPU algorithm" << std::endl;
+    m_log_object->write(ILog::INFO, "Setting LUT profile for GPU algorithm");
     const auto lut_beam_profile = std::dynamic_pointer_cast<LUTBeamProfile>(beam_profile);
     if (!lut_beam_profile) throw std::runtime_error("GpuAlgorithm: failed to cast beam profile");
     m_cur_beam_profile_type = BeamProfileType::LOOKUP;
@@ -469,10 +469,10 @@ void GpuAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     int num_samples_rad = lut_beam_profile->getNumSamplesRadial();
     int num_samples_lat = lut_beam_profile->getNumSamplesLateral();
     int num_samples_ele = lut_beam_profile->getNumSamplesElevational();
-    std::cout << "=== set_lookup_profile() ===" << std::endl;
-    std::cout << "num_samples_rad: " << num_samples_rad << std::endl;
-    std::cout << "num_samples_lat: " << num_samples_lat << std::endl;
-    std::cout << "num_samples_ele: " << num_samples_ele << std::endl;
+    m_log_object->write(ILog::DEBUG, "=== set_lookup_profile() ===");
+    m_log_object->write(ILog::DEBUG, "num_samples_rad: " + std::to_string(num_samples_rad));
+    m_log_object->write(ILog::DEBUG, "num_samples_lat: " + std::to_string(num_samples_lat));
+    m_log_object->write(ILog::DEBUG, "num_samples_ele: " + std::to_string(num_samples_ele));
         
     const auto r_range = lut_beam_profile->getRangeRange();
     const auto l_range = lut_beam_profile->getLateralRange();
@@ -502,7 +502,7 @@ void GpuAlgorithm::set_lookup_profile(IBeamProfile::s_ptr beam_profile) {
     m_lut_e_min = e_range.first;
     m_lut_e_max = e_range.last;
 
-    std::cout << "Created a new DeviceBeamProfileRAII.\n";
+    m_log_object->write(ILog::DEBUG, "Created a new DeviceBeamProfileRAII");
     
     if (false) {
         const std::string raw_lut_path("d:/temp/raw_lookup_table/");
