@@ -90,6 +90,7 @@ struct PointScatterer {
 
 // Common parent for all types of scatterer configurations.
 struct Scatterers {
+    typedef std::unique_ptr<Scatterers> u_ptr;
     typedef std::shared_ptr<Scatterers> s_ptr;
     
     virtual int num_scatterers() const = 0;
