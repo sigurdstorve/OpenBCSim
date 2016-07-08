@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
+#include <iostream>
 #include <memory>
 #include <QApplication>
 #include <QMainWindow>
@@ -55,6 +56,28 @@ class QTimer;
 namespace refresh_worker {
     class RefreshWorker;
 }
+
+// Temporary
+class ConsoleLog : public bcsim::ILog {
+    virtual void write(bcsim::ILog::LogType type, const std::string& msg) {
+        std::string prefix;
+        switch (type) {
+        case bcsim::ILog::DEBUG:
+            prefix = "[debug] ";
+            break;
+        case bcsim::ILog::FATAL:
+            prefix = "[fatal] ";
+            break;
+        case bcsim::ILog::INFO:
+            prefix = "[info] ";
+            break;
+        case bcsim::ILog::WARNING:
+            prefix = "[warning] ";
+            break;
+        }
+        std::cout << prefix << msg << std::endl;
+    }
+};
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
