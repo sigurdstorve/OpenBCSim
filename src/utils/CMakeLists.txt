@@ -11,8 +11,10 @@ list(APPEND UTILS_LIBRARY_SOURCE_FILES
      HDFConvenience.cpp
      HDFConvenience.hpp
      SimpleHDF.hpp
-     DemoPhantoms.cpp
-     DemoPhantoms.hpp
+     DefaultPhantoms.hpp
+     DefaultPhantoms.cpp
+     EllipsoidGeometry.cpp
+     EllipsoidGeometry.hpp
      cartesianator/Cartesianator.cpp
      cartesianator/Cartesianator.hpp
      )
