@@ -531,6 +531,8 @@ void GpuAlgorithm::dump_orthogonal_lut_slices(const std::string& raw_path) {
                                 origin, dir0, dir1, device_slice.data(), m_device_beam_profile->get());
         cudaErrorCheck( cudaDeviceSynchronize() );
         dump_device_buffer_as_raw_file(device_slice, raw_file);
+        m_log_object->write(ILog::DEBUG, "Wrote RAW file to " + raw_file);
+
     };
 
     // slice in the middle lateral-elevational plane (radial dist is 0.5)

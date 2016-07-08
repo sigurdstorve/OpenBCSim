@@ -33,5 +33,4 @@ void dump_device_buffer_as_raw_file(DeviceBufferRAII<T>& device_buffer, const st
     }
 
     out_stream.close();
-    std::cout << "Wrote RAW file to " << raw_file << std::endl;
 }
