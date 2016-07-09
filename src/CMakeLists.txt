@@ -2,6 +2,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(OpenBCSim)
 
+set(CMAKE_CXX_STANDARD 14)
+
 option(BCSIM_ENABLE_OPENMP
        "Enable OpenMP support" ON)
 option(BCSIM_BUILD_UNITTEST
