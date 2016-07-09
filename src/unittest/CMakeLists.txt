@@ -13,7 +13,7 @@ add_executable(all_tests
                )
 target_link_libraries(all_tests
                       Boost::boost
-                      Boost::unit_testing_framework
+                      Boost::unit_test_framework
                       hdf5-static
                       hdf5_cpp-static
                       )

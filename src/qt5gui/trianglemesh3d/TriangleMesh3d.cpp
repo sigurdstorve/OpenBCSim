@@ -7,7 +7,8 @@
 namespace trianglemesh3d {
 
 ITriangleMesh3d::u_ptr LoadTriangleMesh3d(const std::string& filename, Mesh3dFileType type) {
-	return LoadTriangleMesh3d(std::ifstream(filename, std::ios::in), type);
+	auto stream = std::ifstream(filename, std::ios::in);
+	return LoadTriangleMesh3d(stream, type);
 }
 
 ITriangleMesh3d::u_ptr LoadTriangleMesh3d(std::istream& in_stream, Mesh3dFileType type) {
