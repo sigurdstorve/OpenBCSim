@@ -182,7 +182,8 @@ public:
     } TableExtent3D;
 
     DeviceBeamProfileRAII(const TableExtent3D& table_extent, std::vector<float>& host_input_buffer, LogCallback log_callback_fn=[](const std::string&) { })
-        : texture_object(0)
+        : texture_object(0),
+          m_log_callback_fn(log_callback_fn)
     {
         auto channel_desc = cudaCreateChannelDesc(32, 0, 0, 0, cudaChannelFormatKindFloat);
         cudaExtent extent = make_cudaExtent(table_extent.lateral, table_extent.elevational, table_extent.radial);
