@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SimTimeManager.hpp"
 #include "../utils/ScanGeometry.hpp"
 #include "ImageExport.hpp"
+#include "LogWidget.hpp"
 
 // Forward decl.
 class DisplayWidget;
@@ -56,28 +57,6 @@ class QTimer;
 namespace refresh_worker {
     class RefreshWorker;
 }
-
-// Temporary
-class ConsoleLog : public bcsim::ILog {
-    virtual void write(bcsim::ILog::LogType type, const std::string& msg) {
-        std::string prefix;
-        switch (type) {
-        case bcsim::ILog::DEBUG:
-            prefix = "[debug] ";
-            break;
-        case bcsim::ILog::FATAL:
-            prefix = "[fatal] ";
-            break;
-        case bcsim::ILog::INFO:
-            prefix = "[info] ";
-            break;
-        case bcsim::ILog::WARNING:
-            prefix = "[warning] ";
-            break;
-        }
-        std::cout << prefix << msg << std::endl;
-    }
-};
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -208,6 +187,8 @@ private:
     // Needed for color Doppler since a packet of frames must be simulated
     // with different timestamps.
     bcsim::ScanSequence::s_ptr      m_cur_scanseq;
+
+    bcsim::ILog::ptr                m_log_widget;
 };
 
 

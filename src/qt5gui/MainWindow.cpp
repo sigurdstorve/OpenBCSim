@@ -71,6 +71,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "QSettingsConfigAdapter.hpp"
 
 MainWindow::MainWindow() {
+    m_log_widget = std::make_unique<ConsoleLog>();
     onLoadIniSettings();
 
     // Simulation time manager
@@ -469,8 +470,7 @@ void MainWindow::onSetSimulatorNoise() {
 
 void MainWindow::createNewSimulator(const QString sim_type) {
     m_sim = bcsim::Create(sim_type.toUtf8().constData());
-    
-    m_sim->set_logger(std::make_shared<ConsoleLog>());
+    m_sim->set_logger(m_log_widget);
     
     QString window_title_extra;
     if (sim_type == "cpu") {
