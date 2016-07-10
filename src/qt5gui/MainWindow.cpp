@@ -696,7 +696,6 @@ void MainWindow::doSimulation() {
             bmode_task->set_gain(grayscale_settings.gain); 
     
             m_refresh_worker->process_data(bmode_task);
-            statusBar()->showMessage("B-mode simulation time: " + QString::number(total_millisec) + " ms.");
 
             const auto total_scatterers = m_sim->get_total_num_scatterers();
             const auto ns_value = static_cast<float>(1e6*total_millisec/(new_num_scanlines*total_scatterers));
