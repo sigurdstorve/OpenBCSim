@@ -31,7 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QSurfaceFormat>
-#include <QDebug>
 #include "MainWindow.hpp"
 #include "utils.hpp"
 
@@ -41,7 +40,7 @@ int main(int argc, char** argv) try {
     QSurfaceFormat fmt;
     fmt.setDepthBufferSize(24);
     //if (QCoreApplication::arguments().contains(QStringLiteral("--multisample"))) {
-        qDebug() << "Using multisample";
+        std::cout << "Using multisample" << std::endl;;
         fmt.setSamples(4);
     //}
     // Hard-coded to use the core profile.

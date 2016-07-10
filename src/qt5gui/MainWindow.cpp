@@ -40,7 +40,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QImage>
 #include <QPixmap>
 #include <QFileDialog>
-#include <QDebug>
 #include <QStatusBar>
 #include <QInputDialog>
 #include <QTimer>
@@ -99,7 +98,7 @@ MainWindow::MainWindow() {
     if (m_settings->value("enable_gl_widget", true).toBool()) {
 		const QString obj_file(":/scatterer_sphere_trimesh.obj");
 		if (!QFileInfo::exists(obj_file)) {
-			qDebug() << "Scatterer .obj file does not exist.";
+			m_log_widget->write(bcsim::ILog::FATAL, "Scatterer .obj file does not exist.");
 			onExit();
 		}
         IConfig::s_ptr cfg_adapter = std::make_shared<QSettingsConfigAdapter>(m_settings);
@@ -149,17 +148,6 @@ MainWindow::MainWindow() {
     v_layout->addLayout(h_layout);
     v_layout->addWidget(m_time_widget);
 
-    /*
-    auto scatterers_file = m_settings->value("default_scatterers").toString();
-    if (!QFileInfo(scatterers_file).exists()) {
-        scatterers_file = QFileDialog::getOpenFileName(this, tr("Invalid default file. Select h5 scatterer dataset"), "", tr("h5 files (*.h5)"));
-        if (scatterers_file == "") {
-            qDebug() << "No scatterer dataset selected. Exiting application.";
-            onExit();
-        }
-    }
-    loadScatterers(scatterers_file.toUtf8().constData());
-    */
     onCreateNewSimulator();
     m_display_widget = new DisplayWidget;
     h_layout->addWidget(m_display_widget);
@@ -191,7 +179,7 @@ MainWindow::MainWindow() {
 
         if (m_ultrasound_image_exporter) {
             const auto written_image = m_ultrasound_image_exporter->add(result_image);
-            qDebug() << "Simulation time is " << m_sim_time_manager->get_time() << ". Wrote image " << written_image;
+            m_log_widget->write(bcsim::ILog::INFO, "Simulation time is " + std::to_string(m_sim_time_manager->get_time()) + ". Wrote image " + written_image.toStdString());
         }
         // store updated normalization constant if enabled.
         auto temp = m_grayscale_widget->get_values();
@@ -202,7 +190,7 @@ MainWindow::MainWindow() {
         // store grabbed OpenGL image if enabled
         if (m_opengl_image_exporter) {
             const auto written_image = m_opengl_image_exporter->add(m_gl_vis_widget->getGlImage());
-            qDebug() << "Wrote grabbed OpenGL image to " << written_image;
+            m_log_widget->write(bcsim::ILog::INFO, "Wrote grabbed OpenGL image to " + written_image.toStdString());
         }
     });
 
@@ -228,9 +216,9 @@ void MainWindow::onLoadIniSettings() {
 	// TODO: Check if a settings file exists in user location, which
 	// should override the default settings.
     if (QFile::exists(ini_file)) {
-        qDebug() << "Found " << ini_file << ". Using settings from this file";
+        m_log_widget->write(bcsim::ILog::INFO, "Found " + ini_file.toStdString() + ". Using settings from this file");
     } else {
-        qDebug() << "Unable to find " << ini_file << ". Using default settings.";
+        m_log_widget->write(bcsim::ILog::DEBUG, "Unable to find " + ini_file.toStdString() + ". Using default settings.");
     }
     m_settings = std::make_shared<QSettings>(ini_file, QSettings::IniFormat);
 }
@@ -284,7 +272,7 @@ void MainWindow::createMenus() {
         if (checked) {
             const auto out_path = QFileDialog::getExistingDirectory(this, "Folder to save ultrasound images in", "d:/temp");
             if (out_path == "") {
-                qDebug() << "No folder selected. Skipping";
+                m_log_widget->write(bcsim::ILog::WARNING, "No folder selected. Skipping");
                 return;
             }
             m_ultrasound_image_exporter = std::make_unique<ImageSaver>(out_path);
@@ -301,7 +289,7 @@ void MainWindow::createMenus() {
         if (checked) {
             const auto out_path = QFileDialog::getExistingDirectory(this, "Folder to save OpenGL images in", "d:/temp");
             if (out_path == "") {
-                qDebug() << "No folder selected. Skipping";
+                m_log_widget->write(bcsim::ILog::WARNING, "No folder selected. Skipping");
                 return;
             } 
             m_opengl_image_exporter = std::make_unique<ImageSaver>(out_path);
@@ -382,10 +370,14 @@ void MainWindow::createMenus() {
             keys.push_back("kernel_memcpy_ms");
             for (const auto& key : keys) {
                 try {
-                    qDebug() << "=== key:" << key.c_str() << "===";
-                    qDebug() << QVector<double>::fromStdVector(m_sim->get_debug_data(key));
+                    m_log_widget->write(bcsim::ILog::DEBUG, "=== key:" + key + "===");
+                    std::stringstream ss;
+                    for (const auto v : m_sim->get_debug_data(key)) {
+                        ss << v << " ";
+                    }
+                    m_log_widget->write(bcsim::ILog::DEBUG, ss.str());
                 } catch (std::runtime_error& e) {
-                    qDebug() << "FAILED";
+                    m_log_widget->write(bcsim::ILog::WARNING, "FAILED");
                 }
             }
         }
@@ -421,7 +413,7 @@ void MainWindow::createMenus() {
 void MainWindow::onLoadScatterers() {
     auto h5_file = QFileDialog::getOpenFileName(this, tr("Load h5 scatterer dataset"), "", tr("h5 files (*.h5)"));
     if (h5_file == "") {
-        qDebug() << "Invalid scatterer file. Skipping";
+        m_log_widget->write(bcsim::ILog::WARNING, "Invalid scatterer file. Skipping");
         return;
     }
     loadScatterers(h5_file);
@@ -430,7 +422,7 @@ void MainWindow::onLoadScatterers() {
 void MainWindow::onLoadExcitation() {
     auto h5_file = QFileDialog::getOpenFileName(this, tr("Load h5 excitation signal"), "", tr("h5 files (*.h5)"));
     if (h5_file == "") {
-        qDebug() << "Invalid excitation file. Skipping";
+        m_log_widget->write(bcsim::ILog::WARNING, "Invalid excitation file. Skipping");
         return;
     }
     setExcitation(h5_file);
@@ -444,10 +436,10 @@ void MainWindow::onCreateNewSimulator() {
                                          tr("Type:"), items, 0, false, &ok);
     if (ok) {
         try {
-            qDebug() << "Creating simulator of type: " << sim_type;
+            m_log_widget->write(bcsim::ILog::INFO, "Creating simulator of type: " + sim_type.toStdString());
             createNewSimulator(sim_type);
         } catch (const std::runtime_error& e) {
-            qDebug() << "onCreateNewSimulator(): caught exception: " << e.what();
+            m_log_widget->write(bcsim::ILog::INFO, "onCreateNewSimulator(): caught exception: " + std::string(e.what()));
             onExit();
         }
     }
@@ -464,7 +456,7 @@ void MainWindow::onSetSimulatorNoise() {
         return;
     }
 
-    qDebug() << "Setting new noise amplitude: " << noise_amplitude;
+    m_log_widget->write(bcsim::ILog::DEBUG, "Setting new noise amplitude: " + std::to_string(noise_amplitude));
     m_sim->set_parameter("noise_amplitude", std::to_string(noise_amplitude));
 }
 
@@ -486,14 +478,14 @@ void MainWindow::createNewSimulator(const QString sim_type) {
             throw std::runtime_error("No CUDA devices was found");
         }
         if (device_no >= num_devices) {
-            qDebug() << "Invalid device number specified in config. Will default to 0";
+            m_log_widget->write(bcsim::ILog::DEBUG, "Invalid device number specified in config. Will default to 0");
             device_no = 0;
         }
-        qDebug() << "Number of CUDA devices: " << num_devices;
+        m_log_widget->write(bcsim::ILog::INFO, "Number of CUDA devices: " + std::to_string(num_devices));
         for (int device_no = 0; device_no < num_devices; device_no++) {
             m_sim->set_parameter("gpu_device", std::to_string(device_no));
             const auto device_name = m_sim->get_parameter("cur_device_name");
-            qDebug() << "Device " << device_no << " : " << device_name.c_str();
+            m_log_widget->write(bcsim::ILog::INFO, "Device " + std::to_string(device_no) + " : " + device_name);
         }
 
         // switch to selected device number (or default)
@@ -527,13 +519,13 @@ void MainWindow::createNewSimulator(const QString sim_type) {
     m_sim->set_analytical_profile(bcsim::IBeamProfile::s_ptr(new bcsim::GaussianBeamProfile(sigma_lateral, sigma_elevational)));
 
     updateOpenGlVisualization();
-    qDebug() << "Created simulator";
+    m_log_widget->write(bcsim::ILog::INFO, "Created simulator");
 
 }
 
 void MainWindow::loadScatterers(const QString h5_file) {
     if (h5_file == "") {
-        qDebug() << "Invalid scatterer file. Skipping";
+        m_log_widget->write(bcsim::ILog::WARNING, "Invalid scatterer file. Skipping");
         return;
     }
 
@@ -545,7 +537,7 @@ void MainWindow::loadScatterers(const QString h5_file) {
         auto fixed_scatterers = bcsim::loadFixedScatterersFromHdf(h5_file.toUtf8().constData());
         m_sim->add_fixed_scatterers(fixed_scatterers);
     } catch (std::runtime_error& /*e*/) {
-        qDebug() << "Could not read fixed scatterers from file";
+        m_log_widget->write(bcsim::ILog::WARNING, "Could not read fixed scatterers from file");
     }
 
     // load spline scatterers (if found)
@@ -559,10 +551,10 @@ void MainWindow::loadScatterers(const QString h5_file) {
         m_sim_time_manager->set_min_time(min_time);
         m_sim_time_manager->set_max_time(max_time);
         m_sim_time_manager->reset();
-        qDebug() << "Spline scatterers time interval is [" << min_time << ", " << max_time << "]";
+        m_log_widget->write(bcsim::ILog::DEBUG, "Spline scatterers time interval is ["  +std::to_string(min_time) + ", " + std::to_string(max_time) + "]");
 
     } catch (std::runtime_error& e) {
-        qDebug() << "Could not read spline scatterers from file";
+        m_log_widget->write(bcsim::ILog::WARNING, "Could not read spline scatterers from file");
     }
 
     // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
@@ -570,12 +562,12 @@ void MainWindow::loadScatterers(const QString h5_file) {
     try {
         initializeSplineVisualization(h5_file);
     } catch (...) {
-        qDebug() << "Failed to initialize visualization of spline scatterers";
+        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of spline scatterers");
     }
     try {
         initializeFixedVisualization(h5_file);
     } catch (...) {
-        qDebug() << "Failed to initialize visualization of fixed scatterers";
+        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of fixed scatterers");
     }
     updateOpenGlVisualization();
 }
@@ -591,7 +583,7 @@ void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_
     bcsim::vector3 rot_angles(temp_rot_angles.x(), temp_rot_angles.y(), temp_rot_angles.z());
 
     m_scan_geometry = new_geometry;
-    //qDebug() << "Probe orientation: " << rot_angles.x << rot_angles.y << rot_angles.z;
+    m_log_widget->write(bcsim::ILog::DEBUG, "Probe orientation: " + std::to_string(rot_angles.x) + ", " + std::to_string(rot_angles.y) + ", " + std::to_string(rot_angles.z));
     auto new_scanseq = bcsim::OrientScanSequence(bcsim::CreateScanSequence(new_geometry, new_num_lines, cur_time), rot_angles, probe_origin);
 
     new_scanseq->all_timestamps_equal = equal_timestamps;
@@ -609,9 +601,9 @@ void MainWindow::setExcitation(const QString h5_file) {
     try {
         auto new_excitation = bcsim::loadExcitationFromHdf(h5_file.toUtf8().constData());
         m_sim->set_excitation(new_excitation);
-        qDebug() << "Configured excitation";
+        m_log_widget->write(bcsim::ILog::INFO, "Configured excitation");
     } catch (const std::runtime_error& e) {
-        qDebug() << "Caught exception: " << e.what();
+        m_log_widget->write(bcsim::ILog::WARNING, "Caught exception: " + std::string(e.what()));
     }
 }
 
@@ -653,7 +645,7 @@ void MainWindow::doSimulation() {
                 m_sim->simulate_lines(iq_frame);
                 }
                 iq_frames_complex.push_back(iq_frame);
-                qDebug() << "Simulated frame in packet: timestamp is " << packet_timestamp;
+                m_log_widget->write(bcsim::ILog::DEBUG, "Simulated frame in packet: timestamp is " + std::to_string(packet_timestamp));
             }
 
 
@@ -667,7 +659,7 @@ void MainWindow::doSimulation() {
 
 
         } catch (std::runtime_error& e) {
-            qDebug() << "Caught exception simulating color Doppler: " << e.what();
+            m_log_widget->write(bcsim::ILog::WARNING, "Caught exception simulating color Doppler: " + std::string(e.what()));
         }
     }
     if (m_enable_bmode_act->isChecked()) {
@@ -708,10 +700,10 @@ void MainWindow::doSimulation() {
             statusBar()->showMessage(msg);
 
         } catch (std::runtime_error& e) {
-            qDebug() << "Caught exception while simulating B-mode: " << e.what();
+            m_log_widget->write(bcsim::ILog::WARNING, "Caught exception while simulating B-mode: " + std::string(e.what()));
 
         } catch (...) {
-            qDebug() << "Caught unknown error";
+            m_log_widget->write(bcsim::ILog::WARNING, "Caught unknown error");
         }
     }
 }
@@ -727,9 +719,9 @@ void MainWindow::initializeFixedVisualization(const QString& h5_file) {
     auto num_comp = shape[2];
     Q_ASSERT(num_comp == 4);
 
-    qDebug() << "Number of scatterers is " << num_scatterers;
+    m_log_widget->write(bcsim::ILog::INFO, "Number of scatterers is " + std::to_string(num_scatterers));
     int num_vis_scatterers = m_settings->value("num_opengl_scatterers", 1000).toInt();
-    qDebug() << "Number of visualization scatterers is " << num_vis_scatterers;
+    m_log_widget->write(bcsim::ILog::INFO, "Number of visualization scatterers is " + std::to_string(num_vis_scatterers));
 
     // Select random indices into scatterers
     std::random_device rd;
@@ -762,10 +754,10 @@ void MainWindow::initializeSplineVisualization(const QString& h5_file) {
     int num_cs = static_cast<int>(shape[1]);
     int num_comp = static_cast<int>(shape[2]);
     Q_ASSERT(num_comp == 3);
-    qDebug() << "Number of scatterers is " << num_scatterers;
-    qDebug() << "Each scatterer has " << num_cs << " control points";
+    m_log_widget->write(bcsim::ILog::INFO, "Number of scatterers is " + std::to_string(num_scatterers));
+    m_log_widget->write(bcsim::ILog::DEBUG, "Each scatterer has " + std::to_string(num_cs) + " control points");
     int num_vis_scatterers = m_settings->value("num_opengl_scatterers", 1000).toInt();
-    qDebug() << "Number of visualization scatterers is " << num_vis_scatterers;
+    m_log_widget->write(bcsim::ILog::DEBUG, "Number of visualization scatterers is " + std::to_string(num_vis_scatterers));
 
     num_vis_scatterers = std::min(num_vis_scatterers, num_scatterers);
 
@@ -799,7 +791,7 @@ void MainWindow::initializeSplineVisualization(const QString& h5_file) {
 
 void MainWindow::onNewExcitation(bcsim::ExcitationSignal new_excitation) {
     m_sim->set_excitation(new_excitation);
-    qDebug() << "Configured excitation signal";
+    m_log_widget->write(bcsim::ILog::INFO, "Configured excitation signal");
 }
 
 void MainWindow::onNewBeamProfile(bcsim::IBeamProfile::s_ptr new_beamprofile) {
@@ -811,7 +803,7 @@ void MainWindow::onNewBeamProfile(bcsim::IBeamProfile::s_ptr new_beamprofile) {
         throw std::runtime_error("onNewBeamProfile(): all casts failed");
     }
 
-    qDebug() << "Configured beam profile";
+    m_log_widget->write(bcsim::ILog::INFO, "Configured beam profile");
 }
 
 void MainWindow::onStartTimer() {
@@ -851,7 +843,7 @@ void MainWindow::onTimer() {
 
 void MainWindow::onAboutScatterers() {
     if (!m_sim) {
-        qDebug() << "No simulator is active";
+        m_log_widget->write(bcsim::ILog::WARNING, "No simulator is active");
         return;
     }
     const auto n = m_sim->get_total_num_scatterers();
@@ -870,8 +862,8 @@ void MainWindow::updateOpenGlVisualization() {
     if (!m_gl_vis_widget || !m_settings->value("enable_gl_widget", true).toBool()) {
         return;
     }
-    ScopedCpuTimer timer([](int milliseconds) {
-        qDebug() << "updateOpenGlVisualization used " << milliseconds << " milliseconds";
+    ScopedCpuTimer timer([&](int milliseconds) {
+        m_log_widget->write(bcsim::ILog::DEBUG, "updateOpenGlVisualization used " + std::to_string(milliseconds) + " milliseconds");
     });
     // Update scatterer visualization
     auto new_timestamp = m_sim_time_manager->get_time();
@@ -880,30 +872,30 @@ void MainWindow::updateOpenGlVisualization() {
 
 void MainWindow::onLoadBeamProfileLUT() {
     if (!m_sim) {
-        qDebug() << "No active simulator. Ignoring";
+        m_log_widget->write(bcsim::ILog::DEBUG, "No active simulator. Ignoring");
         return;
     }
     auto h5_file = QFileDialog::getOpenFileName(this, "Load HDF5 beam profile lookup-table", ".", "HDF5 files (*.h5)");
     if (h5_file == "") {
-        qDebug() << "No lookup-table file selected. Ignoring.";
+        m_log_widget->write(bcsim::ILog::WARNING, "No lookup-table file selected. Ignoring.");
         return;
     }
     m_sim->set_lookup_profile(bcsim::loadBeamProfileFromHdf(h5_file.toUtf8().constData()));
 }
 
 void MainWindow::onLoadSimulatedData() {
-    qDebug() << "!!! Warning: THIS ONLY WORKS WITH B-MODE DATA !!!";
+    m_log_widget->write(bcsim::ILog::WARNING, "!!! Warning: THIS ONLY WORKS WITH B-MODE DATA !!!");
     if (!m_sim) {
-        qDebug() << "No active simulator. Ignoring";
+        m_log_widget->write(bcsim::ILog::WARNING, "No active simulator. Ignoring");
         return;
     }
     auto h5_file = QFileDialog::getOpenFileName(this, "Load simulated data from HDF5 file", ".", "HDF5 files (*.h5)");
     if (h5_file == "") {
-        qDebug() << "No file selected. Ignoring.";
+        m_log_widget->write(bcsim::ILog::WARNING, "No file selected. Ignoring.");
         return;
     }
 
-    qDebug() << "Loading replay data from " << h5_file;
+    m_log_widget->write(bcsim::ILog::DEBUG, "Loading replay data from " + h5_file.toStdString());
 
     SimpleHDF::SimpleHDF5Reader hdf_reader(h5_file.toUtf8().constData());
     
@@ -938,7 +930,7 @@ void MainWindow::onLoadSimulatedData() {
                 }
             }
             iq_frames.push_back(iq_lines);
-            qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
+            m_log_widget->write(bcsim::ILog::INFO, "Loaded " + std::to_string(num_lines) + " lines, each with " + std::to_string(num_samples) + " samples.");
         }
     } else if (sim_data_rank == 2) {
         auto temp_real = hdf_reader.readMultiArray<float, 2>("sim_data_real");
@@ -959,7 +951,7 @@ void MainWindow::onLoadSimulatedData() {
             }
         }
         iq_frames.push_back(iq_lines);
-        qDebug() << "Loaded " << num_lines << " lines, each with " << num_samples << " samples.";
+        m_log_widget->write(bcsim::ILog::DEBUG, "Loaded " + std::to_string(num_lines) + " lines, each with " + std::to_string(num_samples) + " samples.");
     } else {
         throw std::runtime_error("sim_data must have rank 2 or 3");
     }
@@ -981,41 +973,41 @@ void MainWindow::onLoadSimulatedData() {
 
 void MainWindow::onSetSimulatorParameter() {
     if (!m_sim) {
-        qDebug() << "No valid simulator.";
+        m_log_widget->write(bcsim::ILog::WARNING, "No valid simulator.");
         return;
     }
     bool ok;
     auto key = QInputDialog::getText(this, tr("Parameter key"), tr("key:"), QLineEdit::Normal, "", &ok);
     if (!ok || key.isEmpty()) {
-        qDebug() << "Invalid key.";
+        m_log_widget->write(bcsim::ILog::WARNING, "Invalid key.");
         return;
     }
     auto value = QInputDialog::getText(this, tr("Parameter value"), tr("value:"), QLineEdit::Normal, "", &ok);
     if (!ok || key.isEmpty()) {
-        qDebug() << "Invalid value.";
+        m_log_widget->write(bcsim::ILog::WARNING, "Invalid value.");
         return;
     }
     try {
         m_sim->set_parameter(key.toUtf8().constData(), value.toUtf8().constData());
     } catch (std::runtime_error& e) {
-        qDebug() << "Caught exception: " << e.what();
+        m_log_widget->write(bcsim::ILog::WARNING, "Caught exception: " + std::string(e.what()));
     } catch (...) {
-        qDebug() << "Caught unknown exception.";
+        m_log_widget->write(bcsim::ILog::WARNING, "Caught unknown exception.");
     }
 }
 
 void MainWindow::onSaveIqBufferAs() {
     const auto num_frames = m_iq_buffer.size();
-    qDebug() << "Buffer contains IQ data for " << num_frames << " frames.";
+    m_log_widget->write(bcsim::ILog::INFO, "Buffer contains IQ data for " + std::to_string(num_frames) + " frames.");
 
     if (num_frames == 0) {
-        qDebug() << "No frames in buffer. Skipping";
+        m_log_widget->write(bcsim::ILog::WARNING, "No frames in buffer. Skipping");
         return;
     }
 
     auto h5_file = QFileDialog::getSaveFileName(this, "Save IQ buffer as HDF5", ".", "HDF5 files (*.h5)");
     if (h5_file == "") {
-        qDebug() << "Ignoring IQ buffer save";
+        m_log_widget->write(bcsim::ILog::WARNING, "Ignoring IQ buffer save");
         return;
     }
 
@@ -1023,7 +1015,7 @@ void MainWindow::onSaveIqBufferAs() {
     const auto& frame = m_iq_buffer[0];
     const auto num_lines   = frame.size();
     const auto num_samples = frame[0].size();
-    qDebug() << "Each frame has " << num_lines << " lines of " << num_samples << " samples.";
+    m_log_widget->write(bcsim::ILog::INFO, "Each frame has " + std::to_string(num_lines) + " lines of " + std::to_string(num_samples) + " samples.");
     
     boost::array<size_t, 3> dims;
     dims[0] = num_frames;
@@ -1035,7 +1027,7 @@ void MainWindow::onSaveIqBufferAs() {
     iq_real.resize(dims);
     iq_imag.resize(dims);
 
-    qDebug() << "Converting data";
+    m_log_widget->write(bcsim::ILog::INFO, "Converting data");
     for (size_t frame_no = 0; frame_no < num_frames; frame_no++) {
         for (size_t line_no = 0; line_no < num_lines; line_no++) {
             for (size_t sample_no = 0; sample_no < num_samples; sample_no++) {
@@ -1049,11 +1041,11 @@ void MainWindow::onSaveIqBufferAs() {
     hsize_t dspace_dims[] = {num_frames, num_lines, num_samples};
     H5::DataSpace dspace(3, dspace_dims);
     
-    qDebug() << "Writing real part";
+    m_log_widget->write(bcsim::ILog::INFO, "Writing real part");
     auto dset_real = file.createDataSet("iq_real", H5::PredType::NATIVE_FLOAT, dspace);
     dset_real.write(iq_real.data(), H5::PredType::NATIVE_FLOAT);
     
-    qDebug() << "Writing imaginary part";
+    m_log_widget->write(bcsim::ILog::INFO, "Writing imaginary part");
     auto dset_imag = file.createDataSet("iq_imag", H5::PredType::NATIVE_FLOAT, dspace);
     dset_imag.write(iq_imag.data(), H5::PredType::NATIVE_FLOAT);
     

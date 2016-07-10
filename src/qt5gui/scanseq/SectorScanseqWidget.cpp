@@ -4,7 +4,6 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QGroupBox>
-#include <QDebug>
 #include "../../core/to_string.hpp"
 
 SectorScanseqWidget::SectorScanseqWidget(QWidget* parent)

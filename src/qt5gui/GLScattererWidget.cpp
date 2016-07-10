@@ -31,7 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMouseEvent>
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
-#include <QDebug>
 #include "GLScattererWidget.hpp"
 #include "ScattererModel.hpp"
 #include "ScanSeqModel.hpp"
@@ -118,7 +117,8 @@ void GLScattererWidget::initializeGL() {
     
     initializeOpenGLFunctions();
     
-    qDebug("OpenGL initialized: version: %s GLSL: %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
+    // TODO: Use log object
+    //qDebug("OpenGL initialized: version: %s GLSL: %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     glClearColor(0, 0, 0, m_transparent ? 0 : 1);
     

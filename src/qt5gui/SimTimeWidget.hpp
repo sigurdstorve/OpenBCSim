@@ -1,5 +1,4 @@
 #pragma once
-#include <QDebug>
 #include <QHBoxLayout>
 #include <QWidget>
 #include <QSlider>
@@ -59,7 +58,6 @@ private:
 private slots:
     void on_slider_changed(int new_value) {
         const auto new_time_value = to_float(new_value);
-        //qDebug() << "on_slider_changed: " << new_value << "==>" << new_time_value;
         emit time_changed(new_time_value);
     }
 

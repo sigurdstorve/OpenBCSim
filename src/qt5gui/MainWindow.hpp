@@ -33,7 +33,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QApplication>
 #include <QMainWindow>
 #include <QSlider>
-#include <QDebug>
 #include <QSettings>
 #include "../core/LibBCSim.hpp"
 #include "SimTimeManager.hpp"
