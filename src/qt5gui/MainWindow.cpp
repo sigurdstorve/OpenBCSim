@@ -682,6 +682,8 @@ void MainWindow::doSimulation() {
 
             if (m_save_iq_act->isChecked()) {
                 m_iq_buffer.push_back(rf_lines_complex);
+                const auto timestamp = m_sim_time_manager->get_time();
+                m_iq_buffer_timestamps.push_back(timestamp);
             }
 
             // Create refresh work task from current geometry and the beam space data
@@ -1003,6 +1005,15 @@ void MainWindow::onSetSimulatorParameter() {
 
 void MainWindow::onSaveIqBufferAs() {
     const auto num_frames = m_iq_buffer.size();
+    const auto num_timestamps = m_iq_buffer_timestamps.size();
+    m_log_widget->write(bcsim::ILog::INFO, "IQ Buffer contains data for " + std::to_string(num_frames) + " frames");
+    m_log_widget->write(bcsim::ILog::INFO, "Number of frame timestamps is " + std::to_string(num_timestamps));
+    if (num_timestamps != num_frames) {
+        m_log_widget->write(bcsim::ILog::WARNING, "Mismatch in number of samples. Aborting");
+        onResetIqBuffer();
+        return;
+    }
+
     m_log_widget->write(bcsim::ILog::INFO, "Buffer contains IQ data for " + std::to_string(num_frames) + " frames.");
 
     if (num_frames == 0) {
@@ -1054,10 +1065,17 @@ void MainWindow::onSaveIqBufferAs() {
     auto dset_imag = file.createDataSet("iq_imag", H5::PredType::NATIVE_FLOAT, dspace);
     dset_imag.write(iq_imag.data(), H5::PredType::NATIVE_FLOAT);
     
+    m_log_widget->write(bcsim::ILog::INFO, "Writing timestamps");
+    hsize_t dspace_dims_timestamps[] = {num_frames};
+    H5::DataSpace dspace_timestamps(1, dspace_dims_timestamps);
+    auto dset_timestamps = file.createDataSet("frame_times", H5::PredType::NATIVE_FLOAT, dspace_timestamps);
+    dset_timestamps.write(m_iq_buffer_timestamps.data(), H5::PredType::NATIVE_FLOAT);
+
     onResetIqBuffer();
 }
 
 void MainWindow::onResetIqBuffer() {
     m_iq_buffer.clear();
+    m_iq_buffer_timestamps.clear();
 }
 

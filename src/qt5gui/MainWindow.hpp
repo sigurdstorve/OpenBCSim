@@ -175,6 +175,7 @@ private:
 
     // Related to IQ-buffering
     std::vector<std::vector<std::vector<std::complex<float>>>> m_iq_buffer;
+    std::vector<float>                                         m_iq_buffer_timestamps;
     QAction*                        m_save_iq_act;
     QAction*                        m_save_iq_buffer_as_act;
     QAction*                        m_reset_iq_buffer_act;
