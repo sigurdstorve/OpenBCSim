@@ -38,6 +38,12 @@ private:
 // Device memory for multiple fixed-scatterer datasets
 class DeviceFixedScatterersCollection {
 public:
+    typedef std::function<void(const std::string&)> LogCallback;
+
+    DeviceFixedScatterersCollection(LogCallback log_callback = [](const std::string&) {}) {
+        m_log_callback = log_callback;
+    }
+
     // create a new dataset and fill it with data (will allocate memory on device)
     void add(bcsim::FixedScatterers::s_ptr host_scatterers);
 
@@ -61,14 +67,16 @@ public:
 
 private:
     std::vector<DeviceFixedScatterers::s_ptr>   m_fixed_datasets;
+    LogCallback                                 m_log_callback;
 };
 
 // Device memory for a spline-scatterer dataset.
 class DeviceSplineScatterers {
 public:
+    typedef std::function<void(const std::string&)> LogCallback;
     typedef std::shared_ptr<DeviceSplineScatterers> s_ptr;
 
-    DeviceSplineScatterers(bcsim::SplineScatterers::s_ptr host_scatterers);
+    DeviceSplineScatterers(bcsim::SplineScatterers::s_ptr host_scatterers, LogCallback log_callback_fn = [](const std::string&) {});
 
     // copy everything actual control points.
     void copy_information(bcsim::SplineScatterers::s_ptr host_scatterers);
@@ -118,6 +126,8 @@ private:
     
     // amplitudes: one per spline scatterer.
     DeviceBufferRAII<float>::u_ptr      m_as;
+    
+    LogCallback                         m_log_callback_fn;
 };
 
 // Device memory for multiple spline-scatterers datasets

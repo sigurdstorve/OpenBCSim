@@ -28,16 +28,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
+#include <iostream>
 #include <memory>
 #include <QApplication>
 #include <QMainWindow>
 #include <QSlider>
-#include <QDebug>
 #include <QSettings>
 #include "../core/LibBCSim.hpp"
 #include "SimTimeManager.hpp"
 #include "../utils/ScanGeometry.hpp"
 #include "ImageExport.hpp"
+#include "LogWidget.hpp"
 
 // Forward decl.
 class DisplayWidget;
@@ -185,6 +186,8 @@ private:
     // Needed for color Doppler since a packet of frames must be simulated
     // with different timestamps.
     bcsim::ScanSequence::s_ptr      m_cur_scanseq;
+
+    bcsim::ILog::ptr                m_log_widget;
 };
 
 

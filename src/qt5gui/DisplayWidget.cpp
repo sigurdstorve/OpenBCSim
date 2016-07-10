@@ -3,7 +3,6 @@
 #include <QGraphicsPixmapItem>
 #include <QWheelEvent>
 #include <QVBoxLayout>
-#include <QDebug>
 #include <QStatusBar>
 #include "DisplayWidget.hpp"
 

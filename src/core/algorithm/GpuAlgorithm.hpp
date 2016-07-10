@@ -148,6 +148,7 @@ protected:
     float   m_lut_e_min;
     float   m_lut_e_max;
 
+    // TODO: set log callbacks!
     DeviceFixedScatterersCollection     m_device_fixed_datasets;
     DeviceSplineScatterersCollection    m_device_spline_datasets;
 

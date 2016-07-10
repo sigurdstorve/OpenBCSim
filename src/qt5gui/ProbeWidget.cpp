@@ -184,7 +184,9 @@ QVector3D DynamicProbeWidget::get_origin(float time) const {
     } else {
         // linear interpolation
         const auto k = (time-start_time)/(end_time-start_time);
-        qDebug() << "DynamicProbeWidget: interpolation constant is " << k;
+        
+        // TODO: Use log object
+        //qDebug() << "DynamicProbeWidget: interpolation constant is " << k;
         return k*p2 + (1-k)*p1;
     }
 };

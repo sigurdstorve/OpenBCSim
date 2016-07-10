@@ -104,9 +104,7 @@ void GLVisualizationWidget::updateTimestamp(float new_timestamp) {
     auto temp = m_scatterer_model.dynamicCast<SplineScattererModel>();
     if (temp) {
         temp->setTimestamp(new_timestamp);
-    } else {
-        qDebug() << "Cast to SplineScattererModel failed!";
-    }
+    } 
 
     glWidget->updateFromModel();
     update();
@@ -118,7 +116,9 @@ void GLVisualizationWidget::setScattererSplines(const std::vector<SplineCurve<fl
     input_qfile.open(QIODevice::ReadOnly);
     qfileadapter::InputAdapter adapter(input_qfile);
 	auto mesh3d = trianglemesh3d::LoadTriangleMesh3d(adapter(), trianglemesh3d::Mesh3dFileType::WAVEFRONT_OBJ);
-	qDebug() << "Loaded 3D model with" << mesh3d->num_vertices() << " vertices";
+	
+    // TODO: Use log object
+    //qDebug() << "Loaded 3D model with" << mesh3d->num_vertices() << " vertices";
 	auto temp = new SplineScattererModel(std::move(mesh3d), m_cfg);
     temp->setSplines(splines);
 

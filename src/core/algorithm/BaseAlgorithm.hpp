@@ -55,6 +55,8 @@ public:
 
     virtual std::vector<double> get_debug_data(const std::string& identifier)       const override;
 
+    virtual void set_logger(ILog::ptr log_object) override;
+
 protected:
     float       m_param_sound_speed;
     int         m_param_verbose;
@@ -68,6 +70,8 @@ protected:
 
     // storage of debug data
     std::map<std::string, std::vector<double>>  m_debug_data;
+    
+    ILog::ptr   m_log_object;   // class invariant: always valid (default dummy object)
 };
 
 }   // end namespace

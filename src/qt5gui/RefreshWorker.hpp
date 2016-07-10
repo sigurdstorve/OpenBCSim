@@ -31,7 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <memory>
 #include <QObject>
-#include <QDebug>
 #include <QThread>
 #include <QTimer>
 #include <QMutex>
@@ -172,7 +171,6 @@ private:
             } else if (std::dynamic_pointer_cast<WorkTask_ColorDoppler>(work_task)) {
                 process(std::dynamic_pointer_cast<WorkTask_ColorDoppler>(work_task));
             } else {
-                qDebug() << "Unable to cast WorkTask";
                 throw std::logic_error("Unable to cast WorkTask");
             }
         }
@@ -309,7 +307,6 @@ private:
         }
 
         const auto max_r0_value = bcsim::get_max_value(r0_lines);
-        qDebug() << "Max R0 value is " << max_r0_value;
 
         m_color_cartesianator->SetGeometry(work_task->m_scan_geometry);
 
