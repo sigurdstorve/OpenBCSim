@@ -94,6 +94,7 @@ private slots:
     void onCreateNewSimulator();
 
     void onExit() {
+        if (m_log_widget) m_log_widget->close();
         QApplication::quit();
     }
 
@@ -187,7 +188,7 @@ private:
     // with different timestamps.
     bcsim::ScanSequence::s_ptr      m_cur_scanseq;
 
-    bcsim::ILog::ptr                m_log_widget;
+    LogWidget*                      m_log_widget;
 };
 
 
