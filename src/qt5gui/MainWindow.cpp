@@ -73,6 +73,7 @@ MainWindow::MainWindow() {
     // Make standalone log window
     m_log_widget = new LogWidget;
     m_log_widget->show();
+    m_log_widget->resize(400, 400);
     onLoadIniSettings();
 
     // Simulation time manager
