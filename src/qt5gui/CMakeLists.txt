@@ -71,11 +71,18 @@ set(BCSimGUI_HEADERS
     LogWidget.hpp
     )
 
-add_executable(BCSimGUI
-               ${BCSimGUI_SOURCES}
-               ${BCSimGUI_HEADERS}
-               resources/resources.qrc
-               )
+set(BCSimGUI_STUFF
+    ${BCSimGUI_SOURCES}     
+    ${BCSimGUI_HEADERS}
+    resources/resources.qrc
+    )
+    
+if (WIN32)
+    # Avoid the console window if Windows build
+    add_executable(BCSimGUI WIN32 ${BCSimGUI_STUFF})
+else()
+    add_executable(BCSimGUI ${BCSimGUI_STUFF})
+endif()
 
 # Use the Widgets module from Qt5
 target_link_libraries(BCSimGUI
@@ -89,6 +96,10 @@ target_link_libraries(BCSimGUI
                       hdf5_cpp-static
                       trianglemesh3d
                       )
+if (WIN32)
+    target_link_libraries(BCSimGUI Qt5::WinMain)
+endif()
+
 if (BCSIM_ENABLE_QWT)
     target_link_libraries(BCSimGUI ${QWT_LIBRARIES})
 endif()
