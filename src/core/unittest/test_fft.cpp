@@ -1,11 +1,12 @@
 #define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE test_fft
 #include <boost/test/unit_test.hpp>
 #include <complex>
 #include <stdexcept> 
 #include <vector>
 #include <iostream>
 #include <string>
-#include "../core/fft.hpp"
+#include "../fft.hpp"
 
 template <typename T> 
 std::vector<std::complex<T> > make_complex(const std::vector<T>& real_values,
