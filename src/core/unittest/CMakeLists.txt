@@ -1,4 +1,3 @@
-find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 add_executable(test_fft
                test_fft.cpp
                ../fft.hpp
