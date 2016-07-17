@@ -800,9 +800,7 @@ void MainWindow::initializeSplineVisualization(bcsim::SplineScatterers::s_ptr sp
         const auto num_cs = spline_scatterers->control_points[0].size();
         curve.cs.resize(num_cs);
         for (size_t cs_no = 0; cs_no < num_cs; cs_no++) {
-            curve.cs[cs_no] = bcsim::vector3(spline_scatterers->control_points[ind][cs_no].x,
-                                             spline_scatterers->control_points[ind][cs_no].y,
-                                             spline_scatterers->control_points[ind][cs_no].z);
+            curve.cs[cs_no] = spline_scatterers->control_points[ind][cs_no];
         }
         splines[scatterer_no] = curve;
     }
