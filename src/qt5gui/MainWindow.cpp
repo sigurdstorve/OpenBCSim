@@ -68,6 +68,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GrayscaleTransformWidget.hpp"
 #include "RefreshWorker.hpp"
 #include "QSettingsConfigAdapter.hpp"
+#include "QFileAdapter.hpp"
+#include "../utils/DefaultPhantoms.hpp"
 
 MainWindow::MainWindow() {
     // Make standalone log window
@@ -504,7 +506,35 @@ void MainWindow::createNewSimulator(const QString sim_type) {
     setWindowTitle("BCSimGUI @ " + window_title_extra);
     
     // ask user for a scatterer dataset.
-    onLoadScatterers();
+    // onLoadScatterers();
+    // Configure with LV phantom generated on the fly
+    default_phantoms::LeftVentriclePhantomParameters lv_params;
+    const QString csv_file_name(":/left_ventricle_contraction.csv");
+    if (!QFile::exists(csv_file_name)) {
+        throw std::runtime_error("Unable to find contraction signal for default phantom");
+    }
+    QFile csv_file(csv_file_name);
+    csv_file.open(QIODevice::ReadOnly);
+    qfileadapter::InputAdapter csv_adapter(csv_file);
+    m_log_widget->write(bcsim::ILog::INFO, "Creating default LV phantom");
+    default_phantoms::LeftVentricle3dPhantomFactory lv_phantom_factory(lv_params, csv_adapter(), [&](const std::string& log_msg) {
+        m_log_widget->write(bcsim::ILog::DEBUG, "LV phantom factory: " + log_msg);
+    });
+    m_sim->clear_fixed_scatterers();
+    m_sim->clear_spline_scatterers();
+    auto lv_spline_scatterers = bcsim::SplineScatterers::s_ptr(lv_phantom_factory.get());
+    m_log_widget->write(bcsim::ILog::INFO, "Auto-generated phantom contains " + std::to_string(lv_spline_scatterers->num_scatterers()) + " scatterers");
+    m_sim->add_spline_scatterers(lv_spline_scatterers);
+
+    // update simulation time limits TODO: reduce duplication
+    float min_time, max_time;
+    lv_spline_scatterers->get_time_limits(min_time, max_time);
+    m_sim_time_manager->set_min_time(min_time);
+    m_sim_time_manager->set_max_time(max_time);
+    m_sim_time_manager->reset();
+    m_log_widget->write(bcsim::ILog::DEBUG, "Spline scatterers time interval is [" + std::to_string(min_time) + ", " + std::to_string(max_time) + "]");
+    updateOpenGlVisualization();
+
     m_sim->set_parameter("verbose", "0");
     m_sim->set_parameter("sound_speed", "1540.0");
     m_sim->set_parameter("radial_decimation", std::to_string(m_settings->value("radial_decimation", 15).toInt()));
