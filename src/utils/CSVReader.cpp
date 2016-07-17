@@ -6,16 +6,14 @@
 
 namespace csv {
 
-CSVReader::CSVReader(std::istream& instream, char delimiter, LogCallback log_callback)
-    : m_log_callback([](const std::string&) {}),
-      m_delimiter(delimiter)
+CSVReader::CSVReader(std::istream& instream, char delimiter)
+    : m_delimiter(delimiter)
 {
-    if (log_callback) m_log_callback = log_callback;
     read_column_headers(instream);
     read_and_store_columns_as_string(instream);
 }
-CSVReader::CSVReader(const std::string& filename, char delimiter, LogCallback log_callback)
-    : CSVReader(std::ifstream(filename, std::ios::in), delimiter, log_callback) { }
+CSVReader::CSVReader(const std::string& filename, char delimiter)
+    : CSVReader(std::ifstream(filename, std::ios::in), delimiter) { }
 
 void CSVReader::read_column_headers(std::istream& instream) {
     std::string str;
@@ -24,7 +22,6 @@ void CSVReader::read_column_headers(std::istream& instream) {
     } else {
         throw std::runtime_error("unable to read column headers");
     }
-    m_log_callback("csv file has " + std::to_string(m_column_headers.size()) + " columns");
 }
 
 std::vector<std::string> CSVReader::split_string(const std::string& s) {
@@ -32,6 +29,10 @@ std::vector<std::string> CSVReader::split_string(const std::string& s) {
     std::stringstream ss(s);
     std::string item;
     while (std::getline(ss, item, m_delimiter)) {
+        // strip any \r or \n
+        item.erase(std::remove_if(std::begin(item), std::end(item), [](char c) {
+            return (c=='\n') || (c=='\r');
+        }));
         res.push_back(item);
     }
     return res;
@@ -42,11 +43,9 @@ void CSVReader::read_and_store_columns_as_string(std::istream& instream) {
     const auto num_columns = m_column_headers.size();
     while (std::getline(instream, cur_line)) {
         if (std::all_of(cur_line.begin(), cur_line.end(), isspace)) {
-            m_log_callback("Skipping empty line: " + cur_line);
             continue;
         }
 
-        m_log_callback("Parsing line: " + cur_line);
         auto string_parts = split_string(cur_line);
         if (string_parts.size() != num_columns) {
             throw std::runtime_error("mismatch between number of row entries and number of column headers");

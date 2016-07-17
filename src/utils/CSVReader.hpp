@@ -11,11 +11,9 @@ namespace csv {
     
 class CSVReader {
 public:
-    typedef std::function<void(const std::string&)> LogCallback;
-    
-    CSVReader(const std::string& filename, char delimiter=';', LogCallback log_callback=nullptr);
+    CSVReader(const std::string& filename, char delimiter=';');
 
-    CSVReader(std::istream& instream, char delimiter=';', LogCallback log_callback=nullptr);
+    CSVReader(std::istream& instream, char delimiter=';');
 
     template <typename T>
     std::vector<T> get_column(const std::string& col_name) {
@@ -40,7 +38,6 @@ private:
     std::vector<std::string> split_string(const std::string& s);
 
 private:
-    LogCallback                                         m_log_callback;
     std::map<std::string, std::vector<std::string>>     m_string_data;
     char                                                m_delimiter;
     std::vector<std::string>                            m_column_headers;
