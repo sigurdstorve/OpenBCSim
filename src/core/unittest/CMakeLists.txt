@@ -11,5 +11,11 @@ add_executable(test_hilbert_mask
                ../discrete_hilbert_mask.hpp
                )
 target_link_libraries(test_hilbert_mask Boost::unit_test_framework)
-add_test(NAME test_hilbert_mast COMMAND test_hilbert_mask)
-               
+add_test(NAME test_hilbert_mask COMMAND test_hilbert_mask)
+
+add_executable(test_linalg
+               test_linalg.cpp
+               ../vector3.hpp
+               )
+target_link_libraries(test_linalg Boost::unit_test_framework)
+add_test(NAME test_linalg COMMAND test_linalg)
