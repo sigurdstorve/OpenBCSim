@@ -4,7 +4,6 @@ add_executable(all_tests
                ../utils/SignalProcessing.hpp
                ../utils/SignalProcessing.cpp
                test_linalg.cpp
-               test_hilbert_mask.cpp
                test_main.cpp
                )
 target_link_libraries(all_tests
