@@ -136,7 +136,7 @@ private slots:
     void onResetIqBuffer();
 
 private:
-    void initializeSplineVisualization(const QString& h5_file);
+    void initializeSplineVisualization(bcsim::SplineScatterers::s_ptr spline_scatterers);
 
     void initializeFixedVisualization(const QString& h5_file);
 

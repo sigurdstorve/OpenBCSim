@@ -589,17 +589,18 @@ void MainWindow::loadScatterers(const QString h5_file) {
         m_sim_time_manager->reset();
         m_log_widget->write(bcsim::ILog::DEBUG, "Spline scatterers time interval is ["  +std::to_string(min_time) + ", " + std::to_string(max_time) + "]");
 
+        // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
+        // This does not yet support hdf5 files with both types of scatterers!
+        try {
+            initializeSplineVisualization(spline_scatterers);
+        }
+        catch (...) {
+            m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of spline scatterers");
+        }
     } catch (std::runtime_error& e) {
         m_log_widget->write(bcsim::ILog::WARNING, "Could not read spline scatterers from file");
     }
 
-    // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
-    // This does not yet support hdf5 files with both types of scatterers!
-    try {
-        initializeSplineVisualization(h5_file);
-    } catch (...) {
-        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of spline scatterers");
-    }
     try {
         initializeFixedVisualization(h5_file);
     } catch (...) {
@@ -778,30 +779,15 @@ void MainWindow::initializeFixedVisualization(const QString& h5_file) {
 
 
 // Currently ignoring weights when visualizing
-void MainWindow::initializeSplineVisualization(const QString& h5_file) {
-    SimpleHDF::SimpleHDF5Reader reader(h5_file.toUtf8().constData());
-    auto control_points =  reader.readMultiArray<float, 3>("control_points");
-    auto knot_vector    =  reader.readStdVector<float>("knot_vector");
-    int spline_degree   = reader.readScalar<int>("spline_degree");
-
-    auto shape = control_points.shape();
-    auto dimensionality = control_points.num_dimensions();
-    Q_ASSERT(dimensionality == 3);
-    int num_scatterers = static_cast<int>(shape[0]);
-    int num_cs = static_cast<int>(shape[1]);
-    int num_comp = static_cast<int>(shape[2]);
-    Q_ASSERT(num_comp == 3);
-    m_log_widget->write(bcsim::ILog::INFO, "Number of scatterers is " + std::to_string(num_scatterers));
-    m_log_widget->write(bcsim::ILog::DEBUG, "Each scatterer has " + std::to_string(num_cs) + " control points");
+void MainWindow::initializeSplineVisualization(bcsim::SplineScatterers::s_ptr spline_scatterers) {
     int num_vis_scatterers = m_settings->value("num_opengl_scatterers", 1000).toInt();
     m_log_widget->write(bcsim::ILog::DEBUG, "Number of visualization scatterers is " + std::to_string(num_vis_scatterers));
-
-    num_vis_scatterers = std::min(num_vis_scatterers, num_scatterers);
+    num_vis_scatterers = std::min(num_vis_scatterers, spline_scatterers->num_scatterers());
 
     // Select random indices into scatterers
     std::random_device rd;
     std::mt19937 eng(rd());
-    std::uniform_int_distribution<> distr(0, num_scatterers-1);
+    std::uniform_int_distribution<> distr(0, spline_scatterers->num_scatterers()-1);
 
     std::vector<SplineCurve<float, bcsim::vector3> > splines(num_vis_scatterers);
     for (int scatterer_no = 0; scatterer_no < num_vis_scatterers; scatterer_no++) {
@@ -809,13 +795,14 @@ void MainWindow::initializeSplineVisualization(const QString& h5_file) {
         
         // Create a SplineCurve for current scatterer
         SplineCurve<float, bcsim::vector3> curve;
-        curve.knots = knot_vector;
-        curve.degree = spline_degree;
+        curve.knots = spline_scatterers->knot_vector;
+        curve.degree = spline_scatterers->spline_degree;
+        const auto num_cs = spline_scatterers->control_points[0].size();
         curve.cs.resize(num_cs);
-        for (int cs_no = 0; cs_no < num_cs; cs_no++) {
-            curve.cs[cs_no] = bcsim::vector3(control_points[ind][cs_no][0],
-                                             control_points[ind][cs_no][1],
-                                             control_points[ind][cs_no][2]);
+        for (size_t cs_no = 0; cs_no < num_cs; cs_no++) {
+            curve.cs[cs_no] = bcsim::vector3(spline_scatterers->control_points[ind][cs_no].x,
+                                             spline_scatterers->control_points[ind][cs_no].y,
+                                             spline_scatterers->control_points[ind][cs_no].z);
         }
         splines[scatterer_no] = curve;
     }
