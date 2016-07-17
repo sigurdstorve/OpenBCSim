@@ -842,9 +842,11 @@ void MainWindow::onSetSimTme() {
 
 void MainWindow::onTimer() {
     m_sim_time_manager->advance();
+    /*
     ScopedCpuTimer timer([](int millisec) {
         std::cout << "onTimer() used: " << millisec << " ms.\n";
     });
+    */
     onSimulate();
 }
 
