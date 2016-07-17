@@ -1,11 +1,12 @@
 #define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE test_fft
 #include <boost/test/unit_test.hpp>
 #include <complex>
 #include <stdexcept> 
 #include <vector>
 #include <iostream>
 #include <string>
-#include "../core/fft.hpp"
+#include "../fft.hpp"
 
 template <typename T> 
 std::vector<std::complex<T> > make_complex(const std::vector<T>& real_values,
@@ -52,18 +53,9 @@ void check_close_vector(const std::vector<T>& x, const std::vector<T>& y) {
 }
 
 BOOST_AUTO_TEST_CASE(FFT_convolve1) {
-    std::vector<float> x;
-    x.push_back(1.0f);
-    x.push_back(2.0f);
-    x.push_back(3.0f);
-
-    std::vector<float> h;
-    h.push_back(1.0f);
-
-    std::vector<float> desired_res;
-    desired_res.push_back(1.0f);
-    desired_res.push_back(2.0f);
-    desired_res.push_back(3.0f);
+    std::vector<float> x{1.0f, 2.0f, 3.0f};
+    std::vector<float> h{1.0f};
+    std::vector<float> desired_res{1.0f, 2.0f, 3.0f};
 
     auto res = fft_conv(x, h);
     BOOST_REQUIRE(res.size() == x.size());
@@ -71,39 +63,14 @@ BOOST_AUTO_TEST_CASE(FFT_convolve1) {
 }
 
 BOOST_AUTO_TEST_CASE(FFT_convolve2) {
-    std::vector<float> x;
-    x.push_back(1.0f);
-    x.push_back(2.0f);
-    x.push_back(3.0f);
-    x.push_back(-0.23f);
-    x.push_back(0.001f);
-    x.push_back(32.3f);
-    x.push_back(4.0f);
-
-    std::vector<float> h;
-    h.push_back(-0.33f);
-    h.push_back(0.9f);
-    h.push_back(-0.002f);
-    h.push_back(1.1f);
-    h.push_back(2.3f);
+    std::vector<float> x{1.0f, 2.0f, 3.0f, -0.23f, 0.001f, 32.3f, 4.0f};
+    std::vector<float> h{-0.33f, 0.9f, -0.002f, 1.1f, 2.3f};
     
-    std::vector<float> desired_res;
-    desired_res.push_back(-0.33f);
-    desired_res.push_back(0.24f);
-    desired_res.push_back(0.808f);
-    desired_res.push_back(3.8719f);
-    desired_res.push_back(4.28667f);
-    desired_res.push_back(-2.75764f);
-    desired_res.push_back(34.396998f);
-    desired_res.push_back(3.0075f);
-    desired_res.push_back(35.5243f);
-    desired_res.push_back(78.69f);
-    desired_res.push_back(9.2f);
+    std::vector<float> desired_res{-0.33f, 0.24f, 0.808f, 3.8719f, 4.28667f,
+        -2.75764f, 34.396998f, 3.0075f, 35.5243f, 78.69f, 9.2f};
 
     auto res = fft_conv(x, h);
-
     BOOST_REQUIRE(res.size() == (x.size() + h.size() - 1));
-
     check_close_vector(res, desired_res);
 }
 

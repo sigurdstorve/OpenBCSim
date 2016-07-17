@@ -1,7 +1,8 @@
 // Must do this before including unit_test.hpp
 #define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE test_linalg
 #include <boost/test/unit_test.hpp>
-#include "../core/vector3.hpp"
+#include "../vector3.hpp"
 
 using namespace bcsim;
 

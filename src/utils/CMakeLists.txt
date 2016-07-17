@@ -22,6 +22,10 @@ target_link_libraries(LibBCSimUtils
                       Boost::boost
                       )
 
+if (BCSIM_BUILD_UNITTEST)
+    add_subdirectory(unittest)
+endif()
+
 install(TARGETS LibBCSimUtils DESTINATION lib)
 install(FILES HDFConvenience.hpp    DESTINATION include)
 install(FILES GaussPulse.hpp        DESTINATION include)

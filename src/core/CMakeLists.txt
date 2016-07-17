@@ -58,6 +58,10 @@ if (BCSIM_ENABLE_CUDA)
     target_link_libraries(LibBCSim BCSimCUDA)
 endif()
 
+if (BCSIM_BUILD_UNITTEST)
+    add_subdirectory(unittest)
+endif()
+
 # Define installation of binaries and public API headers
 install(TARGETS LibBCSim DESTINATION lib)
 
