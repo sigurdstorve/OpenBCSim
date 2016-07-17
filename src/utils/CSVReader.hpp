@@ -13,7 +13,7 @@ class CSVReader {
 public:
     CSVReader(const std::string& filename, char delimiter=';');
 
-    CSVReader(std::istream& instream, char delimiter=';');
+    CSVReader(std::istream&& instream, char delimiter=';');
 
     template <typename T>
     std::vector<T> get_column(const std::string& col_name) {

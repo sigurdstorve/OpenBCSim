@@ -6,7 +6,7 @@
 
 namespace csv {
 
-CSVReader::CSVReader(std::istream& instream, char delimiter)
+CSVReader::CSVReader(std::istream&& instream, char delimiter)
     : m_delimiter(delimiter)
 {
     read_column_headers(instream);
@@ -32,7 +32,7 @@ std::vector<std::string> CSVReader::split_string(const std::string& s) {
         // strip any \r or \n
         item.erase(std::remove_if(std::begin(item), std::end(item), [](char c) {
             return (c=='\n') || (c=='\r');
-        }));
+        }), std::end(item));
         res.push_back(item);
     }
     return res;

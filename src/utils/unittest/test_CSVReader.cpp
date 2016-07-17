@@ -4,13 +4,14 @@
 #include <sstream>
 #include <stdexcept>
 #include <functional>
+#include <utility>
 #include "../CSVReader.hpp"
 
 BOOST_AUTO_TEST_CASE(verify_reading_empty_fails) {
     using namespace csv;
     std::stringstream empty_ss;
     char delimiter = ';';
-    BOOST_CHECK_THROW(CSVReader(empty_ss, delimiter), std::runtime_error);
+    BOOST_CHECK_THROW(CSVReader(std::move(empty_ss), delimiter), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(verify_basic_reading_works) {
@@ -23,7 +24,7 @@ BOOST_AUTO_TEST_CASE(verify_basic_reading_works) {
             ss << i << delimiter << (i*i) << std::endl;
         }
 
-        CSVReader csv_reader(ss, delimiter);
+        CSVReader csv_reader(std::move(ss), delimiter);
 
         BOOST_CHECK_NO_THROW(csv_reader.get_column<int>("Signal_x"));
         BOOST_CHECK_NO_THROW(csv_reader.get_column<int>("Signal_y"));
@@ -56,7 +57,7 @@ BOOST_AUTO_TEST_CASE(verify_handle_empty_lines_at_end) {
     ss << "1" << delimiter << "2" << std::endl;
     ss << "3" << delimiter << "4" << std::endl;
     ss << std::endl;
-    CSVReader csv_reader(ss, delimiter);
+    CSVReader csv_reader(std::move(ss), delimiter);
     
     const auto col_x = csv_reader.get_column<int>("x");
     const auto col_y = csv_reader.get_column<int>("y");
@@ -75,14 +76,14 @@ BOOST_AUTO_TEST_CASE(verify_handles_line_endings) {
     std::stringstream ss1;
     ss1 << "columnx;columny\n";
     ss1 << "1;2\r\n";
-    CSVReader csv_reader1(ss1, delimiter);
+    CSVReader csv_reader1(std::move(ss1), delimiter);
     BOOST_CHECK_NO_THROW(csv_reader1.get_column<int>("columnx"));
     BOOST_CHECK_NO_THROW(csv_reader1.get_column<int>("columny"));
 
     std::stringstream ss2;
     ss2 << "column x;column y\r\n";
     ss2 << "1;2\n\n";
-    CSVReader csv_reader2(ss2, delimiter);
+    CSVReader csv_reader2(std::move(ss2), delimiter);
     BOOST_CHECK_NO_THROW(csv_reader2.get_column<int>("column x"));
     BOOST_CHECK_NO_THROW(csv_reader2.get_column<int>("column y"));
 }

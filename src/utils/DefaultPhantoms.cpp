@@ -61,7 +61,7 @@ void LeftVentricle3dPhantomFactory::remove_scatterers_outside() {
 }
 
 void LeftVentricle3dPhantomFactory::load_csv_scale_signal(std::istream& csv_stream) {
-    csv::CSVReader reader(csv_stream, ';');
+    csv::CSVReader reader(std::move(csv_stream), ';');
     auto times_vector   = reader.get_column<float>("times");
     auto factors_vector = reader.get_column<float>("factors");
     if (times_vector.size() != factors_vector.size()) {
