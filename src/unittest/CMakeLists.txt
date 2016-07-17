@@ -1,12 +1,9 @@
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 add_executable(all_tests
-               ../core/fft.hpp
-               ../core/fft.cpp
                ../utils/SignalProcessing.hpp
                ../utils/SignalProcessing.cpp
                test_linalg.cpp
-               test_fft.cpp
                test_hilbert_mask.cpp
                test_main.cpp
                )
