@@ -98,7 +98,6 @@ endif ()
 if (BCSIM_BUILD_UNITTEST)
     enable_testing()
     find_package(Boost REQUIRED COMPONENTS unit_test_framework)
-    add_subdirectory(unittest)
 endif()
 
 add_subdirectory(core)
