@@ -95,15 +95,17 @@ if (UNIX AND NOT WIN32)
   endif ()
 endif ()
 
+if (BCSIM_BUILD_UNITTEST)
+    enable_testing()
+    add_subdirectory(unittest)
+endif()
+
 add_subdirectory(core)
 
 if (BCSIM_BUILD_UTILS)
     add_subdirectory(utils)
 endif()
 
-if (BCSIM_BUILD_UNITTEST)
-    add_subdirectory(unittest)
-endif()
 
 if (BCSIM_BUILD_EXAMPLES) 
     add_subdirectory(examples)
