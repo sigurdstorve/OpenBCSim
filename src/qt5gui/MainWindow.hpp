@@ -140,6 +140,10 @@ private:
 
     void initializeFixedVisualization(bcsim::FixedScatterers::s_ptr);
 
+    void updateWithNewFixedScatterers(bcsim::FixedScatterers::s_ptr fixed_scatterers);
+
+    void updateWithNewSplineScatterers(bcsim::SplineScatterers::s_ptr spline_scatterers);
+
 private:
     // The simulator object.
     bcsim::IAlgorithm::s_ptr        m_sim;

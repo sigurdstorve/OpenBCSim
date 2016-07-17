@@ -422,6 +422,7 @@ void MainWindow::onLoadScatterers() {
         return;
     }
     loadScatterers(h5_file);
+    updateOpenGlVisualization();
 }
 
 void MainWindow::onLoadExcitation() {
@@ -505,8 +506,7 @@ void MainWindow::createNewSimulator(const QString sim_type) {
     }
     setWindowTitle("BCSimGUI @ " + window_title_extra);
     
-    // ask user for a scatterer dataset.
-    // onLoadScatterers();
+    // onLoadScatterers(); // ask user for a scatterer dataset.
     // Configure with LV phantom generated on the fly
     default_phantoms::LeftVentriclePhantomParameters lv_params;
     const QString csv_file_name(":/left_ventricle_contraction.csv");
@@ -524,15 +524,7 @@ void MainWindow::createNewSimulator(const QString sim_type) {
     m_sim->clear_spline_scatterers();
     auto lv_spline_scatterers = bcsim::SplineScatterers::s_ptr(lv_phantom_factory.get());
     m_log_widget->write(bcsim::ILog::INFO, "Auto-generated phantom contains " + std::to_string(lv_spline_scatterers->num_scatterers()) + " scatterers");
-    m_sim->add_spline_scatterers(lv_spline_scatterers);
-
-    // update simulation time limits TODO: reduce duplication
-    float min_time, max_time;
-    lv_spline_scatterers->get_time_limits(min_time, max_time);
-    m_sim_time_manager->set_min_time(min_time);
-    m_sim_time_manager->set_max_time(max_time);
-    m_sim_time_manager->reset();
-    m_log_widget->write(bcsim::ILog::DEBUG, "Spline scatterers time interval is [" + std::to_string(min_time) + ", " + std::to_string(max_time) + "]");
+    updateWithNewSplineScatterers(lv_spline_scatterers);
     updateOpenGlVisualization();
 
     m_sim->set_parameter("verbose", "0");
@@ -559,55 +551,58 @@ void MainWindow::createNewSimulator(const QString sim_type) {
 
 }
 
+void MainWindow::updateWithNewFixedScatterers(bcsim::FixedScatterers::s_ptr fixed_scatterers) {
+    m_sim->add_fixed_scatterers(fixed_scatterers);
+    try {
+        initializeFixedVisualization(fixed_scatterers);
+    }
+    catch (...) {
+        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of fixed scatterers");
+    }
+}
+
+void MainWindow::updateWithNewSplineScatterers(bcsim::SplineScatterers::s_ptr spline_scatterers) {
+    m_sim->add_spline_scatterers(spline_scatterers);
+
+    // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
+    // This does not yet support hdf5 files with both types of scatterers!
+    try {
+        initializeSplineVisualization(spline_scatterers);
+    }
+    catch (...) {
+        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of spline scatterers");
+    }
+
+    // update simulation time limits
+    float min_time, max_time;
+    spline_scatterers->get_time_limits(min_time, max_time);
+    m_sim_time_manager->set_min_time(min_time);
+    m_sim_time_manager->set_max_time(max_time);
+    m_sim_time_manager->reset();
+    m_log_widget->write(bcsim::ILog::DEBUG, "Spline scatterers time interval is [" + std::to_string(min_time) + ", " + std::to_string(max_time) + "]");
+}
+
 void MainWindow::loadScatterers(const QString h5_file) {
     if (h5_file == "") {
         m_log_widget->write(bcsim::ILog::WARNING, "Invalid scatterer file. Skipping");
         return;
     }
-
     m_sim->clear_fixed_scatterers();
     m_sim->clear_spline_scatterers();
 
     // load fixed scatterers (if found)
     try {
-        auto fixed_scatterers = bcsim::loadFixedScatterersFromHdf(h5_file.toUtf8().constData());
-        m_sim->add_fixed_scatterers(fixed_scatterers);
-
-        try {
-            initializeFixedVisualization(fixed_scatterers);
-        }
-        catch (...) {
-            m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of fixed scatterers");
-        }
+        updateWithNewFixedScatterers(bcsim::loadFixedScatterersFromHdf(h5_file.toUtf8().constData()));
     } catch (std::runtime_error& /*e*/) {
         m_log_widget->write(bcsim::ILog::WARNING, "Could not read fixed scatterers from file");
     }
 
     // load spline scatterers (if found)
     try {
-        auto spline_scatterers = bcsim::loadSplineScatterersFromHdf(h5_file.toUtf8().constData());
-        m_sim->add_spline_scatterers(spline_scatterers);
-
-        // update simulation time limits
-        float min_time, max_time;
-        spline_scatterers->get_time_limits(min_time, max_time);
-        m_sim_time_manager->set_min_time(min_time);
-        m_sim_time_manager->set_max_time(max_time);
-        m_sim_time_manager->reset();
-        m_log_widget->write(bcsim::ILog::DEBUG, "Spline scatterers time interval is ["  +std::to_string(min_time) + ", " + std::to_string(max_time) + "]");
-
-        // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
-        // This does not yet support hdf5 files with both types of scatterers!
-        try {
-            initializeSplineVisualization(spline_scatterers);
-        }
-        catch (...) {
-            m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of spline scatterers");
-        }
+        updateWithNewSplineScatterers(bcsim::loadSplineScatterersFromHdf(h5_file.toUtf8().constData()));
     } catch (std::runtime_error& e) {
         m_log_widget->write(bcsim::ILog::WARNING, "Could not read spline scatterers from file");
     }
-    updateOpenGlVisualization();
 }
 
 void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines, bool equal_timestamps) {
