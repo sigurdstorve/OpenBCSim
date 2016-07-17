@@ -90,6 +90,7 @@ struct PointScatterer {
 
 // Common parent for all types of scatterer configurations.
 struct Scatterers {
+    typedef std::unique_ptr<Scatterers> u_ptr;
     typedef std::shared_ptr<Scatterers> s_ptr;
     
     virtual int num_scatterers() const = 0;
@@ -111,7 +112,7 @@ struct FixedScatterers : public Scatterers {
 // All splines have the same degree and are defined on the same
 // knot vector to save memory.
 struct SplineScatterers : public Scatterers {
-
+    typedef std::unique_ptr<SplineScatterers> u_ptr;
     typedef std::shared_ptr<SplineScatterers> s_ptr;
 
     virtual int num_scatterers() const {

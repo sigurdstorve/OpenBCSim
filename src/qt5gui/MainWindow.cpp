@@ -68,6 +68,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GrayscaleTransformWidget.hpp"
 #include "RefreshWorker.hpp"
 #include "QSettingsConfigAdapter.hpp"
+#include "QFileAdapter.hpp"
+#include "../utils/DefaultPhantoms.hpp"
 
 MainWindow::MainWindow() {
     // Make standalone log window
@@ -420,6 +422,7 @@ void MainWindow::onLoadScatterers() {
         return;
     }
     loadScatterers(h5_file);
+    updateOpenGlVisualization();
 }
 
 void MainWindow::onLoadExcitation() {
@@ -503,8 +506,27 @@ void MainWindow::createNewSimulator(const QString sim_type) {
     }
     setWindowTitle("BCSimGUI @ " + window_title_extra);
     
-    // ask user for a scatterer dataset.
-    onLoadScatterers();
+    // onLoadScatterers(); // ask user for a scatterer dataset.
+    // Configure with LV phantom generated on the fly
+    default_phantoms::LeftVentriclePhantomParameters lv_params;
+    const QString csv_file_name(":/left_ventricle_contraction.csv");
+    if (!QFile::exists(csv_file_name)) {
+        throw std::runtime_error("Unable to find contraction signal for default phantom");
+    }
+    QFile csv_file(csv_file_name);
+    csv_file.open(QIODevice::ReadOnly);
+    qfileadapter::InputAdapter csv_adapter(csv_file);
+    m_log_widget->write(bcsim::ILog::INFO, "Creating default LV phantom");
+    default_phantoms::LeftVentricle3dPhantomFactory lv_phantom_factory(lv_params, csv_adapter(), [&](const std::string& log_msg) {
+        m_log_widget->write(bcsim::ILog::DEBUG, "LV phantom factory: " + log_msg);
+    });
+    m_sim->clear_fixed_scatterers();
+    m_sim->clear_spline_scatterers();
+    auto lv_spline_scatterers = bcsim::SplineScatterers::s_ptr(lv_phantom_factory.get());
+    m_log_widget->write(bcsim::ILog::INFO, "Auto-generated phantom contains " + std::to_string(lv_spline_scatterers->num_scatterers()) + " scatterers");
+    updateWithNewSplineScatterers(lv_spline_scatterers);
+    updateOpenGlVisualization();
+
     m_sim->set_parameter("verbose", "0");
     m_sim->set_parameter("sound_speed", "1540.0");
     m_sim->set_parameter("radial_decimation", std::to_string(m_settings->value("radial_decimation", 15).toInt()));
@@ -529,53 +551,58 @@ void MainWindow::createNewSimulator(const QString sim_type) {
 
 }
 
+void MainWindow::updateWithNewFixedScatterers(bcsim::FixedScatterers::s_ptr fixed_scatterers) {
+    m_sim->add_fixed_scatterers(fixed_scatterers);
+    try {
+        initializeFixedVisualization(fixed_scatterers);
+    }
+    catch (...) {
+        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of fixed scatterers");
+    }
+}
+
+void MainWindow::updateWithNewSplineScatterers(bcsim::SplineScatterers::s_ptr spline_scatterers) {
+    m_sim->add_spline_scatterers(spline_scatterers);
+
+    // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
+    // This does not yet support hdf5 files with both types of scatterers!
+    try {
+        initializeSplineVisualization(spline_scatterers);
+    }
+    catch (...) {
+        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of spline scatterers");
+    }
+
+    // update simulation time limits
+    float min_time, max_time;
+    spline_scatterers->get_time_limits(min_time, max_time);
+    m_sim_time_manager->set_min_time(min_time);
+    m_sim_time_manager->set_max_time(max_time);
+    m_sim_time_manager->reset();
+    m_log_widget->write(bcsim::ILog::DEBUG, "Spline scatterers time interval is [" + std::to_string(min_time) + ", " + std::to_string(max_time) + "]");
+}
+
 void MainWindow::loadScatterers(const QString h5_file) {
     if (h5_file == "") {
         m_log_widget->write(bcsim::ILog::WARNING, "Invalid scatterer file. Skipping");
         return;
     }
-
     m_sim->clear_fixed_scatterers();
     m_sim->clear_spline_scatterers();
 
     // load fixed scatterers (if found)
     try {
-        auto fixed_scatterers = bcsim::loadFixedScatterersFromHdf(h5_file.toUtf8().constData());
-        m_sim->add_fixed_scatterers(fixed_scatterers);
+        updateWithNewFixedScatterers(bcsim::loadFixedScatterersFromHdf(h5_file.toUtf8().constData()));
     } catch (std::runtime_error& /*e*/) {
         m_log_widget->write(bcsim::ILog::WARNING, "Could not read fixed scatterers from file");
     }
 
     // load spline scatterers (if found)
     try {
-        auto spline_scatterers = bcsim::loadSplineScatterersFromHdf(h5_file.toUtf8().constData());
-        m_sim->add_spline_scatterers(spline_scatterers);
-
-        // update simulation time limits
-        float min_time, max_time;
-        spline_scatterers->get_time_limits(min_time, max_time);
-        m_sim_time_manager->set_min_time(min_time);
-        m_sim_time_manager->set_max_time(max_time);
-        m_sim_time_manager->reset();
-        m_log_widget->write(bcsim::ILog::DEBUG, "Spline scatterers time interval is ["  +std::to_string(min_time) + ", " + std::to_string(max_time) + "]");
-
+        updateWithNewSplineScatterers(bcsim::loadSplineScatterersFromHdf(h5_file.toUtf8().constData()));
     } catch (std::runtime_error& e) {
         m_log_widget->write(bcsim::ILog::WARNING, "Could not read spline scatterers from file");
     }
-
-    // Handle visualization in OpenGL - TODO: Update (sample some scatterers from all collections?)
-    // This does not yet support hdf5 files with both types of scatterers!
-    try {
-        initializeSplineVisualization(h5_file);
-    } catch (...) {
-        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of spline scatterers");
-    }
-    try {
-        initializeFixedVisualization(h5_file);
-    } catch (...) {
-        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of fixed scatterers");
-    }
-    updateOpenGlVisualization();
 }
 
 void MainWindow::newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines, bool equal_timestamps) {
@@ -716,7 +743,8 @@ void MainWindow::doSimulation() {
 }
 
 // Currently ignoring weights when visualizing
-void MainWindow::initializeFixedVisualization(const QString& h5_file) {
+void MainWindow::initializeFixedVisualization(bcsim::FixedScatterers::s_ptr fixed_scatterers) {
+    /*
     SimpleHDF::SimpleHDF5Reader reader(h5_file.toUtf8().constData());
     auto data =  reader.readMultiArray<float, 2>("data");
     auto shape = data.shape();
@@ -725,21 +753,19 @@ void MainWindow::initializeFixedVisualization(const QString& h5_file) {
     auto num_scatterers = shape[0];
     auto num_comp = shape[2];
     Q_ASSERT(num_comp == 4);
-
-    m_log_widget->write(bcsim::ILog::INFO, "Number of scatterers is " + std::to_string(num_scatterers));
+    */
     int num_vis_scatterers = m_settings->value("num_opengl_scatterers", 1000).toInt();
     m_log_widget->write(bcsim::ILog::INFO, "Number of visualization scatterers is " + std::to_string(num_vis_scatterers));
 
     // Select random indices into scatterers
     std::random_device rd;
     std::mt19937 eng(rd());
-    std::uniform_int_distribution<> distr(0, static_cast<int>(num_scatterers)-1);
+    std::uniform_int_distribution<> distr(0, static_cast<int>(fixed_scatterers->num_scatterers())-1);
 
     std::vector<bcsim::vector3> scatterer_points(num_vis_scatterers);
     for (int scatterer_no = 0; scatterer_no < num_vis_scatterers; scatterer_no++) {
         int ind = distr(eng);
-        const auto p = bcsim::vector3(data[ind][0], data[ind][1], data[ind][2]);
-        scatterer_points[scatterer_no] = p;
+        scatterer_points[scatterer_no] = fixed_scatterers->scatterers[ind].pos;
     }
     if (m_settings->value("enable_gl_widget", true).toBool()) {
         m_gl_vis_widget->setFixedScatterers(scatterer_points);
@@ -748,30 +774,15 @@ void MainWindow::initializeFixedVisualization(const QString& h5_file) {
 
 
 // Currently ignoring weights when visualizing
-void MainWindow::initializeSplineVisualization(const QString& h5_file) {
-    SimpleHDF::SimpleHDF5Reader reader(h5_file.toUtf8().constData());
-    auto control_points =  reader.readMultiArray<float, 3>("control_points");
-    auto knot_vector    =  reader.readStdVector<float>("knot_vector");
-    int spline_degree   = reader.readScalar<int>("spline_degree");
-
-    auto shape = control_points.shape();
-    auto dimensionality = control_points.num_dimensions();
-    Q_ASSERT(dimensionality == 3);
-    int num_scatterers = static_cast<int>(shape[0]);
-    int num_cs = static_cast<int>(shape[1]);
-    int num_comp = static_cast<int>(shape[2]);
-    Q_ASSERT(num_comp == 3);
-    m_log_widget->write(bcsim::ILog::INFO, "Number of scatterers is " + std::to_string(num_scatterers));
-    m_log_widget->write(bcsim::ILog::DEBUG, "Each scatterer has " + std::to_string(num_cs) + " control points");
+void MainWindow::initializeSplineVisualization(bcsim::SplineScatterers::s_ptr spline_scatterers) {
     int num_vis_scatterers = m_settings->value("num_opengl_scatterers", 1000).toInt();
     m_log_widget->write(bcsim::ILog::DEBUG, "Number of visualization scatterers is " + std::to_string(num_vis_scatterers));
-
-    num_vis_scatterers = std::min(num_vis_scatterers, num_scatterers);
+    num_vis_scatterers = std::min(num_vis_scatterers, spline_scatterers->num_scatterers());
 
     // Select random indices into scatterers
     std::random_device rd;
     std::mt19937 eng(rd());
-    std::uniform_int_distribution<> distr(0, num_scatterers-1);
+    std::uniform_int_distribution<> distr(0, spline_scatterers->num_scatterers()-1);
 
     std::vector<SplineCurve<float, bcsim::vector3> > splines(num_vis_scatterers);
     for (int scatterer_no = 0; scatterer_no < num_vis_scatterers; scatterer_no++) {
@@ -779,13 +790,12 @@ void MainWindow::initializeSplineVisualization(const QString& h5_file) {
         
         // Create a SplineCurve for current scatterer
         SplineCurve<float, bcsim::vector3> curve;
-        curve.knots = knot_vector;
-        curve.degree = spline_degree;
+        curve.knots = spline_scatterers->knot_vector;
+        curve.degree = spline_scatterers->spline_degree;
+        const auto num_cs = spline_scatterers->control_points[0].size();
         curve.cs.resize(num_cs);
-        for (int cs_no = 0; cs_no < num_cs; cs_no++) {
-            curve.cs[cs_no] = bcsim::vector3(control_points[ind][cs_no][0],
-                                             control_points[ind][cs_no][1],
-                                             control_points[ind][cs_no][2]);
+        for (size_t cs_no = 0; cs_no < num_cs; cs_no++) {
+            curve.cs[cs_no] = spline_scatterers->control_points[ind][cs_no];
         }
         splines[scatterer_no] = curve;
     }
@@ -842,8 +852,8 @@ void MainWindow::onSetSimTme() {
 
 void MainWindow::onTimer() {
     m_sim_time_manager->advance();
-    ScopedCpuTimer timer([](int millisec) {
-        std::cout << "onTimer() used: " << millisec << " ms.\n";
+    ScopedCpuTimer timer([&](int millisec) {
+        m_log_widget->write(bcsim::ILog::DEBUG, "onTimer() used " + std::to_string(millisec) + " milliseconds");
     });
     onSimulate();
 }

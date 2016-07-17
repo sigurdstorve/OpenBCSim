@@ -11,8 +11,14 @@ list(APPEND UTILS_LIBRARY_SOURCE_FILES
      HDFConvenience.cpp
      HDFConvenience.hpp
      SimpleHDF.hpp
+     DefaultPhantoms.hpp
+     DefaultPhantoms.cpp
+     EllipsoidGeometry.cpp
+     EllipsoidGeometry.hpp
      cartesianator/Cartesianator.cpp
      cartesianator/Cartesianator.hpp
+     CSVReader.hpp
+     CSVReader.cpp
      )
 
 add_library(LibBCSimUtils STATIC ${UTILS_LIBRARY_SOURCE_FILES})

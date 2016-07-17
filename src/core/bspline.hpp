@@ -90,4 +90,39 @@ std::pair<int, int> get_lower_upper_inds(const std::vector<T>& knots, T t, int d
     return std::make_pair(mu-degree, mu);
 }
 
+// Create a p + 1 - regular uniform knot vector for a given number of control points
+// Throws if n is too small
+template <typename T>
+std::vector<T> uniform_regular_knot_vector(int n, int p, T t0, T t1) {
+    std::vector<T> res;
+
+    //The minimum length of a p + 1 - regular knot vector is 2 * (p + 1)
+    if (n < p + 1) {
+        throw std::runtime_error("Too small n for a uniform regular knot vector");
+    }
+
+    // p + 1 copies of t0 left and p + 1 copies of t1 right but one of each in linspace
+    for (int i = 0; i < p; i++) res.push_back(t0);
+    const auto num_middle = n + 1 - p;
+    for (int i = 0; i < num_middle; i++) {
+        res.push_back(t0 + i*(t1 - t0) / (num_middle-1));
+    }
+    for (int i = 0; i < p; i++) res.push_back(t1);
+    return res;
+}
+
+// Returns the control point abscissa for the control polygon of a one-dimensional spline.
+template <typename T>
+std::vector<T> control_points(int p, const std::vector<T>& knots) {
+    std::vector<T> res;
+    for (int i = 0; i < static_cast<int>(knots.size()) - p - 1; i++)  {
+        T knot_avg = static_cast<T>(0.0);
+        for (int j = i + 1; j < i + 1 + p; j++) {
+            knot_avg += knots[j] / p;
+        }
+        res.push_back(knot_avg);
+    }
+    return res;
+}
+
 }   // end namespace

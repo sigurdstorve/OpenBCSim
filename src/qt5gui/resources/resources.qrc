@@ -14,5 +14,8 @@
         <!-- vertex & fragment shaders for drawing scansequence -->
         <file>scanseq_vshader.glsl</file>
         <file>scanseq_fshader.glsl</file>
+        
+        <!-- Left ventricle scaling factor signel for creating default phantom -->
+        <file>left_ventricle_contraction.csv</file>
     </qresource>
 </RCC>
