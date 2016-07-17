@@ -111,4 +111,18 @@ std::vector<T> uniform_regular_knot_vector(int n, int p, T t0, T t1) {
     return res;
 }
 
+// Returns the control point abscissa for the control polygon of a one-dimensional spline.
+template <typename T>
+std::vector<T> control_points(int p, const std::vector<T>& knots) {
+    std::vector<T> res;
+    for (int i = 0; i < static_cast<int>(knots.size()) - p - 1; i++)  {
+        T knot_avg = static_cast<T>(0.0);
+        for (int j = i + 1; j < i + 1 + p; j++) {
+            knot_avg += knots[j] / p;
+        }
+        res.push_back(knot_avg);
+    }
+    return res;
+}
+
 }   // end namespace
