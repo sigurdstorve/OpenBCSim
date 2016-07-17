@@ -1,5 +1,7 @@
 #include <fstream>
 #include <stdexcept>
+#include <locale>   // for std::isspace
+#include <algorithm>
 #include "CSVReader.hpp"
 
 namespace csv {
@@ -39,6 +41,11 @@ void CSVReader::read_and_store_columns_as_string(std::istream& instream) {
     std::string cur_line;
     const auto num_columns = m_column_headers.size();
     while (std::getline(instream, cur_line)) {
+        if (std::all_of(cur_line.begin(), cur_line.end(), isspace)) {
+            m_log_callback("Skipping empty line: " + cur_line);
+            continue;
+        }
+
         m_log_callback("Parsing line: " + cur_line);
         auto string_parts = split_string(cur_line);
         if (string_parts.size() != num_columns) {
