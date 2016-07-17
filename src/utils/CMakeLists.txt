@@ -17,6 +17,8 @@ list(APPEND UTILS_LIBRARY_SOURCE_FILES
      EllipsoidGeometry.hpp
      cartesianator/Cartesianator.cpp
      cartesianator/Cartesianator.hpp
+     CSVReader.hpp
+     CSVReader.cpp
      )
 
 add_library(LibBCSimUtils STATIC ${UTILS_LIBRARY_SOURCE_FILES})
