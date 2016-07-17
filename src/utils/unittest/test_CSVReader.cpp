@@ -50,3 +50,26 @@ BOOST_AUTO_TEST_CASE(verify_basic_reading_works) {
         }
     }
 }
+
+BOOST_AUTO_TEST_CASE(verify_handle_empty_lines_at_end) {
+    using namespace csv;
+    const char delimiter = ';';
+
+    std::stringstream ss;
+    ss << "x" << delimiter << "y" << std::endl;
+    ss << "1" << delimiter << "2" << std::endl;
+    ss << "3" << delimiter << "4" << std::endl;
+    ss << std::endl;
+    CSVReader csv_reader(ss, delimiter, [](const std::string& s) {
+        std::cout << "Log message: " << s << std::endl;
+    });
+    
+    const auto col_x = csv_reader.get_column<int>("x");
+    const auto col_y = csv_reader.get_column<int>("y");
+    BOOST_CHECK_EQUAL(col_x.size(), col_y.size());
+    BOOST_CHECK_EQUAL(col_x.size(), 2);
+    BOOST_CHECK_EQUAL(col_x[0], 1);
+    BOOST_CHECK_EQUAL(col_x[1], 3);
+    BOOST_CHECK_EQUAL(col_y[0], 2);
+    BOOST_CHECK_EQUAL(col_y[1], 4);
+}
