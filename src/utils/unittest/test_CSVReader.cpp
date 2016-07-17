@@ -1,6 +1,5 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE test_CSVReader
-#include <iostream> // temporary
 #include <boost/test/unit_test.hpp>
 #include <sstream>
 #include <stdexcept>
@@ -24,10 +23,7 @@ BOOST_AUTO_TEST_CASE(verify_basic_reading_works) {
             ss << i << delimiter << (i*i) << std::endl;
         }
 
-        auto log_callback = [](const std::string& s) {
-            std::cout << "Log message: " << s << std::endl;
-        };
-        CSVReader csv_reader(ss, delimiter, log_callback);
+        CSVReader csv_reader(ss, delimiter);
 
         BOOST_CHECK_NO_THROW(csv_reader.get_column<int>("Signal_x"));
         BOOST_CHECK_NO_THROW(csv_reader.get_column<int>("Signal_y"));
@@ -60,9 +56,7 @@ BOOST_AUTO_TEST_CASE(verify_handle_empty_lines_at_end) {
     ss << "1" << delimiter << "2" << std::endl;
     ss << "3" << delimiter << "4" << std::endl;
     ss << std::endl;
-    CSVReader csv_reader(ss, delimiter, [](const std::string& s) {
-        std::cout << "Log message: " << s << std::endl;
-    });
+    CSVReader csv_reader(ss, delimiter);
     
     const auto col_x = csv_reader.get_column<int>("x");
     const auto col_y = csv_reader.get_column<int>("y");
@@ -72,4 +66,23 @@ BOOST_AUTO_TEST_CASE(verify_handle_empty_lines_at_end) {
     BOOST_CHECK_EQUAL(col_x[1], 3);
     BOOST_CHECK_EQUAL(col_y[0], 2);
     BOOST_CHECK_EQUAL(col_y[1], 4);
+}
+
+BOOST_AUTO_TEST_CASE(verify_handles_line_endings) {
+    using namespace csv;
+    const char delimiter = ';';
+    
+    std::stringstream ss1;
+    ss1 << "columnx;columny\n";
+    ss1 << "1;2\r\n";
+    CSVReader csv_reader1(ss1, delimiter);
+    BOOST_CHECK_NO_THROW(csv_reader1.get_column<int>("columnx"));
+    BOOST_CHECK_NO_THROW(csv_reader1.get_column<int>("columny"));
+
+    std::stringstream ss2;
+    ss2 << "column x;column y\r\n";
+    ss2 << "1;2\n\n";
+    CSVReader csv_reader2(ss2, delimiter);
+    BOOST_CHECK_NO_THROW(csv_reader2.get_column<int>("column x"));
+    BOOST_CHECK_NO_THROW(csv_reader2.get_column<int>("column y"));
 }
