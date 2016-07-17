@@ -7,7 +7,6 @@ add_executable(all_tests
                ../utils/SignalProcessing.cpp
                test_linalg.cpp
                test_fft.cpp
-               test_direct_conv.cpp
                test_hilbert_mask.cpp
                test_main.cpp
                )
