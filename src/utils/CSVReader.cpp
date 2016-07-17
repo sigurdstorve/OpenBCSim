@@ -6,7 +6,7 @@
 
 namespace csv {
 
-CSVReader::CSVReader(std::istream& instream, char delimiter)
+CSVReader::CSVReader(std::istream&& instream, char delimiter)
     : m_delimiter(delimiter)
 {
     read_column_headers(instream);
