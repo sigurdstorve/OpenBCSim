@@ -572,6 +572,13 @@ void MainWindow::loadScatterers(const QString h5_file) {
     try {
         auto fixed_scatterers = bcsim::loadFixedScatterersFromHdf(h5_file.toUtf8().constData());
         m_sim->add_fixed_scatterers(fixed_scatterers);
+
+        try {
+            initializeFixedVisualization(fixed_scatterers);
+        }
+        catch (...) {
+            m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of fixed scatterers");
+        }
     } catch (std::runtime_error& /*e*/) {
         m_log_widget->write(bcsim::ILog::WARNING, "Could not read fixed scatterers from file");
     }
@@ -599,12 +606,6 @@ void MainWindow::loadScatterers(const QString h5_file) {
         }
     } catch (std::runtime_error& e) {
         m_log_widget->write(bcsim::ILog::WARNING, "Could not read spline scatterers from file");
-    }
-
-    try {
-        initializeFixedVisualization(h5_file);
-    } catch (...) {
-        m_log_widget->write(bcsim::ILog::WARNING, "Failed to initialize visualization of fixed scatterers");
     }
     updateOpenGlVisualization();
 }
@@ -747,7 +748,8 @@ void MainWindow::doSimulation() {
 }
 
 // Currently ignoring weights when visualizing
-void MainWindow::initializeFixedVisualization(const QString& h5_file) {
+void MainWindow::initializeFixedVisualization(bcsim::FixedScatterers::s_ptr fixed_scatterers) {
+    /*
     SimpleHDF::SimpleHDF5Reader reader(h5_file.toUtf8().constData());
     auto data =  reader.readMultiArray<float, 2>("data");
     auto shape = data.shape();
@@ -756,21 +758,19 @@ void MainWindow::initializeFixedVisualization(const QString& h5_file) {
     auto num_scatterers = shape[0];
     auto num_comp = shape[2];
     Q_ASSERT(num_comp == 4);
-
-    m_log_widget->write(bcsim::ILog::INFO, "Number of scatterers is " + std::to_string(num_scatterers));
+    */
     int num_vis_scatterers = m_settings->value("num_opengl_scatterers", 1000).toInt();
     m_log_widget->write(bcsim::ILog::INFO, "Number of visualization scatterers is " + std::to_string(num_vis_scatterers));
 
     // Select random indices into scatterers
     std::random_device rd;
     std::mt19937 eng(rd());
-    std::uniform_int_distribution<> distr(0, static_cast<int>(num_scatterers)-1);
+    std::uniform_int_distribution<> distr(0, static_cast<int>(fixed_scatterers->num_scatterers())-1);
 
     std::vector<bcsim::vector3> scatterer_points(num_vis_scatterers);
     for (int scatterer_no = 0; scatterer_no < num_vis_scatterers; scatterer_no++) {
         int ind = distr(eng);
-        const auto p = bcsim::vector3(data[ind][0], data[ind][1], data[ind][2]);
-        scatterer_points[scatterer_no] = p;
+        scatterer_points[scatterer_no] = fixed_scatterers->scatterers[ind].pos;
     }
     if (m_settings->value("enable_gl_widget", true).toBool()) {
         m_gl_vis_widget->setFixedScatterers(scatterer_points);

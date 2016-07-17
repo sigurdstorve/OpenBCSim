@@ -138,7 +138,7 @@ private slots:
 private:
     void initializeSplineVisualization(bcsim::SplineScatterers::s_ptr spline_scatterers);
 
-    void initializeFixedVisualization(const QString& h5_file);
+    void initializeFixedVisualization(bcsim::FixedScatterers::s_ptr);
 
 private:
     // The simulator object.
