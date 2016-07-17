@@ -90,4 +90,25 @@ std::pair<int, int> get_lower_upper_inds(const std::vector<T>& knots, T t, int d
     return std::make_pair(mu-degree, mu);
 }
 
+// Create a p + 1 - regular uniform knot vector for a given number of control points
+// Throws if n is too small
+template <typename T>
+std::vector<T> uniform_regular_knot_vector(int n, int p, T t0, T t1) {
+    std::vector<T> res;
+
+    //The minimum length of a p + 1 - regular knot vector is 2 * (p + 1)
+    if (n < p + 1) {
+        throw std::runtime_error("Too small n for a uniform regular knot vector");
+    }
+
+    // p + 1 copies of t0 left and p + 1 copies of t1 right but one of each in linspace
+    for (int i = 0; i < p; i++) res.push_back(t0);
+    const auto num_middle = n + 1 - p;
+    for (int i = 0; i < num_middle; i++) {
+        res.push_back(t0 + i*(t1 - t0) / (num_middle-1));
+    }
+    for (int i = 0; i < p; i++) res.push_back(t1);
+    return res;
+}
+
 }   // end namespace
