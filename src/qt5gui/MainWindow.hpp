@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMainWindow>
 #include <QSlider>
 #include <QSettings>
+#include <QCloseEvent>
 #include "../core/LibBCSim.hpp"
 #include "SimTimeManager.hpp"
 #include "../utils/ScanGeometry.hpp"
@@ -82,6 +83,12 @@ public:
     // Do simulation using current config.
     void doSimulation();
 
+protected:
+    void closeEvent(QCloseEvent* event) override {
+        if (m_log_widget) m_log_widget->close();
+        return event->accept();
+    }
+
 private slots:
     void newScansequence(bcsim::ScanGeometry::ptr new_geometry, int new_num_lines, bool equal_timestamps);
     
@@ -97,11 +104,6 @@ private slots:
 
     // Create a new simulator instance. Will ask user for CPU or GPU impl.
     void onCreateNewSimulator();
-
-    void onExit() {
-        if (m_log_widget) m_log_widget->close();
-        QApplication::quit();
-    }
 
     // Update simulator object with new ExcitationSignal from widget
     void onNewExcitation(bcsim::ExcitationSignal new_excitation);

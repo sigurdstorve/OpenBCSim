@@ -104,7 +104,7 @@ MainWindow::MainWindow() {
 		const QString obj_file(":/scatterer_sphere_trimesh.obj");
 		if (!QFileInfo::exists(obj_file)) {
 			m_log_widget->write(bcsim::ILog::FATAL, "Scatterer .obj file does not exist.");
-			onExit();
+            QApplication::quit();
 		}
         IConfig::s_ptr cfg_adapter = std::make_shared<QSettingsConfigAdapter>(m_settings);
 		m_gl_vis_widget = new GLVisualizationWidget(obj_file, cfg_adapter);
@@ -282,7 +282,7 @@ void MainWindow::createMenus() {
     fileMenu->addAction(load_simdata_act);
 
     auto exitAct = new QAction(tr("Exit"), this);
-    connect(exitAct, SIGNAL(triggered()), this, SLOT(onExit()));
+    connect(exitAct, &QAction::triggered, []() { QApplication::quit(); });
     fileMenu->addAction(exitAct);
     
     // Create all actions in "Simulate" menu
@@ -467,7 +467,7 @@ void MainWindow::onCreateNewSimulator() {
             createNewSimulator(sim_type);
         } catch (const std::runtime_error& e) {
             m_log_widget->write(bcsim::ILog::INFO, std::string(__FUNCTION__) + ": caught exception: " + std::string(e.what()));
-            onExit();
+            QApplication::quit();   // TODO: Handle in a better way?
         }
     }
 }
