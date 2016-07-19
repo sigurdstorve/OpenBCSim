@@ -19,6 +19,8 @@ list(APPEND UTILS_LIBRARY_SOURCE_FILES
      cartesianator/Cartesianator.hpp
      CSVReader.hpp
      CSVReader.cpp
+     HardwareAutodetection.hpp
+     HardwareAutodetection.cpp 
      )
 
 add_library(LibBCSimUtils STATIC ${UTILS_LIBRARY_SOURCE_FILES})
@@ -28,6 +30,13 @@ target_link_libraries(LibBCSimUtils
                       Boost::boost
                       )
 
+if (BCSIM_ENABLE_CUDA)
+    # Needed because we're going to interact with the CUDA runtime API
+    # to query the number and type of available GPUs.
+    target_include_directories(LibBCSimUtils PRIVATE ${CUDA_INCLUDE_DIRS})
+    target_link_libraries(LibBCSimUtils ${CUDA_LIBRARIES})
+endif()
+                      
 if (BCSIM_BUILD_UNITTEST)
     add_subdirectory(unittest)
 endif()
