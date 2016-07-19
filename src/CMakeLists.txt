@@ -1,5 +1,5 @@
 # Version 2.8.11 is minimum version for auto-linking with Qt5 libs.
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5)
 project(OpenBCSim)
 
 set(CMAKE_CXX_STANDARD 14)
