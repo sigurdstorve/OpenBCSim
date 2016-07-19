@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../utils/ScanGeometry.hpp"
 #include "ImageExport.hpp"
 #include "LogWidget.hpp"
+#include "../utils/HardwareAutodetection.hpp"
 
 // Forward decl.
 class DisplayWidget;
@@ -68,8 +69,12 @@ public:
     // Configure current simulator with new scatterers. Will clear the existsing.
     void loadScatterers(const QString h5_file);
 
-    // Create a new simulator
-    void createNewSimulator(const QString sim_type);
+    // Create the initial simulator instance - will default to GPU if detected,
+    // otherwise CPU with max number of OpenMP threads.
+    void createInitialSimulator() { }
+
+    // "cpu", "gpu", or "auto"
+    void createNewSimulator(const QString& sim_type);
 
     // Define the excitation signal using data from hdf5 file
     void setExcitation(const QString h5_file);
@@ -194,6 +199,7 @@ private:
     bcsim::ScanSequence::s_ptr      m_cur_scanseq;
 
     LogWidget*                      m_log_widget;
+    utils::HardwareAutodetector     m_hardware_autodetector;
 };
 
 

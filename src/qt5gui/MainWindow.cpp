@@ -153,7 +153,7 @@ MainWindow::MainWindow() {
     v_layout->addLayout(h_layout);
     v_layout->addWidget(m_time_widget);
 
-    onCreateNewSimulator();
+    createNewSimulator("auto");
     m_display_widget = new DisplayWidget;
     h_layout->addWidget(m_display_widget);
     
@@ -214,6 +214,26 @@ MainWindow::MainWindow() {
     });
 
     createMenus();
+
+    // Dump hardware information
+    const auto& hw = m_hardware_autodetector;
+    if (hw.built_with_gpu_support()) {
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator was built with CUDA support");
+        m_log_widget->write(bcsim::ILog::INFO, "Number of CUDA-enabled GPUs detected: " + std::to_string(hw.get_num_gpus()));
+        for (int gpu_no = 0; gpu_no < m_hardware_autodetector.get_num_gpus(); gpu_no++) {
+            m_log_widget->write(bcsim::ILog::INFO, "GPU " + std::to_string(gpu_no) + " : " + hw.get_gpu_name(gpu_no));
+            m_log_widget->write(bcsim::ILog::INFO, "    Compute capability " + std::to_string(hw.get_gpu_major(gpu_no)) + "." + std::to_string(hw.get_gpu_minor(gpu_no)));
+            m_log_widget->write(bcsim::ILog::INFO, "    Global memory: " + std::to_string(hw.get_gpu_total_memory(gpu_no)));
+        }
+    } else {
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator was NOT built with CUDA support.");
+    }
+    if (hw.built_with_openmp_support()) {
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator was built with OpenMP support");
+        m_log_widget->write(bcsim::ILog::INFO, "System supports a maximum of " + std::to_string(hw.max_openmp_threads()) + " OpenMP threads");
+    } else {
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator was NOT built with OpenMP support");
+    }
 }
 
 void MainWindow::onLoadIniSettings() {
@@ -441,11 +461,12 @@ void MainWindow::onCreateNewSimulator() {
     QString sim_type = QInputDialog::getItem(this, tr("Select algorithm type"),
                                          tr("Type:"), items, 0, false, &ok);
     if (ok) {
+        // TODO: If "gpu" was selected and the system has more than one, ask for whick to use!
         try {
             m_log_widget->write(bcsim::ILog::INFO, "Creating simulator of type: " + sim_type.toStdString());
             createNewSimulator(sim_type);
         } catch (const std::runtime_error& e) {
-            m_log_widget->write(bcsim::ILog::INFO, "onCreateNewSimulator(): caught exception: " + std::string(e.what()));
+            m_log_widget->write(bcsim::ILog::INFO, std::string(__FUNCTION__) + ": caught exception: " + std::string(e.what()));
             onExit();
         }
     }
@@ -466,44 +487,37 @@ void MainWindow::onSetSimulatorNoise() {
     m_sim->set_parameter("noise_amplitude", std::to_string(noise_amplitude));
 }
 
-void MainWindow::createNewSimulator(const QString sim_type) {
-    m_sim = bcsim::Create(sim_type.toUtf8().constData());
-    
-    // simulator needs a shared_ptr. In order to not delete the log widget when the simulator
-    // instance is deleted, we create a shared_ptr with a dummy deleter.
-    m_sim->set_logger(std::shared_ptr<bcsim::ILog>(m_log_widget, [](bcsim::ILog*) { }));
-    
+void MainWindow::createNewSimulator(const QString& sim_type) {
+    const int gpu_device_no = m_settings->value("cuda_device_no", 0).toInt();
+    bool force_cpu = false;
+    bool force_gpu = false;
     QString window_title_extra;
-    if (sim_type == "cpu") {
-        const auto num_cores = m_settings->value("cpu_sim_num_cores", 1).toInt();
-        m_sim->set_parameter("num_cpu_cores", std::to_string(num_cores));
-        window_title_extra = QString::number(num_cores) + " CPU cores";
-    } else if (sim_type == "gpu") {
-        auto device_no = m_settings->value("cuda_device_no", 0).toInt();
-
-        // hack to query devices
-        const auto num_devices = std::stoi(m_sim->get_parameter("num_cuda_devices"));
-        if (num_devices == 0) {
-            throw std::runtime_error("No CUDA devices was found");
+    m_sim = nullptr;
+    if (sim_type == "auto") {
+        if (m_hardware_autodetector.built_with_gpu_support()) {
+            const auto gpu_name = m_hardware_autodetector.get_gpu_name(gpu_device_no);
+            window_title_extra += "GPU: " + QString::fromStdString(gpu_name);
+            m_log_widget->write(bcsim::ILog::INFO, "Defaulting to GPU device " + std::to_string(gpu_device_no) + " : " + gpu_name);
+            force_gpu = true;
+        } else {
+            // in the worst case with no OpenMP we just use one CPU thread.
+            force_cpu = true;
         }
-        if (device_no >= num_devices) {
-            m_log_widget->write(bcsim::ILog::DEBUG, "Invalid device number specified in config. Will default to 0");
-            device_no = 0;
-        }
-        m_log_widget->write(bcsim::ILog::INFO, "Number of CUDA devices: " + std::to_string(num_devices));
-        for (int device_no = 0; device_no < num_devices; device_no++) {
-            m_sim->set_parameter("gpu_device", std::to_string(device_no));
-            const auto device_name = m_sim->get_parameter("cur_device_name");
-            m_log_widget->write(bcsim::ILog::INFO, "Device " + std::to_string(device_no) + " : " + device_name);
-        }
-
-        // switch to selected device number (or default)
-        m_sim->set_parameter("gpu_device", std::to_string(device_no));
-        QString device_name = m_sim->get_parameter("cur_device_name").c_str();
-        window_title_extra += "GPU: " + device_name;
-    } else {
-        throw std::runtime_error("Should not happen");
     }
+    if (sim_type == "gpu" || force_gpu) {
+        m_sim = bcsim::Create("gpu");
+        m_sim->set_parameter("gpu_device", std::to_string(gpu_device_no));
+    } else if (sim_type == "cpu" || force_cpu) {
+        const auto num_cores = m_settings->value("cpu_sim_num_cores", m_hardware_autodetector.max_openmp_threads()).toInt();
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator will use " + std::to_string(num_cores) + " threads");
+        m_sim = bcsim::Create("cpu");
+        m_sim->set_parameter("num_cpu_cores", std::to_string(num_cores));
+        window_title_extra = QString::number(num_cores) + " CPU threads";
+    }
+    if (!m_sim) throw std::runtime_error("This should never happen - simulator was not created!");
+
+    // The simulator needs a shared pointer. A dummy deleted ensures that it doesn't try to delete our log widget.
+    m_sim->set_logger(std::shared_ptr<bcsim::ILog>(m_log_widget, [](bcsim::ILog*) { }));
     setWindowTitle("BCSimGUI @ " + window_title_extra);
     
     // onLoadScatterers(); // ask user for a scatterer dataset.
@@ -548,7 +562,6 @@ void MainWindow::createNewSimulator(const QString sim_type) {
 
     updateOpenGlVisualization();
     m_log_widget->write(bcsim::ILog::INFO, "Created simulator");
-
 }
 
 void MainWindow::updateWithNewFixedScatterers(bcsim::FixedScatterers::s_ptr fixed_scatterers) {
