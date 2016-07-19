@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../utils/ScanGeometry.hpp"
 #include "ImageExport.hpp"
 #include "LogWidget.hpp"
+#include "../utils/HardwareAutodetection.hpp"
 
 // Forward decl.
 class DisplayWidget;
@@ -194,6 +195,7 @@ private:
     bcsim::ScanSequence::s_ptr      m_cur_scanseq;
 
     LogWidget*                      m_log_widget;
+    utils::HardwareAutodetector     m_hardware_autodetector;
 };
 
 
