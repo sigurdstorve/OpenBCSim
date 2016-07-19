@@ -214,6 +214,26 @@ MainWindow::MainWindow() {
     });
 
     createMenus();
+
+    // Dump hardware information
+    const auto& hw = m_hardware_autodetector;
+    if (hw.built_with_gpu_support()) {
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator was built with CUDA support");
+        m_log_widget->write(bcsim::ILog::INFO, "Number of CUDA-enabled GPUs detected: " + std::to_string(hw.get_num_gpus()));
+        for (int gpu_no = 0; gpu_no < m_hardware_autodetector.get_num_gpus(); gpu_no++) {
+            m_log_widget->write(bcsim::ILog::INFO, "GPU " + std::to_string(gpu_no) + " : " + hw.get_gpu_name(gpu_no));
+            m_log_widget->write(bcsim::ILog::INFO, "    Compute capability " + std::to_string(hw.get_gpu_major(gpu_no)) + "." + std::to_string(hw.get_gpu_minor(gpu_no)));
+            m_log_widget->write(bcsim::ILog::INFO, "    Global memory: " + std::to_string(hw.get_gpu_total_memory(gpu_no)));
+        }
+    } else {
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator was NOT built with CUDA support.");
+    }
+    if (hw.built_with_openmp_support()) {
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator was built with OpenMP support");
+        m_log_widget->write(bcsim::ILog::INFO, "System supports a maximum of " + std::to_string(hw.max_openmp_threads()) + " OpenMP threads");
+    } else {
+        m_log_widget->write(bcsim::ILog::INFO, "Simulator was NOT built with OpenMP support");
+    }
 }
 
 void MainWindow::onLoadIniSettings() {
