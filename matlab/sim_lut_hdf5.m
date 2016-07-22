@@ -42,8 +42,9 @@ function sim_lut_hdf5(h5_file, xmit_aperture, receive_aperture, geo, job_info)
     % the HDF5 library uses row-major..
     % (the simulator expects: dim0~radial, dim1~lateral, dim2~elevational)
     %
-    % using NaN to support multi-CPU simulation with different Matlab
-    % instances; combination is done with Python script afterwards.
+    % using zeros to support multi-CPU simulation with different Matlab
+    % instances; combination is done by simple summation with a Python script
+    % afterwards.
     intensities = zeros(geo.num_y, geo.num_x, geo.num_z);
     for ix = xi_start:xi_end
         fprintf('ix = %d of %d\n', ix, xi_end)
