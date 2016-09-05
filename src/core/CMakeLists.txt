@@ -30,8 +30,7 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/GpuScatterers.cpp
      )
 
-# Made static in order to avoid DLL interface-related issues
-add_library(LibBCSim STATIC ${CORE_LIBRARY_SOURCE_FILES})
+add_library(LibBCSim ${CORE_LIBRARY_SOURCE_FILES})
 
 if (BCSIM_ENABLE_CUDA)
     cuda_add_library(BCSimCUDA
@@ -64,6 +63,7 @@ endif()
 
 # Define installation of binaries and public API headers
 install(TARGETS LibBCSim DESTINATION lib)
+install(TARGETS BCSimCUDA DESTINATION lib)
 
 install(FILES BeamProfile.hpp      DESTINATION include)
 install(FILES BCSimConfig.hpp      DESTINATION include)

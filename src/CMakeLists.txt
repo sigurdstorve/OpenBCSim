@@ -1,9 +1,11 @@
-# Version 2.8.11 is minimum version for auto-linking with Qt5 libs.
 cmake_minimum_required(VERSION 3.5)
 project(OpenBCSim)
 cmake_policy(VERSION 3.5)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libs")
 
 option(BCSIM_ENABLE_OPENMP
        "Enable OpenMP support" ON)
@@ -33,11 +35,11 @@ if (BCSIM_BUILD_UTILS OR BCSIM_BUILD_QT5_GUI)
     # makes available imported targets.
     # Then it is no longer needed to do manually do include_directories()
     find_package(HDF5 REQUIRED)
-    if (NOT HDF5_FOUND)
-        message(FATAL "Unable to locate HDF5")
+    if (NOT TARGET hdf5-shared)
+        message(FATAL_ERROR "Imported target hdf5-shared is not available")
     endif()
-    if (NOT HDF5_BUILD_CPP_LIB)
-        message(FATAL "Unable to locate HDF5 c++ component")
+    if (NOT TARGET hdf5_cpp-shared)
+        message(FATAL_ERROR "Imported target hdf5_cpp-shared is not available")
     endif()
 endif()
 
@@ -52,9 +54,6 @@ if (BCSIM_ENABLE_CUDA)
     add_definitions(-DBCSIM_ENABLE_CUDA)
 endif()
 
-if (UNIX)
-    add_compile_options(-std=c++11 -fvisibility=hidden)
-endif()
 # C++11 is enabled by default on recent MSVC
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
@@ -82,19 +81,6 @@ if (BCSIM_ENABLE_CUDA)
     message(STATUS "Found CUDA version: ${CUDA_VERSION}")
     include_directories(${CUDA_INCLUDE_DIRS})
 endif()
-
-# Need to add -fPIC on 64-bit Linux
-if (UNIX AND NOT WIN32)
-    find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
-    if(CMAKE_UNAME)
-        exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
-        set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL
-            "processor type (i386 and x86_64)")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-            add_compile_options(-fPIC)
-        endif ()
-  endif ()
-endif ()
 
 if (BCSIM_BUILD_UNITTEST)
     enable_testing()
