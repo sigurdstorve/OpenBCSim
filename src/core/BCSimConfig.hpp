@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "export_macros.hpp"
 #include "vector3.hpp"
 
+#ifdef __GNUC__
 #if (__GNUC__ <= 4) && (__GNUC__MINOR <= 8)
 // Workaround for GCC <= 4.8 lacking std::make_unqiue
 namespace std {
@@ -43,6 +44,7 @@ std::unique_ptr<T> make_unique(Args&&... args) {
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 }    // end namespace
+#endif
 #endif
 
 namespace bcsim {
