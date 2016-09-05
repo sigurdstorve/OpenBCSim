@@ -35,6 +35,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "export_macros.hpp"
 #include "vector3.hpp"
 
+#if (__GNUC__ <= 4) && (__GNUC__MINOR <= 8)
+// Workaround for GCC <= 4.8 lacking std::make_unqiue
+namespace std {
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+}    // end namespace
+#endif
+
 namespace bcsim {
 
 // Define the precision level to work at (32- or 64-bit floats)
