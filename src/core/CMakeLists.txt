@@ -30,8 +30,7 @@ list(APPEND CORE_LIBRARY_SOURCE_FILES
      algorithm/GpuScatterers.cpp
      )
 
-# Made static in order to avoid DLL interface-related issues
-add_library(LibBCSim STATIC ${CORE_LIBRARY_SOURCE_FILES})
+add_library(LibBCSim ${CORE_LIBRARY_SOURCE_FILES})
 
 if (BCSIM_ENABLE_CUDA)
     cuda_add_library(BCSimCUDA

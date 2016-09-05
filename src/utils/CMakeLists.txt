@@ -23,7 +23,7 @@ list(APPEND UTILS_LIBRARY_SOURCE_FILES
      HardwareAutodetection.cpp 
      )
 
-add_library(LibBCSimUtils STATIC ${UTILS_LIBRARY_SOURCE_FILES})
+add_library(LibBCSimUtils ${UTILS_LIBRARY_SOURCE_FILES})
 target_link_libraries(LibBCSimUtils
                       hdf5-static
                       hdf5_cpp-static

@@ -5,6 +5,8 @@ cmake_policy(VERSION 3.5)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libs")
+
 option(BCSIM_ENABLE_OPENMP
        "Enable OpenMP support" ON)
 option(BCSIM_BUILD_UNITTEST
