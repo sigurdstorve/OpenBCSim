@@ -83,19 +83,6 @@ if (BCSIM_ENABLE_CUDA)
     include_directories(${CUDA_INCLUDE_DIRS})
 endif()
 
-# Need to add -fPIC on 64-bit Linux
-if (UNIX AND NOT WIN32)
-    find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
-    if(CMAKE_UNAME)
-        exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
-        set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL
-            "processor type (i386 and x86_64)")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-            add_compile_options(-fPIC)
-        endif ()
-  endif ()
-endif ()
-
 if (BCSIM_BUILD_UNITTEST)
     enable_testing()
     find_package(Boost REQUIRED COMPONENTS unit_test_framework)
