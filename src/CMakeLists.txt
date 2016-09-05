@@ -3,6 +3,7 @@ project(OpenBCSim)
 cmake_policy(VERSION 3.5)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 option(BCSIM_ENABLE_OPENMP
        "Enable OpenMP support" ON)
@@ -51,9 +52,6 @@ if (BCSIM_ENABLE_CUDA)
     add_definitions(-DBCSIM_ENABLE_CUDA)
 endif()
 
-if (UNIX)
-    add_compile_options(-std=c++11 -fvisibility=hidden)
-endif()
 # C++11 is enabled by default on recent MSVC
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
