@@ -181,7 +181,7 @@ if __name__ == "__main__":
     sim_spline.set_analytical_beam_profile(args.sigma_lateral, args.sigma_elevational)
     
     # configure spline simulator
-    sim_spline.add_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
+    sim_spline.add_spline_scatterers(int(spline_degree), knot_vector, control_points, amplitudes)
     sim_spline.set_scan_sequence(origins, directions, args.line_length, lateral_dirs, timestamps)
 
     # fixed

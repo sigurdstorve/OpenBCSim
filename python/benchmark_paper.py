@@ -53,7 +53,7 @@ def reconfigure_scatterers(sim, h5_phantom):
             amplitudes     = f["amplitudes"].value
             control_points = f["control_points"].value
             knot_vector    = f["knot_vector"].value
-            spline_degree  = f["spline_degree"].value
+            spline_degree  = int(f["spline_degree"].value)
             sim.add_spline_scatterers(spline_degree, knot_vector, control_points, amplitudes)
             total_num += control_points.shape[0]
     return total_num
