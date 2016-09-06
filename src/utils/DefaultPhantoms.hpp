@@ -5,6 +5,7 @@
 #include <vector>
 #include "EllipsoidGeometry.hpp"
 #include "core/BCSimConfig.hpp"
+#include "core/export_macros.hpp"
 
 namespace default_phantoms {
 
@@ -38,7 +39,7 @@ struct LeftVentriclePhantomParameters {
 // Create a LV spline phantom model by randomly distributing point-scatterers in a box and then removing
 // those who are not inside a 3D capped ellipsoid. The remaining points are then scaled and rotated
 // to generate control points for splines.
-class LeftVentricle3dPhantomFactory {
+class DLL_PUBLIC LeftVentricle3dPhantomFactory {
 public:
     typedef std::function<void(const std::string&)> LogCallback;
 

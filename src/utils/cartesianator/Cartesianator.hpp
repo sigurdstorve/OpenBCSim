@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include <vector>
 #include "../ScanGeometry.hpp"
+#include "core/export_macros.hpp"
 
 // Geometry + Beam Space data => Sampled cartesian grid.
 // Manages its own output buffer.
@@ -63,7 +64,7 @@ public:
 };
 
 template <typename T>
-class CpuCartesianator : public ICartesianator<T> {
+class DLL_PUBLIC CpuCartesianator : public ICartesianator<T> {
 public:
     CpuCartesianator();
 
