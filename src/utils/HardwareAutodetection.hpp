@@ -1,11 +1,12 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "../core/export_macros.hpp"
 
 namespace utils {
 
 // Detect CPU and GPU hardware.
-class HardwareAutodetector {
+class DLL_PUBLIC HardwareAutodetector {
 public:
     // Throws std::runtime_error on error.
     HardwareAutodetector();
