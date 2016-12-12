@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(OpenBCSim)
 cmake_policy(VERSION 3.5)
+include(CMakeDependentOption)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -21,11 +22,13 @@ option(BCSIM_ENABLE_NAN_CHECK
        "Enable NaN checking (for debug builds)" ON)
 option(BCSIM_ENABLE_CUDA
        "Build the GPU algorithms" OFF)
-option(BCSIM_BUILD_QT5_GUI
-       "Build development Qt5 code (requires BCSIM_BUILD_UTILS)" OFF)
 option(BCSIM_BUILD_BENCHMARK_CODE
        "Build development code used for benchmarking" OFF)
 
+# The Qt5 GUI requires the "Utils" library.
+cmake_dependent_option(BCSIM_BUILD_QT5_GUI "Build interactive Qt5 GUI" OFF
+                       "BCSIM_BUILD_UTILS" OFF)       
+       
 include_directories(${PROJECT_SOURCE_DIR})
 
 find_package(Boost REQUIRED)
