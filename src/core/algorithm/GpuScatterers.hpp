@@ -1,3 +1,4 @@
+#ifdef BCSIM_ENABLE_CUDA
 #include <memory>
 #include <vector>
 #include "../LibBCSim.hpp"
@@ -150,3 +151,4 @@ private:
 };
 
 }   // end namespace
+#endif BCSIM_ENABLE_CUDA
