@@ -1,3 +1,4 @@
+#ifdef BCSIM_ENABLE_CUDA
 #include <stdexcept>
 #include <tuple>
 #include "common_definitions.h" // for MAX_SPLINE_DEGREE
@@ -350,3 +351,4 @@ DeviceSplineScatterers::s_ptr DeviceSplineScatterersCollection::get_dataset(size
 }
 
 }   // end namespace
+#endif BCSIM_ENABLE_CUDA
