@@ -63,7 +63,9 @@ endif()
 
 # Define installation of binaries and public API headers
 install(TARGETS LibBCSim DESTINATION lib)
-install(TARGETS BCSimCUDA DESTINATION lib)
+if (BCSIM_ENABLE_CUDA)
+    install(TARGETS BCSimCUDA DESTINATION lib)
+endif()
 
 install(FILES BeamProfile.hpp      DESTINATION include)
 install(FILES BCSimConfig.hpp      DESTINATION include)
