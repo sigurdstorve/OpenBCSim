@@ -26,9 +26,13 @@ target_link_libraries(pyrfsim
                       Boost::python
                       Boost::system
                       LibBCSim
-                      hdf5-shared
-                      hdf5_cpp-shared
                       )
+if (TARGET hdf5-shared AND TARGET hdf5_cpp-shared)
+    target_link_libraries(pyrfsim hdf5-shared hdf5_cpp-shared)
+else()
+    target_link_libraries(pyrfsim ${HDF5_LIBRARIES})
+endif()
+                      
 set_target_properties(pyrfsim PROPERTIES PREFIX "")
 if (WIN32)
 set_target_properties(pyrfsim PROPERTIES SUFFIX ".pyd")

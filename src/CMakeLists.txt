@@ -34,15 +34,12 @@ include_directories(${PROJECT_SOURCE_DIR})
 find_package(Boost REQUIRED)
 
 if (BCSIM_BUILD_UTILS OR BCSIM_BUILD_QT5_GUI)
-    # Note: Using the new-style find_package() from HDF5 which
-    # makes available imported targets.
-    # Then it is no longer needed to do manually do include_directories()
+    # Note: Prefer the new-style find_package() for HDF5 which creates imported targets.
+    # Then it is no longer needed to manually do include_directories().
     find_package(HDF5 REQUIRED COMPONENTS C CXX)
-    if (NOT TARGET hdf5-shared)
-        message(FATAL_ERROR "Imported target hdf5-shared is not available")
-    endif()
-    if (NOT TARGET hdf5_cpp-shared)
-        message(FATAL_ERROR "Imported target hdf5_cpp-shared is not available")
+    if (NOT TARGET hdf5-shared OR NOT TARGET hdf5_cpp-shared)
+        message(WARNING "Could not find imported HDF5 targets. Using module-mode instead.")
+        include_directories(${HDF5_INCLUDE_DIRS}) 
     endif()
 endif()
 
