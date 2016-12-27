@@ -37,7 +37,7 @@ if (BCSIM_BUILD_UTILS OR BCSIM_BUILD_QT5_GUI)
     # Note: Using the new-style find_package() from HDF5 which
     # makes available imported targets.
     # Then it is no longer needed to do manually do include_directories()
-    find_package(HDF5 REQUIRED)
+    find_package(HDF5 REQUIRED COMPONENTS C CXX)
     if (NOT TARGET hdf5-shared)
         message(FATAL_ERROR "Imported target hdf5-shared is not available")
     endif()
