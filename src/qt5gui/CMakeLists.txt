@@ -92,10 +92,15 @@ target_link_libraries(BCSimGUI
                       Boost::boost
                       LibBCSim
                       LibBCSimUtils # BCSimCUDA also?
-                      hdf5-static
-                      hdf5_cpp-static
                       trianglemesh3d
                       )
+
+if (TARGET hdf5-shared AND TARGET hdf5_cpp-shared)
+    target_link_libraries(BCSimGUI hdf5-shared hdf5_cpp-shared)
+else()
+    target_link_libraries(BCSimGUI ${HDF5_LIBRARIES})
+endif()
+
 if (WIN32)
     target_link_libraries(BCSimGUI Qt5::WinMain)
 endif()

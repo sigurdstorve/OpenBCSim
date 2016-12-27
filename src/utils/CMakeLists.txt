@@ -25,11 +25,15 @@ list(APPEND UTILS_LIBRARY_SOURCE_FILES
 
 add_library(LibBCSimUtils ${UTILS_LIBRARY_SOURCE_FILES})
 target_link_libraries(LibBCSimUtils
-                      hdf5-static
-                      hdf5_cpp-static
                       Boost::boost
                       )
 
+if (TARGET hdf5-shared AND TARGET hdf5_cpp-shared)
+    target_link_libraries(LibBCSimUtils hdf5-shared hdf5_cpp-shared)
+else()
+    target_link_libraries(LibBCSimUtils ${HDF5_LIBRARIES})
+endif()
+                      
 if (BCSIM_ENABLE_CUDA)
     # Needed because we're going to interact with the CUDA runtime API
     # to query the number and type of available GPUs.
