@@ -25,8 +25,8 @@ list(APPEND UTILS_LIBRARY_SOURCE_FILES
 
 add_library(LibBCSimUtils ${UTILS_LIBRARY_SOURCE_FILES})
 target_link_libraries(LibBCSimUtils
-                      hdf5-static
-                      hdf5_cpp-static
+                      hdf5-shared
+                      hdf5_cpp-shared
                       Boost::boost
                       )
 

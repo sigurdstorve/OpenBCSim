@@ -26,8 +26,8 @@ target_link_libraries(pyrfsim
                       Boost::python
                       Boost::system
                       LibBCSim
-                      hdf5-static
-                      hdf5_cpp-static
+                      hdf5-shared
+                      hdf5_cpp-shared
                       )
 set_target_properties(pyrfsim PROPERTIES PREFIX "")
 if (WIN32)

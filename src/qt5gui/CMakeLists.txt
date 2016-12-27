@@ -92,8 +92,8 @@ target_link_libraries(BCSimGUI
                       Boost::boost
                       LibBCSim
                       LibBCSimUtils # BCSimCUDA also?
-                      hdf5-static
-                      hdf5_cpp-static
+                      hdf5-shared
+                      hdf5_cpp-shared
                       trianglemesh3d
                       )
 if (WIN32)
