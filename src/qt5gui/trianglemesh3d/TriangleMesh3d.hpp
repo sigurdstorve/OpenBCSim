@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <ostream>
+#include "../../core/export_macros.hpp" // TODO: Better solution?
 
 namespace trianglemesh3d {
 
@@ -9,7 +10,7 @@ enum class Mesh3dFileType {
 };
 
 // A 3D triangle mesh with normals.
-class ITriangleMesh3d {
+class DLL_PUBLIC ITriangleMesh3d {
 public:
 	typedef std::unique_ptr<ITriangleMesh3d> u_ptr;
 	virtual ~ITriangleMesh3d() { }
@@ -24,13 +25,13 @@ public:
     virtual const double* normal_data() const = 0;
 };
 
-std::ostream& operator<<(std::ostream& os, const ITriangleMesh3d& mesh);
+DLL_PUBLIC std::ostream& operator<<(std::ostream& os, const ITriangleMesh3d& mesh);
 
 // Load model from a file.
-ITriangleMesh3d::u_ptr LoadTriangleMesh3d(const std::string& filename, Mesh3dFileType type);
+DLL_PUBLIC ITriangleMesh3d::u_ptr LoadTriangleMesh3d(const std::string& filename, Mesh3dFileType type);
 
 // Load model from an input stream. This is useful in case the model file is
 // not a file on disk, but e.g. a Qt resource file embedded in an executable.
-ITriangleMesh3d::u_ptr LoadTriangleMesh3d(std::istream& in_stream, Mesh3dFileType type);
+DLL_PUBLIC ITriangleMesh3d::u_ptr LoadTriangleMesh3d(std::istream& in_stream, Mesh3dFileType type);
 
 }   // end namespace

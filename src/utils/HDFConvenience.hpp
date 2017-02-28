@@ -52,7 +52,7 @@ ScanSequence::u_ptr DLL_PUBLIC loadScanSequenceFromHdf(const std::string& h5_fil
 ExcitationSignal DLL_PUBLIC loadExcitationFromHdf(const std::string& h5_file);
 
 // Load a LUT beam profile.
-IBeamProfile::s_ptr loadBeamProfileFromHdf(const std::string& h5_file);
+IBeamProfile::s_ptr DLL_PUBLIC loadBeamProfileFromHdf(const std::string& h5_file);
 
 }   // namespace
 
